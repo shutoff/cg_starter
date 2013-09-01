@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:key="item"
+        android:title="@string/item"/>
+
+    <EditTextPreference
+        android:key="name"
+        android:title="@string/name"/>
+
+    <CheckBoxPreference
+        android:key="auto"
+        android:title="@string/auto"
+        android:summary="@string/auto_sum"/>
+
+    <ru.shutoff.cgstarter.TimePreference
+        android:key="period"
+        android:title="@string/interval"
+        android:summary="@string/interval_sum"/>
+
+    <ListPreference
+        android:key="days"
+        android:title="@string/days"
+        android:entries="@array/days_list"
+        android:entryValues="@array/days_values"/>
+
+    <ru.shutoff.cgstarter.DaysListPreference
+        android:key="weekdays"
+        android:title="@string/weekdays"
+        android:entries="@array/weekdays_list"
+        android:entryValues="@array/weekdays_values"/>
+
+    <Preference
+        android:key="clear"
+        android:title="@string/clear"
+        android:summary="@string/clear_sum"/>
+
+</PreferenceScreen>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Preference
+        android:key="button"
+        android:title="@string/button"
+        android:summary="@string/button_sum"/>
+
+    <ru.shutoff.cgstarter.SeekBarPreference
+        android:key="auto_pause"
+        android:title="@string/auto_pause"
+        android:defaultValue="5"
+        android:max="60"
+        android:text="@string/sec"/>
+
+    <ru.shutoff.cgstarter.SeekBarPreference
+        android:key="launch_pause"
+        android:title="@string/launch_pause"
+        android:defaultValue="30"
+        android:max="300"
+        android:text="@string/sec"/>
+
+    <CheckBoxPreference
+        android:key="rotate"
+        android:title="@string/rotate"
+        android:summary="@string/rotate_sum"/>
+
+    <CheckBoxPreference
+        android:key="bt"
+        android:title="@string/bt"
+        android:summary="@string/bt_sum"/>
+
+    <CheckBoxPreference
+        android:key="data"
+        android:title="@string/data"
+        android:summary="@string/data_sum"/>
+
+    <CheckBoxPreference
+        android:key="volume"
+        android:title="@string/volume"
+        android:summary="@string/volume_sum"/>
+
+    <ru.shutoff.cgstarter.SeekBarPreference
+        android:key="level"
+        android:title="@string/level"
+        android:defaultValue="100"
+        android:max="100"/>
+
+    <Preference
+        android:key="about"
+        android:title="@string/about"
+        android:summary="@string/version"/>
+
+</PreferenceScreen>

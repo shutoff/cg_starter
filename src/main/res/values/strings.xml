@@ -1,8 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">CG starter</string>
     <string name="action_settings">Settings</string>
-    <string name="hello_world">Hello world!</string>
-
+    <string name="item">Point</string>
+    <string name="name">Name</string>
+    <string name="picture">Picture</string>
+    <string name="auto">Autostart</string>
+    <string name="auto_sum">Autostart this item in selected time</string>
+    <string name="no_cg">CityGuide not found</string>
+    <string name="set">Set</string>
+    <string name="cancel">Cancel</string>
+    <string name="interval">Interval</string>
+    <string name="interval_sum">Select interval for autostart</string>
+    <string name="item_sum">Select point</string>
+    <string name="name_sum">Input point name</string>
+    <string name="clear">Clear</string>
+    <string name="clear_sum">Clear button</string>
+    <string name="days">Days for run</string>
+    <string-array name="days_list">
+        <item>All days</item>
+        <item>Working days</item>
+        <item>Holidays</item>
+        <item>Days of week</item>
+    </string-array>
+    <string-array name="days_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+    <string name="weekdays">Week days for run</string>
+    <string-array name="weekdays_list">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
+    <string-array name="weekdays_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </string-array>
+    <string name="days_sum">Select days for auto run</string>
+    <string name="button">Button settings</string>
+    <string name="button_sum">For setup button press and hold it</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+    <string name="run">Run CityGuide</string>
+    <string name="auto_pause">Autostart pause</string>
+    <string name="launch_pause">Launch pause</string>
+    <string name="sec">sec</string>
+    <string name="rotate">Screen rotate</string>
+    <string name="rotate_sum">Disable screen rotate on run CituGuide</string>
+    <string name="bt">Bluetooth control</string>
+    <string name="bt_sum">Turn ON bluetooth</string>
+    <string name="data">Mobile data control</string>
+    <string name="data_sum">Turn ON mobile data</string>
+    <string name="volume">Volume control</string>
+    <string name="volume_sum">Set volume on run CityGuide</string>
+    <string name="level">Volume level</string>
+    <string name="level_sum">Set volume level</string>
 </resources>
