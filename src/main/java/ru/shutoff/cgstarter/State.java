@@ -2,6 +2,14 @@ package ru.shutoff.cgstarter;
 
 import android.content.SharedPreferences;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
+
 public class State {
 
     static class Point {
@@ -10,7 +18,7 @@ public class State {
         String lat;
         String lng;
         String interval;
-        int    days;
+        int days;
     }
 
     static final String NAME = "Name";
@@ -80,4 +88,36 @@ public class State {
         }
         ed.commit();
     }
+
+/*
+    static public void appendLog(String text) {
+        File logFile = new File("/sdcard/cg.log");
+        if (!logFile.exists()) {
+            try {
+                logFile.createNewFile();
+            } catch (IOException e) {
+            }
+        }
+        try {
+            //BufferedWriter for performance, true to set append to file flag
+            BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
+            Date d = new Date();
+            buf.append(d.toLocaleString());
+            buf.append(" ");
+            buf.append(text);
+            buf.newLine();
+            buf.close();
+        } catch (IOException e) {
+        }
+    }
+
+    static public void print(Exception ex) {
+        appendLog("Error: " + ex.toString());
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        String s = sw.toString();
+        appendLog(s);
+    }
+*/
+
 }

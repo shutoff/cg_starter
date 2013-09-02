@@ -52,4 +52,6 @@
     <string name="volume_sum">Установить громкость при запуске CityGuide</string>
     <string name="level">Громкость</string>
     <string name="level_sum">Регулировка громкости звука</string>
+    <string name="carmode">Автомобильный режим</string>
+    <string name="carmode_sum">Запускать приложение при включении автомобильного режима</string>
 </resources>

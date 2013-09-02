@@ -326,6 +326,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             case RUN_CG:
             {
                 Intent intent = new Intent(this, OnExitService.class);
+                intent.setAction(OnExitService.START);
                 startService(intent);
                 finish();
                 break;
@@ -358,7 +359,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             writer.append("1|router|65001\n");
             writer.append("#[CURRENT]|1|1\n");
             writer.append("Start|0|0\n");
-            writer.append("Finish||");
+            writer.append("Finish|");
             writer.append(p.lat);
             writer.append("|");
             writer.append(p.lng);
@@ -423,8 +424,6 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
-
-            finish();
         }
 
         if (preferences.getBoolean("volume", false))
@@ -443,6 +442,23 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     String[] parts = line.split("=");
                     if (parts[0].equals("audiostream")) {
                         channel = Integer.parseInt(parts[1]);
+                        switch (channel){
+                            case 0:
+                                channel = AudioManager.STREAM_SYSTEM;
+                                break;
+                            case 1:
+                                channel = AudioManager.STREAM_RING;
+                                break;
+                            case 2:
+                                channel = AudioManager.STREAM_MUSIC;
+                                break;
+                            case 3:
+                                channel = AudioManager.STREAM_ALARM;
+                                break;
+                            case 4:
+                                channel = AudioManager.STREAM_NOTIFICATION;
+                                break;
+                        }
                         break;
                     }
                 }
@@ -451,7 +467,9 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     ed.putInt("save_channel", channel);
                     AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                     ed.putInt("save_level", audio.getStreamVolume(channel));
-                    audio.setStreamVolume(channel, level * audio.getStreamMaxVolume(channel) / 100, 0);
+                    int max_level = audio.getStreamMaxVolume(channel);
+                    int new_level = level *  max_level/ 100;
+                    audio.setStreamVolume(channel, new_level, 0);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -466,7 +484,6 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             toast.show();
             return;
         }
-
         startActivityForResult(intent, RUN_CG);
     }
 

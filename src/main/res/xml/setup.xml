@@ -47,6 +47,11 @@
         android:defaultValue="100"
         android:max="100"/>
 
+    <CheckBoxPreference
+        android:key="carmode"
+        android:title="@string/carmode"
+        android:summary="@string/carmode_sum"/>
+
     <Preference
         android:key="about"
         android:title="@string/about"
