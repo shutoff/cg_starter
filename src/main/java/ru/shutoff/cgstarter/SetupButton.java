@@ -223,7 +223,6 @@ public class SetupButton extends PreferenceActivity {
             }
         });
 
-        setResult(RESULT_OK, intent);
     }
 
     void setupInterval() {

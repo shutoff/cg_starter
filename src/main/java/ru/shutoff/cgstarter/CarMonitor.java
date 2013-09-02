@@ -18,11 +18,20 @@ public class CarMonitor extends BroadcastReceiver {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             if (preferences.getBoolean("carmode", false)) {
                 int dockState = intent.getIntExtra(Intent.EXTRA_DOCK_STATE, -1);
+                boolean newMode = false;
                 if (dockState == Intent.EXTRA_DOCK_STATE_CAR) {
+                    newMode = true;
                     if (!OnExitService.isRunCG(context)) {
                         Intent run = new Intent(context, MainActivity.class);
+                        run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         context.startActivity(run);
                     }
+                }
+                boolean curMode = preferences.getBoolean("car_state", false);
+                if (curMode != newMode){
+                    SharedPreferences.Editor ed = preferences.edit();
+                    ed.putBoolean("car_state", newMode);
+                    ed.commit();
                 }
             }
         }

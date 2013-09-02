@@ -15,6 +15,7 @@ import android.provider.Settings;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 
+import java.util.Iterator;
 import java.util.List;
 
 public class OnExitService extends Service {
@@ -28,6 +29,7 @@ public class OnExitService extends Service {
     PendingIntent pi;
 
     PhoneStateListener phoneListener;
+    TelephonyManager tm;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -44,14 +46,11 @@ public class OnExitService extends Service {
     }
 
     @Override
-    public void onDestroy(){
-        if (phoneListener != null){
-            TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
+    public void onDestroy() {
+        if (phoneListener != null)
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
-        }
         super.onDestroy();
     }
-
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -62,23 +61,15 @@ public class OnExitService extends Service {
             return START_STICKY;
         if (action.equals(START)) {
             alarmMgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + TIMEOUT, TIMEOUT, pi);
-            if (phoneListener == null){
-                phoneListener = new PhoneStateListener(){
-                    @Override
-                    public void onCallStateChanged(int state, String incomingNumber){
-                        State.appendLog("Call " + state);
-                        super.onCallStateChanged(state, incomingNumber);
-                    }
-                };
-                TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
-                tm.listen(phoneListener, PhoneStateListener.LISTEN_CALL_STATE);
-            }
+            setPhoneListener();
             return START_STICKY;
         }
         if (action.equals(TIMER)) {
             if (!isRunCG(this)) {
-                alarmMgr.cancel(pi);
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                if (preferences.getBoolean("carmode", false) && preferences.getBoolean("car_state", false))
+                    return START_STICKY;
+                alarmMgr.cancel(pi);
                 SharedPreferences.Editor ed = preferences.edit();
                 int rotate = preferences.getInt("save_rotate", 0);
                 if (rotate > 0) {
@@ -107,19 +98,74 @@ public class OnExitService extends Service {
                 }
                 ed.commit();
                 stopSelf();
+            } else {
+                setPhoneListener();
             }
             return START_STICKY;
         }
         return START_STICKY;
     }
 
+    void setPhoneListener() {
+        if (phoneListener != null)
+            return;
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (preferences.getBoolean("phone", false)) {
+            phoneListener = new PhoneStateListener() {
+                @Override
+                public void onCallStateChanged(int state, String incomingNumber) {
+                    super.onCallStateChanged(state, incomingNumber);
+                    if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
+                        if (!isActiveCG(getApplicationContext())) {
+                            try{
+                                Intent intent = getPackageManager().getLaunchIntentForPackage("cityguide.probki.net");
+                                if (intent != null)
+                                    startActivity(intent);
+                            }catch (Exception ex){
+                                // ignore
+                            }
+                        }
+                    }
+                }
+            };
+            tm = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
+            tm.listen(phoneListener, PhoneStateListener.LISTEN_CALL_STATE);
+        }
+    }
+
     static boolean isRunCG(Context context) {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
+        if (procInfos == null)
+            return false;
         int i;
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
             if (proc.processName.equals("cityguide.probki.net"))
+                return true;
+        }
+        return false;
+    }
+
+    static ActivityManager mActivityManager;
+
+    static boolean isActiveCG(Context context) {
+        if (mActivityManager == null)
+            mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningAppProcessInfo info: mActivityManager.getRunningAppProcesses()){
+            if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                    && !isRunningService(info.processName)) {
+                return info.processName.equals("cityguide.probki.net");
+            }
+        }
+        return false;
+    }
+
+    static boolean isRunningService(String processname) {
+        if (processname == null || processname.isEmpty())
+            return false;
+        for ( ActivityManager.RunningServiceInfo service: mActivityManager.getRunningServices(9999)) {
+            if (service.process.equals(processname))
                 return true;
         }
         return false;

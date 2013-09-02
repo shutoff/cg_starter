@@ -14,7 +14,6 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.view.KeyEvent;
-import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -264,10 +263,19 @@ public class MainActivity extends Activity implements View.OnTouchListener {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+    protected void onResume() {
+        super.onResume();
+        for (int i = 0; i < 8; i++)
+            buttons[i].setText(points[i].name);
+        State.save(preferences);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        timer.cancel();
+        autostart.cancel();
+        launchTimer.cancel();
     }
 
     @Override
@@ -328,7 +336,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 Intent intent = new Intent(this, OnExitService.class);
                 intent.setAction(OnExitService.START);
                 startService(intent);
- //               finish();
+                finish();
                 break;
             }
         }
@@ -378,16 +386,12 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         launchTimer.cancel();
 
         SharedPreferences.Editor ed = preferences.edit();
-        ed.remove("save_rotate");
-        ed.remove("save_bt");
-        ed.remove("save_channel");
-        ed.remove("save_level");
-
         if (preferences.getBoolean("rotate", false)) {
             try {
                 int save_rotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
                 Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-                ed.putInt("save_rotate", save_rotation);
+                if (!preferences.contains("save_rotate"))
+                    ed.putInt("save_rotate", save_rotation);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -466,7 +470,8 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 if (channel > 0){
                     ed.putInt("save_channel", channel);
                     AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    ed.putInt("save_level", audio.getStreamVolume(channel));
+                    if (!preferences.contains("save_level"))
+                        ed.putInt("save_level", audio.getStreamVolume(channel));
                     int max_level = audio.getStreamMaxVolume(channel);
                     int new_level = level *  max_level/ 100;
                     audio.setStreamVolume(channel, new_level, 0);
@@ -493,7 +498,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         launchTimer.cancel();
         Intent intent = new Intent(this, SetupButton.class);
         intent.putExtra("ID", active - 1);
-        startActivityForResult(intent, SETUP_BUTTON);
+        startActivity(intent);
     }
 
     void setup_app() {

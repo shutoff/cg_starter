@@ -15,7 +15,11 @@
                 android:topRightRadius="10dp" />
         </shape>
     </item>
-    <item>
+    <item
+        android:top="15dp"
+        android:bottom="15dp"
+        android:left="25dp"
+        android:right="25dp">
         <bitmap
             android:src="@android:drawable/ic_menu_preferences" />
     </item>
