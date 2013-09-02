@@ -48,6 +48,11 @@
         android:max="100"/>
 
     <CheckBoxPreference
+        android:key="phone"
+        android:title="@string/phone"
+        android:summary="@string/phone_sum"/>
+
+    <CheckBoxPreference
         android:key="carmode"
         android:title="@string/carmode"
         android:summary="@string/carmode_sum"/>

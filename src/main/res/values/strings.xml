@@ -69,4 +69,6 @@
     <string name="level_sum">Set volume level</string>
     <string name="carmode">Car mode</string>
     <string name="carmode_sum">Launch application on car mode</string>
+    <string name="phone">Phone control</string>
+    <string name="phone_sum">Show CityGuide while phone call</string>
 </resources>

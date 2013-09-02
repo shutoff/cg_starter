@@ -54,4 +54,6 @@
     <string name="level_sum">Регулировка громкости звука</string>
     <string name="carmode">Автомобильный режим</string>
     <string name="carmode_sum">Запускать приложение при включении автомобильного режима</string>
+    <string name="phone">Телефон</string>
+    <string name="phone_sum">Показывать CityGuide во время разговора по телефону</string>
 </resources>

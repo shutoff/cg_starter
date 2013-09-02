@@ -328,7 +328,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 Intent intent = new Intent(this, OnExitService.class);
                 intent.setAction(OnExitService.START);
                 startService(intent);
-                finish();
+ //               finish();
                 break;
             }
         }

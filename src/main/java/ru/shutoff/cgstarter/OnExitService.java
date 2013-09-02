@@ -12,6 +12,8 @@ import android.media.AudioManager;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 
 import java.util.List;
 
@@ -24,6 +26,8 @@ public class OnExitService extends Service {
 
     AlarmManager alarmMgr;
     PendingIntent pi;
+
+    PhoneStateListener phoneListener;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -40,6 +44,16 @@ public class OnExitService extends Service {
     }
 
     @Override
+    public void onDestroy(){
+        if (phoneListener != null){
+            TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
+            tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
+        }
+        super.onDestroy();
+    }
+
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null)
             return START_STICKY;
@@ -48,10 +62,21 @@ public class OnExitService extends Service {
             return START_STICKY;
         if (action.equals(START)) {
             alarmMgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + TIMEOUT, TIMEOUT, pi);
+            if (phoneListener == null){
+                phoneListener = new PhoneStateListener(){
+                    @Override
+                    public void onCallStateChanged(int state, String incomingNumber){
+                        State.appendLog("Call " + state);
+                        super.onCallStateChanged(state, incomingNumber);
+                    }
+                };
+                TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
+                tm.listen(phoneListener, PhoneStateListener.LISTEN_CALL_STATE);
+            }
             return START_STICKY;
         }
         if (action.equals(TIMER)) {
-            if (!isRunCG()) {
+            if (!isRunCG(this)) {
                 alarmMgr.cancel(pi);
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
                 SharedPreferences.Editor ed = preferences.edit();
@@ -85,24 +110,11 @@ public class OnExitService extends Service {
             }
             return START_STICKY;
         }
-        if (action.equals(Intent.ACTION_DOCK_EVENT)) {
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            if (preferences.getBoolean("carmode", false)) {
-                int dockState = intent.getIntExtra(Intent.EXTRA_DOCK_STATE, -1);
-                if (dockState == Intent.EXTRA_DOCK_STATE_CAR) {
-                    if (!isRunCG()) {
-                        Intent run = new Intent(this, MainActivity.class);
-                        startActivity(run);
-                    }
-                }
-            }
-            return START_STICKY;
-        }
         return START_STICKY;
     }
 
-    boolean isRunCG() {
-        ActivityManager activityManager = (ActivityManager) this.getSystemService(ACTIVITY_SERVICE);
+    static boolean isRunCG(Context context) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
         int i;
         for (i = 0; i < procInfos.size(); i++) {
