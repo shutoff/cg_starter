@@ -11,14 +11,14 @@
         android:key="auto_pause"
         android:title="@string/auto_pause"
         android:defaultValue="5"
-        android:max="60"
+        android:max="20"
         android:text="@string/sec"/>
 
     <ru.shutoff.cgstarter.SeekBarPreference
         android:key="launch_pause"
         android:title="@string/launch_pause"
         android:defaultValue="30"
-        android:max="300"
+        android:max="120"
         android:text="@string/sec"/>
 
     <CheckBoxPreference
