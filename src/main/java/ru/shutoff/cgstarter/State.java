@@ -1,6 +1,7 @@
 package ru.shutoff.cgstarter;
 
 import android.content.SharedPreferences;
+import android.os.Environment;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -45,6 +46,14 @@ public class State {
                 p.lng = preferences.getString(LONGITUDE + i, "");
                 p.interval = preferences.getString(INTERVAL + i, "");
                 p.days = preferences.getInt(DAYS + i, 0);
+                if (p.lat.equals("") || p.lng.equals("")){
+                    p.name = "";
+                    p.original = "";
+                    p.lat = "";
+                    p.lng = "";
+                    p.interval = "";
+                    p.days = 0;
+                }
                 if (!p.name.equals(""))
                     is_init = true;
                 points[i] = p;
@@ -89,9 +98,10 @@ public class State {
         ed.commit();
     }
 
- /*
+/*
     static public void appendLog(String text) {
-        File logFile = new File("/sdcard/cg.log");
+        File logFile = Environment.getExternalStorageDirectory();
+        logFile = new File(logFile, "cg.log");
         if (!logFile.exists()) {
             try {
                 logFile.createNewFile();
