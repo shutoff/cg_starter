@@ -57,6 +57,11 @@
         android:title="@string/carmode"
         android:summary="@string/carmode_sum"/>
 
+    <CheckBoxPreference
+        android:key="powermode"
+        android:title="@string/powermode"
+        android:summary="@string/powermode_sum"/>
+
     <Preference
         android:key="about"
         android:title="@string/about"

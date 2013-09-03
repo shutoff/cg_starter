@@ -69,6 +69,8 @@ public class OnExitService extends Service {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
                 if (preferences.getBoolean("carmode", false) && preferences.getBoolean("car_state", false))
                     return START_STICKY;
+                if (preferences.getBoolean("powermode", false) && preferences.getBoolean("power_state", false))
+                    return START_STICKY;
                 alarmMgr.cancel(pi);
                 SharedPreferences.Editor ed = preferences.edit();
                 int rotate = preferences.getInt("save_rotate", 0);
@@ -116,12 +118,12 @@ public class OnExitService extends Service {
                 public void onCallStateChanged(int state, String incomingNumber) {
                     super.onCallStateChanged(state, incomingNumber);
                     if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
-                        if (!isActiveCG(getApplicationContext())) {
-                            try{
+                        if (!isActiveCG(getApplicationContext()) && isRunCG(getApplicationContext())) {
+                            try {
                                 Intent intent = getPackageManager().getLaunchIntentForPackage("cityguide.probki.net");
                                 if (intent != null)
                                     startActivity(intent);
-                            }catch (Exception ex){
+                            } catch (Exception ex) {
                                 // ignore
                             }
                         }
@@ -152,7 +154,7 @@ public class OnExitService extends Service {
     static boolean isActiveCG(Context context) {
         if (mActivityManager == null)
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningAppProcessInfo info: mActivityManager.getRunningAppProcesses()){
+        for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
             if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
                     && !isRunningService(info.processName)) {
                 return info.processName.equals("cityguide.probki.net");
@@ -164,7 +166,7 @@ public class OnExitService extends Service {
     static boolean isRunningService(String processname) {
         if (processname == null || processname.isEmpty())
             return false;
-        for ( ActivityManager.RunningServiceInfo service: mActivityManager.getRunningServices(9999)) {
+        for (ActivityManager.RunningServiceInfo service : mActivityManager.getRunningServices(9999)) {
             if (service.process.equals(processname))
                 return true;
         }

@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -172,7 +173,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             }
             if (is_ok) {
                 active = i + 1;
-                buttons[i].setBackgroundResource(R.drawable.pressed);
+                buttons[i].setBackgroundResource(R.drawable.auto);
                 autostart.start();
             }
         }
@@ -189,7 +190,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             }
         };
 
-        Button setup = (Button) findViewById(R.id.setup);
+        View setup = findViewById(R.id.setup);
         setup.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -201,24 +202,24 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                         timer.cancel();
                         autostart.cancel();
                         launchTimer.cancel();
-                        v.setBackgroundResource(R.drawable.active_preferences);
+                        v.setBackgroundResource(R.drawable.pressed);
                         setup_active = true;
-                        break;
+                        return true;
                     case MotionEvent.ACTION_UP:
                         if (setup_active)
                             setup_app();
                     case MotionEvent.ACTION_CANCEL:
-                        v.setBackgroundResource(R.drawable.preferences);
+                        v.setBackgroundResource(R.drawable.button);
                         setup_active = false;
-                        break;
+                        return true;
                     case MotionEvent.ACTION_MOVE: {
                         float x = event.getX();
                         float y = event.getY();
                         if ((x < 0) || (x > v.getWidth()) || (y < 0) || (y > v.getHeight())) {
-                            v.setBackgroundResource(R.drawable.preferences);
+                            v.setBackgroundResource(R.drawable.button);
                             setup_active = false;
                         }
-                        break;
+                        return true;
                     }
                 }
                 return false;
@@ -239,14 +240,14 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                         launchTimer.cancel();
                         v.setBackgroundResource(R.drawable.pressed);
                         run_active = true;
-                        break;
+                        return true;
                     case MotionEvent.ACTION_UP:
                         if (run_active)
                             launch();
                     case MotionEvent.ACTION_CANCEL:
                         v.setBackgroundResource(R.drawable.button);
                         run_active = false;
-                        break;
+                        return true;
                     case MotionEvent.ACTION_MOVE: {
                         float x = event.getX();
                         float y = event.getY();
@@ -254,12 +255,17 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                             v.setBackgroundResource(R.drawable.button);
                             run_active = false;
                         }
-                        break;
+                        return true;
                     }
                 }
                 return false;
             }
         });
+
+        if (preferences.getBoolean("carmode", false) && preferences.getBoolean("car_state", false))
+            setState();
+        if (preferences.getBoolean("powermode", false) && preferences.getBoolean("power_state", false))
+            setState();
     }
 
     @Override
@@ -294,14 +300,14 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 autostart.cancel();
                 timer.cancel();
                 timer.start();
-                break;
+                return true;
             case MotionEvent.ACTION_UP:
                 if (active > 0)
                     action();
             case MotionEvent.ACTION_CANCEL:
                 v.setBackgroundResource(R.drawable.button);
                 timer.cancel();
-                break;
+                return true;
             case MotionEvent.ACTION_MOVE: {
                 float x = event.getX();
                 float y = event.getY();
@@ -310,7 +316,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     active = 0;
                     timer.cancel();
                 }
-                break;
+                return true;
             }
         }
         return false;
@@ -331,8 +337,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     }
                 }
                 break;
-            case RUN_CG:
-            {
+            case RUN_CG: {
                 Intent intent = new Intent(this, OnExitService.class);
                 intent.setAction(OnExitService.START);
                 startService(intent);
@@ -380,11 +385,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         launch();
     }
 
-    void launch() {
-        timer.cancel();
-        autostart.cancel();
-        launchTimer.cancel();
-
+    void setState() {
         SharedPreferences.Editor ed = preferences.edit();
         if (preferences.getBoolean("rotate", false)) {
             try {
@@ -409,29 +410,35 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         }
         if (preferences.getBoolean("data", false)) {
             try {
-                ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-                Class conmanClass = Class.forName(conman.getClass().getName());
-                Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
-                iConnectivityManagerField.setAccessible(true);
-                Object iConnectivityManager = iConnectivityManagerField.get(conman);
-                Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
-                Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
-                setMobileDataEnabledMethod.setAccessible(true);
-                setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-
-            try {
                 WifiManager wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
                 wifiManager.setWifiEnabled(false);
+                State.appendLog("disable wifi");
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
+            try {
+                ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
+                State.appendLog("type " + activeNetwork.getType());
+                if ((activeNetwork.getType() != ConnectivityManager.TYPE_MOBILE) || !activeNetwork.isConnected()) {
+                    State.appendLog("enable  data");
+                    Class conmanClass = Class.forName(conman.getClass().getName());
+                    Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
+                    iConnectivityManagerField.setAccessible(true);
+                    Object iConnectivityManager = iConnectivityManagerField.get(conman);
+                    Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
+                    Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
+                    setMobileDataEnabledMethod.setAccessible(true);
+                    setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                State.print(ex);
+            }
+
         }
 
-        if (preferences.getBoolean("volume", false))
-        {
+        if (preferences.getBoolean("volume", false)) {
             try {
                 int channel = 0;
                 int level = preferences.getInt("level", 100);
@@ -446,7 +453,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     String[] parts = line.split("=");
                     if (parts[0].equals("audiostream")) {
                         channel = Integer.parseInt(parts[1]);
-                        switch (channel){
+                        switch (channel) {
                             case 0:
                                 channel = AudioManager.STREAM_SYSTEM;
                                 break;
@@ -467,13 +474,13 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     }
                 }
                 reader.close();
-                if (channel > 0){
+                if (channel > 0) {
                     ed.putInt("save_channel", channel);
                     AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                     if (!preferences.contains("save_level"))
                         ed.putInt("save_level", audio.getStreamVolume(channel));
                     int max_level = audio.getStreamMaxVolume(channel);
-                    int new_level = level *  max_level/ 100;
+                    int new_level = level * max_level / 100;
                     audio.setStreamVolume(channel, new_level, 0);
                 }
             } catch (Exception ex) {
@@ -481,10 +488,17 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             }
         }
         ed.commit();
+    }
+
+    void launch() {
+        timer.cancel();
+        autostart.cancel();
+        launchTimer.cancel();
+
+        setState();
 
         Intent intent = getPackageManager().getLaunchIntentForPackage("cityguide.probki.net");
-        if (intent == null)
-        {
+        if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
             toast.show();
             return;

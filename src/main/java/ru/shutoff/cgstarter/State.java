@@ -98,7 +98,6 @@ public class State {
         ed.commit();
     }
 
-/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -121,12 +120,12 @@ public class State {
         }
     }
 
-    static public void print(Exception ex) {
+    static public void print(Throwable ex) {
         appendLog("Error: " + ex.toString());
         StringWriter sw = new StringWriter();
         ex.printStackTrace(new PrintWriter(sw));
         String s = sw.toString();
         appendLog(s);
     }
-*/
+
 }
