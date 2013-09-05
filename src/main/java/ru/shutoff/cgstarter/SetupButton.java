@@ -225,6 +225,12 @@ public class SetupButton extends PreferenceActivity {
 
     }
 
+    @Override
+    public void finish() {
+        setResult(RESULT_OK, intent);
+        super.finish();
+    }
+
     void setupInterval() {
         if (preferences.getString("name", "").equals("")) {
             autoPref.setEnabled(false);
@@ -257,7 +263,7 @@ public class SetupButton extends PreferenceActivity {
             daysPref.setSummary(days[0]);
         } else if ((point.days & State.WORKDAYS) == State.WORKDAYS) {
             daysPref.setSummary(days[1]);
-        } else if ((point.days & State.WORKDAYS) == State.WORKDAYS) {
+        } else if ((point.days & State.HOLIDAYS) == State.HOLIDAYS) {
             daysPref.setSummary(days[2]);
         } else {
             String sum = null;

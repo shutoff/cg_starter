@@ -98,6 +98,7 @@ public class State {
         ed.commit();
     }
 
+/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -127,5 +128,6 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
+*/
 
 }

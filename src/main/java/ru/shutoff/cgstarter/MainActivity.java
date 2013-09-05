@@ -44,6 +44,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
     State.Point[] points;
     boolean setup_active;
     boolean run_active;
+    boolean set_state;
 
     SharedPreferences preferences;
 
@@ -269,11 +270,13 @@ public class MainActivity extends Activity implements View.OnTouchListener {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        for (int i = 0; i < 8; i++)
-            buttons[i].setText(points[i].name);
-        State.save(preferences);
+    public void finish() {
+        if (set_state){
+            Intent intent = new Intent(this, OnExitService.class);
+            intent.setAction(OnExitService.START);
+            startService(intent);
+        }
+        super.finish();
     }
 
     @Override
@@ -333,14 +336,11 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                         Button btn = buttons[id];
                         State.Point point = points[id];
                         btn.setText(point.name);
-                        State.save(PreferenceManager.getDefaultSharedPreferences(this));
+                        State.save(preferences);
                     }
                 }
                 break;
             case RUN_CG: {
-                Intent intent = new Intent(this, OnExitService.class);
-                intent.setAction(OnExitService.START);
-                startService(intent);
                 finish();
                 break;
             }
@@ -387,6 +387,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
     void setState() {
         SharedPreferences.Editor ed = preferences.edit();
+        set_state = true;
         if (preferences.getBoolean("rotate", false)) {
             try {
                 int save_rotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
@@ -412,16 +413,15 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             try {
                 WifiManager wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
                 wifiManager.setWifiEnabled(false);
-                State.appendLog("disable wifi");
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
             try {
                 ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
-                State.appendLog("type " + activeNetwork.getType());
-                if ((activeNetwork.getType() != ConnectivityManager.TYPE_MOBILE) || !activeNetwork.isConnected()) {
-                    State.appendLog("enable  data");
+                if ((activeNetwork == null) ||
+                    (activeNetwork.getType() != ConnectivityManager.TYPE_MOBILE) ||
+                    !activeNetwork.isConnected()) {
                     Class conmanClass = Class.forName(conman.getClass().getName());
                     Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
                     iConnectivityManagerField.setAccessible(true);
@@ -433,7 +433,6 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
-                State.print(ex);
             }
 
         }
@@ -477,8 +476,10 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 if (channel > 0) {
                     ed.putInt("save_channel", channel);
                     AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    if (!preferences.contains("save_level"))
-                        ed.putInt("save_level", audio.getStreamVolume(channel));
+                    if (!preferences.contains("save_level")){
+                        int prev_level = audio.getStreamVolume(channel);
+                        ed.putInt("save_level", prev_level);
+                    }
                     int max_level = audio.getStreamMaxVolume(channel);
                     int new_level = level * max_level / 100;
                     audio.setStreamVolume(channel, new_level, 0);
@@ -512,7 +513,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         launchTimer.cancel();
         Intent intent = new Intent(this, SetupButton.class);
         intent.putExtra("ID", active - 1);
-        startActivity(intent);
+        startActivityForResult(intent, SETUP_BUTTON);
     }
 
     void setup_app() {

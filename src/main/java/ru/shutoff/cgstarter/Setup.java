@@ -46,6 +46,26 @@ public class Setup extends PreferenceActivity {
             }
         });
 
+        CheckBoxPreference carMode = (CheckBoxPreference)findPreference("carmode");
+        carMode.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                SharedPreferences.Editor ed = preference.getEditor();
+                ed.putBoolean("car_state", false);
+                return true;
+            }
+        });
+
+        CheckBoxPreference powerMode = (CheckBoxPreference)findPreference("powermode");
+        powerMode.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                SharedPreferences.Editor ed = preference.getEditor();
+                ed.putBoolean("power_state", false);
+                return true;
+            }
+        });
+
         Preference aboutPref = (Preference) findPreference("about");
         try {
             PackageManager pkgManager = getPackageManager();

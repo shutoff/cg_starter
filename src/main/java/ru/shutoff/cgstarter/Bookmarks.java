@@ -34,16 +34,16 @@ public class Bookmarks {
                     String[] parts = line.split("\\|");
                     if (parts.length < 4)
                         continue;
+                    Point p = new Point();
+                    p.name = parts[1];
+                    p.lat = Double.parseDouble(parts[2]);
+                    p.lng = Double.parseDouble(parts[3]);
                     try{
-                        Point p = new Point();
-                        p.name = parts[1];
-                        p.lat = Double.parseDouble(parts[2]);
-                        p.lng = Double.parseDouble(parts[3]);
                         p.count = Integer.parseInt(parts[parts.length - 1]);
-                        points.add(p);
                     }catch (Exception ex){
                         // ignore
                     }
+                    points.add(p);
                 }
                 reader.close();
             } catch (Exception ex){

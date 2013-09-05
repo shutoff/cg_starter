@@ -15,7 +15,6 @@ import android.provider.Settings;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 
-import java.util.Iterator;
 import java.util.List;
 
 public class OnExitService extends Service {
@@ -67,10 +66,6 @@ public class OnExitService extends Service {
         if (action.equals(TIMER)) {
             if (!isRunCG(this)) {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                if (preferences.getBoolean("carmode", false) && preferences.getBoolean("car_state", false))
-                    return START_STICKY;
-                if (preferences.getBoolean("powermode", false) && preferences.getBoolean("power_state", false))
-                    return START_STICKY;
                 alarmMgr.cancel(pi);
                 SharedPreferences.Editor ed = preferences.edit();
                 int rotate = preferences.getInt("save_rotate", 0);
@@ -96,7 +91,7 @@ public class OnExitService extends Service {
                     int level = preferences.getInt("save_level", 0);
                     AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                     audio.setStreamVolume(channel, level, 0);
-                    ed.remove("save_channel");
+                    ed.remove("save_level");
                 }
                 ed.commit();
                 stopSelf();
@@ -154,11 +149,15 @@ public class OnExitService extends Service {
     static boolean isActiveCG(Context context) {
         if (mActivityManager == null)
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
-            if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-                    && !isRunningService(info.processName)) {
-                return info.processName.equals("cityguide.probki.net");
+        try {
+            for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
+                if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                        && !isRunningService(info.processName)) {
+                    return info.processName.equals("cityguide.probki.net");
+                }
             }
+        } catch (Exception ex) {
+            // ignore
         }
         return false;
     }
@@ -166,9 +165,13 @@ public class OnExitService extends Service {
     static boolean isRunningService(String processname) {
         if (processname == null || processname.isEmpty())
             return false;
-        for (ActivityManager.RunningServiceInfo service : mActivityManager.getRunningServices(9999)) {
-            if (service.process.equals(processname))
-                return true;
+        try {
+            for (ActivityManager.RunningServiceInfo service : mActivityManager.getRunningServices(9999)) {
+                if (service.process.equals(processname))
+                    return true;
+            }
+        } catch (Exception ex) {
+            // ignore
         }
         return false;
     }
