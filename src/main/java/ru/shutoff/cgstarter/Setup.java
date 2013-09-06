@@ -1,6 +1,7 @@
 package ru.shutoff.cgstarter;
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -10,6 +11,8 @@ import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.preference.PreferenceScreen;
+import android.telephony.TelephonyManager;
 
 public class Setup extends PreferenceActivity {
 
@@ -101,5 +104,24 @@ public class Setup extends PreferenceActivity {
             }
         });
 
+        PreferenceScreen screen = getPreferenceScreen();
+        BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
+        if (bt == null){
+            SharedPreferences.Editor ed = prefs.edit();
+            screen.removePreference(findPreference("bt"));
+            ed.remove("bt");
+            ed.commit();
+        }
+        TelephonyManager tm = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+        if ((tm != null) && (tm.getPhoneType() == TelephonyManager.PHONE_TYPE_NONE)
+            tm = null;
+        if (tm == null){
+            screen.removePreference(findPreference("phone"));
+            screen.removePreference(findPreference("data"));
+            SharedPreferences.Editor ed = prefs.edit();
+            ed.remove("phone");
+            ed.remove("data");
+            ed.commit();
+        }
     }
 }

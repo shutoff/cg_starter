@@ -401,7 +401,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         if (preferences.getBoolean("bt", false)) {
             try {
                 BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
-                if (!bt.isEnabled()) {
+                if ((bt != null) && !bt.isEnabled()) {
                     bt.enable();
                     ed.putBoolean("save_bt", true);
                 }
@@ -412,7 +412,8 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         if (preferences.getBoolean("data", false)) {
             try {
                 WifiManager wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
-                wifiManager.setWifiEnabled(false);
+                if (wifiManager != null)
+                    wifiManager.setWifiEnabled(false);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }

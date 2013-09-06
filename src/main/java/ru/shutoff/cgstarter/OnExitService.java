@@ -80,7 +80,9 @@ public class OnExitService extends Service {
                 boolean bt = preferences.getBoolean("save_bt", false);
                 if (bt) {
                     try {
-                        BluetoothAdapter.getDefaultAdapter().disable();
+                        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+                        if (btAdapter != null)
+                            btAdapter.disable();
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
