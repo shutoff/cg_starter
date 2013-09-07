@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -19,6 +20,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -36,14 +39,14 @@ import java.util.Calendar;
 public class MainActivity extends Activity implements View.OnTouchListener {
 
     Button[] buttons;
-    int active;
+
     CountDownTimer timer;
     CountDownTimer autostart;
     CountDownTimer launchTimer;
 
     State.Point[] points;
-    boolean setup_active;
-    boolean run_active;
+
+    View activeButton;
     boolean set_state;
 
     SharedPreferences preferences;
@@ -70,6 +73,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
@@ -125,7 +129,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             @Override
             public void onFinish() {
                 action();
-                active = 0;
+                activeButton = null;
             }
         };
         launchTimer = new CountDownTimer(launch_pause, launch_pause) {
@@ -150,11 +154,10 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         };
         launchTimer.start();
 
-        active = 0;
         for (int i = 0; i < 8; i++) {
             buttons[i].setText(points[i].name);
             buttons[i].setOnTouchListener(this);
-            if (active > 0)
+            if (activeButton != null)
                 continue;
             State.Point p = points[i];
             if (p.name.equals(""))
@@ -182,7 +185,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     is_ok = true;
             }
             if (is_ok) {
-                active = i + 1;
+                activeButton = buttons[i];
                 buttons[i].setBackgroundResource(R.drawable.auto);
                 autostart.start();
             }
@@ -196,81 +199,29 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             @Override
             public void onFinish() {
                 setup();
-                active = 0;
+                if (activeButton != null) {
+                    activeButton.setBackgroundResource(R.drawable.button);
+                    activeButton = null;
+                }
             }
         };
 
         View setup = findViewById(R.id.setup);
-        setup.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        if (active > 0)
-                            buttons[active - 1].setBackgroundResource(R.drawable.button);
-                        active = 0;
-                        timer.cancel();
-                        autostart.cancel();
-                        launchTimer.cancel();
-                        v.setBackgroundResource(R.drawable.pressed);
-                        setup_active = true;
-                        return true;
-                    case MotionEvent.ACTION_UP:
-                        if (setup_active)
-                            setup_app();
-                    case MotionEvent.ACTION_CANCEL:
-                        v.setBackgroundResource(R.drawable.button);
-                        setup_active = false;
-                        return true;
-                    case MotionEvent.ACTION_MOVE: {
-                        float x = event.getX();
-                        float y = event.getY();
-                        if ((x < 0) || (x > v.getWidth()) || (y < 0) || (y > v.getHeight())) {
-                            v.setBackgroundResource(R.drawable.button);
-                            setup_active = false;
-                        }
-                        return true;
-                    }
-                }
-                return false;
-            }
-        });
+        setup.setOnTouchListener(this);
 
-        Button run = (Button) findViewById(R.id.run);
-        run.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        if (active > 0)
-                            buttons[active - 1].setBackgroundResource(R.drawable.button);
-                        active = 0;
-                        timer.cancel();
-                        autostart.cancel();
-                        launchTimer.cancel();
-                        v.setBackgroundResource(R.drawable.pressed);
-                        run_active = true;
-                        return true;
-                    case MotionEvent.ACTION_UP:
-                        if (run_active)
-                            launch();
-                    case MotionEvent.ACTION_CANCEL:
-                        v.setBackgroundResource(R.drawable.button);
-                        run_active = false;
-                        return true;
-                    case MotionEvent.ACTION_MOVE: {
-                        float x = event.getX();
-                        float y = event.getY();
-                        if ((x < 0) || (x > v.getWidth()) || (y < 0) || (y > v.getHeight())) {
-                            v.setBackgroundResource(R.drawable.button);
-                            run_active = false;
-                        }
-                        return true;
-                    }
-                }
-                return false;
-            }
-        });
+        View run = findViewById(R.id.run);
+        run.setOnTouchListener(this);
+
+        LinearLayout cg = (LinearLayout) findViewById(R.id.cg);
+        ImageView cg_icon = (ImageView) findViewById(R.id.cg_icon);
+        try {
+            PackageManager manager = getPackageManager();
+            cg_icon.setImageDrawable(manager.getApplicationIcon(State.CG_PACKAGE));
+            View cg_button = findViewById(R.id.cg);
+            cg_button.setOnTouchListener(this);
+        } catch (Exception e) {
+            cg.setVisibility(View.GONE);
+        }
 
         if (preferences.getBoolean(State.CAR_MODE, false) && preferences.getBoolean(State.CAR_STATE, false))
             setState();
@@ -298,21 +249,18 @@ public class MainActivity extends Activity implements View.OnTouchListener {
     public boolean onTouch(View v, MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                if (active > 0)
-                    buttons[active - 1].setBackgroundResource(R.drawable.button);
-                for (int i = 0; i < 9; i++) {
-                    if (v == buttons[i]) {
-                        active = i + 1;
-                        break;
-                    }
+                if (activeButton != null) {
+                    activeButton.setBackgroundResource(R.drawable.button);
+                    activeButton = null;
                 }
+                activeButton = v;
                 v.setBackgroundResource(R.drawable.pressed);
                 autostart.cancel();
                 timer.cancel();
                 timer.start();
                 return true;
             case MotionEvent.ACTION_UP:
-                if (active > 0)
+                if (activeButton != null)
                     action();
             case MotionEvent.ACTION_CANCEL:
                 v.setBackgroundResource(R.drawable.button);
@@ -323,7 +271,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 float y = event.getY();
                 if ((x < 0) || (x > v.getWidth()) || (y < 0) || (y > v.getHeight())) {
                     v.setBackgroundResource(R.drawable.button);
-                    active = 0;
+                    activeButton = null;
                     timer.cancel();
                 }
                 return true;
@@ -364,9 +312,30 @@ public class MainActivity extends Activity implements View.OnTouchListener {
     }
 
     void action() {
-        int i = active - 1;
-        if ((i < 0) || (i >= points.length))
+        if (activeButton == null)
             return;
+        if (activeButton == findViewById(R.id.setup)) {
+            setup_app();
+            return;
+        }
+        if (activeButton == findViewById(R.id.run)) {
+            removeRoute();
+            launch();
+            return;
+        }
+        if (activeButton == findViewById(R.id.cg)) {
+            launch();
+            return;
+        }
+
+        int i;
+        for (i = 0; i < 8; i++) {
+            if (buttons[i] == activeButton)
+                break;
+        }
+        if (i >= 8)
+            return;
+
         State.Point p = points[i];
         if (p.name.equals(""))
             return;
@@ -390,6 +359,22 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             return;
         }
         launch();
+    }
+
+    void removeRoute() {
+        try {
+            File routes_dat = Environment.getExternalStorageDirectory();
+            routes_dat = new File(routes_dat, "CityGuide/routes.dat");
+            if (!routes_dat.exists())
+                routes_dat.createNewFile();
+            BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
+            writer.append("1|router|65001\n");
+            writer.append("#[CURRENT]|0|0\n");
+            writer.close();
+        } catch (IOException e) {
+            Toast toast = Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG);
+            toast.show();
+        }
     }
 
     void setState() {
@@ -503,9 +488,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         timer.cancel();
         autostart.cancel();
         launchTimer.cancel();
-
         setState();
-
         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
         if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
@@ -519,8 +502,17 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         timer.cancel();
         autostart.cancel();
         launchTimer.cancel();
+
+        int i;
+        for (i = 0; i < 8; i++) {
+            if (buttons[i] == activeButton)
+                break;
+        }
+        if (i >= 8)
+            return;
+
         Intent intent = new Intent(this, SetupButton.class);
-        intent.putExtra(State.ID, active - 1);
+        intent.putExtra(State.ID, i);
         startActivityForResult(intent, SETUP_BUTTON);
     }
 
@@ -528,9 +520,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         timer.cancel();
         autostart.cancel();
         launchTimer.cancel();
-        if (active > 0)
-            buttons[active - 1].setBackgroundResource(R.drawable.button);
-        active = 0;
+
         Intent intent = new Intent(this, Setup.class);
         startActivity(intent);
     }

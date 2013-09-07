@@ -14,7 +14,11 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.view.KeyEvent;
 
+import com.android.internal.telephony.ITelephony;
+
+import java.lang.reflect.Method;
 import java.util.List;
 
 public class OnExitService extends Service {
@@ -23,12 +27,18 @@ public class OnExitService extends Service {
 
     static final String START = "Start";
     static final String TIMER = "Timer";
+    static final String ANSWER = "Answer";
 
     AlarmManager alarmMgr;
     PendingIntent pi;
+    PendingIntent piAnswer;
 
     PhoneStateListener phoneListener;
     TelephonyManager tm;
+
+    boolean phone;
+    boolean speaker;
+    int autoanswer;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -39,9 +49,7 @@ public class OnExitService extends Service {
     public void onCreate() {
         super.onCreate();
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(this, OnExitService.class);
-        intent.setAction(TIMER);
-        pi = PendingIntent.getService(this, 0, intent, 0);
+        pi = createPendingIntent(TIMER);
     }
 
     @Override
@@ -103,6 +111,31 @@ public class OnExitService extends Service {
             }
             return START_STICKY;
         }
+        if (action.equals(ANSWER)) {
+            try {
+                TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+                if (tm.getCallState() != TelephonyManager.CALL_STATE_RINGING)
+                    return START_STICKY;
+
+                Class c = Class.forName(tm.getClass().getName());
+                Method m = c.getDeclaredMethod("getITelephony");
+                m.setAccessible(true);
+                ITelephony telephonyService;
+                telephonyService = (ITelephony) m.invoke(tm);
+
+                telephonyService.silenceRinger();
+                telephonyService.answerRingingCall();
+            } catch (Exception e) {
+                Intent buttonDown = new Intent(Intent.ACTION_MEDIA_BUTTON);
+                buttonDown.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK));
+                sendOrderedBroadcast(buttonDown, "android.permission.CALL_PRIVILEGED");
+
+                Intent buttonUp = new Intent(Intent.ACTION_MEDIA_BUTTON);
+                buttonUp.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK));
+                sendOrderedBroadcast(buttonUp, "android.permission.CALL_PRIVILEGED");
+            }
+
+        }
         return START_STICKY;
     }
 
@@ -110,27 +143,64 @@ public class OnExitService extends Service {
         if (phoneListener != null)
             return;
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (preferences.getBoolean(State.PHONE, false)) {
+        phone = preferences.getBoolean(State.PHONE, false);
+        speaker = preferences.getBoolean(State.SPEAKER, false);
+        try {
+            autoanswer = Integer.parseInt(preferences.getString(State.ANSWER_TIME, "0")) * 1000;
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (phone || speaker || (autoanswer > 0)) {
             phoneListener = new PhoneStateListener() {
                 @Override
                 public void onCallStateChanged(int state, String incomingNumber) {
                     super.onCallStateChanged(state, incomingNumber);
-                    if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
-                        if (!isActiveCG(getApplicationContext()) && isRunCG(getApplicationContext())) {
-                            try {
-                                Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
-                                if (intent != null)
-                                    startActivity(intent);
-                            } catch (Exception ex) {
-                                // ignore
+                    switch (state) {
+                        case TelephonyManager.CALL_STATE_OFFHOOK:
+                            if (piAnswer != null)
+                                alarmMgr.cancel(piAnswer);
+                            if (phone && !isActiveCG(getApplicationContext()) && isRunCG(getApplicationContext())) {
+                                try {
+                                    Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                                    if (intent != null)
+                                        startActivity(intent);
+                                } catch (Exception ex) {
+                                    // ignore
+                                }
                             }
-                        }
+                            if (speaker) {
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                if (!audio.isBluetoothScoOn())
+                                    audio.setSpeakerphoneOn(true);
+                            }
+                            break;
+                        case TelephonyManager.CALL_STATE_RINGING:
+                            if (autoanswer > 0) {
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                if (speaker || audio.isBluetoothScoOn()) {
+                                    if (piAnswer == null)
+                                        piAnswer = createPendingIntent(ANSWER);
+                                    alarmMgr.setRepeating(AlarmManager.RTC,
+                                            System.currentTimeMillis() + autoanswer, autoanswer, piAnswer);
+                                }
+                            }
+                            break;
+                        case TelephonyManager.CALL_STATE_IDLE:
+                            if (piAnswer != null)
+                                alarmMgr.cancel(piAnswer);
+                            break;
                     }
                 }
             };
             tm = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
             tm.listen(phoneListener, PhoneStateListener.LISTEN_CALL_STATE);
         }
+    }
+
+    PendingIntent createPendingIntent(String action) {
+        Intent intent = new Intent(this, OnExitService.class);
+        intent.setAction(action);
+        return PendingIntent.getService(this, 0, intent, 0);
     }
 
     static boolean isRunCG(Context context) {

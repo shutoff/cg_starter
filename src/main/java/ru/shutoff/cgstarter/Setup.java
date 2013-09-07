@@ -8,6 +8,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
@@ -20,6 +21,7 @@ public class Setup extends PreferenceActivity {
     SeekBarPreference launchPref;
     SeekBarPreference levelPref;
     CheckBoxPreference powerStartPref;
+    ListPreference answerPref;
     SharedPreferences prefs;
 
     @Override
@@ -93,10 +95,6 @@ public class Setup extends PreferenceActivity {
             }
         });
 
-        CheckBoxPreference btPref = (CheckBoxPreference) findPreference(State.BT);
-        if (BluetoothAdapter.getDefaultAdapter() == null)
-            btPref.setEnabled(false);
-
         levelPref = (SeekBarPreference) findPreference(State.LEVEL);
         levelPref.setEnabled(prefs.getBoolean(State.VOLUME, false));
 
@@ -126,10 +124,48 @@ public class Setup extends PreferenceActivity {
         if (tm == null){
             screen.removePreference(findPreference(State.PHONE));
             screen.removePreference(findPreference(State.DATA));
+            screen.removePreference(findPreference(State.SPEAKER));
             SharedPreferences.Editor ed = prefs.edit();
             ed.remove(State.PHONE);
             ed.remove(State.DATA);
             ed.commit();
+        } else {
+            Preference.OnPreferenceChangeListener listener = new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    if (newValue instanceof Boolean) {
+                        SharedPreferences.Editor ed = prefs.edit();
+                        ed.putBoolean(preference.getKey(), (Boolean) newValue);
+                        ed.commit();
+                        setupAnswerPref();
+                        return true;
+                    }
+                    return false;
+                }
+            };
+
+            CheckBoxPreference btPref = (CheckBoxPreference) findPreference(State.BT);
+            btPref.setOnPreferenceChangeListener(listener);
+
+            CheckBoxPreference speakerPref = (CheckBoxPreference) findPreference(State.SPEAKER);
+            speakerPref.setOnPreferenceChangeListener(listener);
+
+            answerPref = (ListPreference) findPreference(State.ANSWER_TIME);
+            answerPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    if (newValue instanceof String) {
+                        SharedPreferences.Editor ed = prefs.edit();
+                        ed.putString(State.ANSWER_TIME, (String) newValue);
+                        ed.commit();
+                        setupAnswerPref();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
+            setupAnswerPref();
         }
 
         powerStartPref = (CheckBoxPreference) findPreference(State.POWER_START);
@@ -155,5 +191,18 @@ public class Setup extends PreferenceActivity {
         powerStartPref.setSummary(getString(
                 prefs.getBoolean(State.POWER_START, false) ?
                         R.string.powerstart_sum : R.string.powerexit_sum));
+    }
+
+    void setupAnswerPref() {
+        answerPref.setEnabled(prefs.getBoolean(State.BT, false) || prefs.getBoolean(State.SPEAKER, false));
+        String answer = prefs.getString(State.ANSWER_TIME, "0");
+        String[] entries = getResources().getStringArray(R.array.answer_times);
+        String[] values = getResources().getStringArray(R.array.times);
+        for (int i = 0; i < entries.length; i++) {
+            if (entries[i].equals(answer)) {
+                answerPref.setSummary(values[i]);
+                break;
+            }
+        }
     }
 }

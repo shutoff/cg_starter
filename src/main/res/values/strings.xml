@@ -53,7 +53,7 @@
     <string name="button_sum">For setup button press and hold it</string>
     <string name="about">About</string>
     <string name="version">Version</string>
-    <string name="run">Run CityGuide</string>
+    <string name="run">Start</string>
     <string name="auto_pause">Autostart pause</string>
     <string name="launch_pause">Launch pause</string>
     <string name="sec">sec</string>
@@ -76,4 +76,24 @@
     <string name="powerexit_sum">Don\'t launch CG when starting on power</string>
     <string name="phone">Phone control</string>
     <string name="phone_sum">Show CityGuide while phone call</string>
+    <string name="control">Control</string>
+    <string name="oncall">On call</string>
+    <string name="speaker">Speakerphone</string>
+    <string name="speaker_sum">Turn on speakerphone</string>
+    <string name="autoanswer">Auto answer</string>
+    <string name="autoanswer_sum">Auto answer on incomming call after 12 sec</string>
+    <string-array name="answer_times">
+        <item>0</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+    </string-array>
+    <string-array name="times">
+        <item>no auto answer</item>
+        <item>after 2 sec</item>
+        <item>after 5 sec</item>
+        <item>after 10 sec</item>
+        <item>after 15 sec</item>
+    </string-array>
 </resources>

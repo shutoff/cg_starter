@@ -123,5 +123,21 @@
             android:textColor="@color/white"
             android:layout_margin="5dp" />
 
+        <LinearLayout
+            android:id="@+id/cg"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/button"
+            android:gravity="center"
+            android:layout_margin="5dp">
+
+            <ImageView
+                android:id="@+id/cg_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp" />
+        </LinearLayout>
+
     </TableRow>
 </TableLayout>

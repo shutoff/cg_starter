@@ -38,7 +38,7 @@
     <string name="button_sum">Нажмите и удерживайте кнопку для настройки</string>
     <string name="about">О программе</string>
     <string name="version">Версия</string>
-    <string name="run">Запустить CityGuide</string>
+    <string name="run">Поехали</string>
     <string name="auto_pause">Запуск точки</string>
     <string name="launch_pause">Запуск CityGuide</string>
     <string name="sec">сек</string>
@@ -56,9 +56,25 @@
     <string name="carmode_sum">Запускать приложение при включении автомобильного режима</string>
     <string name="powermode">Зарядное устройство</string>
     <string name="powermode_sum">Запускать приложение при подключении зарядного устройства</string>
-    <string name="powerstart">Запуск СГ от зарядки</string>
-    <string name="powerstart_sum">Автоматически запускать СГ при старте от зарядки</string>
-    <string name="powerexit_sum">Не запускать автоматически СГ при старте от зарядки</string>
+    <string name="powerstart">Запуск СГ от зарядного устройства</string>
+    <string name="powerstart_sum">Автоматически запускать СГ при старте от зарядного устройства
+    </string>
+    <string name="powerexit_sum">Не запускать автоматически СГ при старте от зарядного устройства
+    </string>
     <string name="phone">Телефон</string>
     <string name="phone_sum">Показывать CityGuide во время разговора по телефону</string>
+    <string name="control">Управление</string>
+    <string name="oncall">Поведение при разговоре</string>
+    <string name="power">Питание</string>
+    <string name="speaker">Громкая связь</string>
+    <string name="speaker_sum">Включать громкую связь</string>
+    <string name="autoanswer">Автоответ</string>
+    <string name="autoanswer_sum">Автоответ на входящие звонки через 12 секунд</string>
+    <string-array name="times">
+        <item>не отвечать</item>
+        <item>через 2 сек</item>
+        <item>через 5 сек</item>
+        <item>через 10 сек</item>
+        <item>через 15 сек</item>
+    </string-array>
 </resources>

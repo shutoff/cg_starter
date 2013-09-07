@@ -1,6 +1,7 @@
 package ru.shutoff.cgstarter;
 
 import android.content.SharedPreferences;
+
 /*
 import android.os.Environment;
 
@@ -30,6 +31,8 @@ public class State {
     static final String LEVEL = "level";
     static final String PHONE = "phone";
     static final String DATA = "data";
+    static final String SPEAKER = "speaker";
+    static final String ANSWER_TIME = "answertime";
     static final String POWER_START = "powerstart";
     static final String ID = "ID";
     static final String ROTATE = "rotate";
@@ -153,4 +156,5 @@ public class State {
         appendLog(s);
     }
 */
+
 }
