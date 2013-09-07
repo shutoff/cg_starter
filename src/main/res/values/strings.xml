@@ -71,6 +71,9 @@
     <string name="carmode_sum">Launch application on car mode</string>
     <string name="powermode">Power mode</string>
     <string name="powermode_sum">Launch application on AC power</string>
+    <string name="powerstart">Launch CG on power</string>
+    <string name="powerstart_sum">Launch CG when starting on power</string>
+    <string name="powerexit_sum">Don\'t launch CG when starting on power</string>
     <string name="phone">Phone control</string>
     <string name="phone_sum">Show CityGuide while phone call</string>
 </resources>

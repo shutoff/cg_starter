@@ -86,11 +86,11 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        int auto_pause = preferences.getInt("auto_pause", 5);
+        int auto_pause = preferences.getInt(State.AUTO_PAUSE, 5);
         if (auto_pause < 3)
             auto_pause = 3;
         auto_pause = auto_pause * 1000;
-        int launch_pause = preferences.getInt("launch_pause", 30);
+        int launch_pause = preferences.getInt(State.LAUNCH_PAUSE, 30);
         if (launch_pause < 10)
             launch_pause = 10;
         launch_pause = launch_pause * 1000;
@@ -136,6 +136,15 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
             @Override
             public void onFinish() {
+                if (!preferences.getBoolean(State.POWER_START, false)) {
+                    Intent intent = getIntent();
+                    if (intent != null) {
+                        if (intent.getBooleanExtra(State.POWER_STATE, false)) {
+                            finish();
+                            return;
+                        }
+                    }
+                }
                 launch();
             }
         };
@@ -263,9 +272,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             }
         });
 
-        if (preferences.getBoolean("carmode", false) && preferences.getBoolean("car_state", false))
-            setState();
-        if (preferences.getBoolean("powermode", false) && preferences.getBoolean("power_state", false))
+        if (preferences.getBoolean(State.CAR_MODE, false) && preferences.getBoolean(State.CAR_STATE, false))
             setState();
     }
 
@@ -331,7 +338,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         switch (requestCode) {
             case SETUP_BUTTON:
                 if (data != null) {
-                    int id = data.getIntExtra("ID", -1);
+                    int id = data.getIntExtra(State.ID, -1);
                     if ((id >= 0) && (id < buttons.length)) {
                         Button btn = buttons[id];
                         State.Point point = points[id];
@@ -388,28 +395,28 @@ public class MainActivity extends Activity implements View.OnTouchListener {
     void setState() {
         SharedPreferences.Editor ed = preferences.edit();
         set_state = true;
-        if (preferences.getBoolean("rotate", false)) {
+        if (preferences.getBoolean(State.ROTATE, false)) {
             try {
                 int save_rotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
                 Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-                if (!preferences.contains("save_rotate"))
-                    ed.putInt("save_rotate", save_rotation);
+                if (!preferences.contains(State.SAVE_ROTATE))
+                    ed.putInt(State.SAVE_ROTATE, save_rotation);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
         }
-        if (preferences.getBoolean("bt", false)) {
+        if (preferences.getBoolean(State.BT, false)) {
             try {
                 BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
                 if ((bt != null) && !bt.isEnabled()) {
                     bt.enable();
-                    ed.putBoolean("save_bt", true);
+                    ed.putBoolean(State.SAVE_BT, true);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
         }
-        if (preferences.getBoolean("data", false)) {
+        if (preferences.getBoolean(State.DATA, false)) {
             try {
                 WifiManager wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
                 if (wifiManager != null)
@@ -438,10 +445,10 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
         }
 
-        if (preferences.getBoolean("volume", false)) {
+        if (preferences.getBoolean(State.VOLUME, false)) {
             try {
                 int channel = 0;
-                int level = preferences.getInt("level", 100);
+                int level = preferences.getInt(State.LEVEL, 100);
                 File settings = Environment.getExternalStorageDirectory();
                 settings = new File(settings, "CityGuide/settings.ini");
                 BufferedReader reader = new BufferedReader(
@@ -475,11 +482,11 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 }
                 reader.close();
                 if (channel > 0) {
-                    ed.putInt("save_channel", channel);
+                    ed.putInt(State.SAVE_CHANNEL, channel);
                     AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    if (!preferences.contains("save_level")){
+                    if (!preferences.contains(State.SAVE_LEVEL)) {
                         int prev_level = audio.getStreamVolume(channel);
-                        ed.putInt("save_level", prev_level);
+                        ed.putInt(State.SAVE_LEVEL, prev_level);
                     }
                     int max_level = audio.getStreamMaxVolume(channel);
                     int new_level = level * max_level / 100;
@@ -499,7 +506,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
         setState();
 
-        Intent intent = getPackageManager().getLaunchIntentForPackage("cityguide.probki.net");
+        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
         if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
             toast.show();
@@ -513,7 +520,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         autostart.cancel();
         launchTimer.cancel();
         Intent intent = new Intent(this, SetupButton.class);
-        intent.putExtra("ID", active - 1);
+        intent.putExtra(State.ID, active - 1);
         startActivityForResult(intent, SETUP_BUTTON);
     }
 

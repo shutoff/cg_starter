@@ -56,6 +56,9 @@
     <string name="carmode_sum">Запускать приложение при включении автомобильного режима</string>
     <string name="powermode">Зарядное устройство</string>
     <string name="powermode_sum">Запускать приложение при подключении зарядного устройства</string>
+    <string name="powerstart">Запуск СГ от зарядки</string>
+    <string name="powerstart_sum">Автоматически запускать СГ при старте от зарядки</string>
+    <string name="powerexit_sum">Не запускать автоматически СГ при старте от зарядки</string>
     <string name="phone">Телефон</string>
     <string name="phone_sum">Показывать CityGuide во время разговора по телефону</string>
 </resources>

@@ -62,6 +62,10 @@
         android:title="@string/powermode"
         android:summary="@string/powermode_sum"/>
 
+    <CheckBoxPreference
+        android:key="powerstart"
+        android:title="@string/powerstart" />
+
     <Preference
         android:key="about"
         android:title="@string/about"

@@ -36,9 +36,9 @@ public class Bookmarks {
                         continue;
                     Point p = new Point();
                     p.name = parts[1];
-                    p.lat = Double.parseDouble(parts[2]);
-                    p.lng = Double.parseDouble(parts[3]);
                     try{
+                        p.lat = Double.parseDouble(parts[2]);
+                        p.lng = Double.parseDouble(parts[3]);
                         p.count = Integer.parseInt(parts[parts.length - 1]);
                     }catch (Exception ex){
                         // ignore
@@ -47,6 +47,7 @@ public class Bookmarks {
                 }
                 reader.close();
             } catch (Exception ex){
+                // ignore
             }
             Collections.sort(points, new Comparator<Point>() {
                 @Override

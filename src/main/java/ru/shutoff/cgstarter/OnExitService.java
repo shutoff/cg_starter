@@ -68,16 +68,16 @@ public class OnExitService extends Service {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
                 alarmMgr.cancel(pi);
                 SharedPreferences.Editor ed = preferences.edit();
-                int rotate = preferences.getInt("save_rotate", 0);
+                int rotate = preferences.getInt(State.SAVE_ROTATE, 0);
                 if (rotate > 0) {
                     try {
                         Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, rotate);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
-                    ed.remove("save_rotate");
+                    ed.remove(State.SAVE_ROTATE);
                 }
-                boolean bt = preferences.getBoolean("save_bt", false);
+                boolean bt = preferences.getBoolean(State.SAVE_BT, false);
                 if (bt) {
                     try {
                         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -86,14 +86,15 @@ public class OnExitService extends Service {
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
-                    ed.remove("save_bt");
+                    ed.remove(State.SAVE_BT);
                 }
-                int channel = preferences.getInt("save_channel", 0);
+                int channel = preferences.getInt(State.SAVE_CHANNEL, 0);
                 if (channel > 0) {
-                    int level = preferences.getInt("save_level", 0);
+                    int level = preferences.getInt(State.SAVE_LEVEL, 0);
                     AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                     audio.setStreamVolume(channel, level, 0);
-                    ed.remove("save_level");
+                    ed.remove(State.SAVE_LEVEL);
+                    ed.remove(State.SAVE_CHANNEL);
                 }
                 ed.commit();
                 stopSelf();
@@ -109,7 +110,7 @@ public class OnExitService extends Service {
         if (phoneListener != null)
             return;
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (preferences.getBoolean("phone", false)) {
+        if (preferences.getBoolean(State.PHONE, false)) {
             phoneListener = new PhoneStateListener() {
                 @Override
                 public void onCallStateChanged(int state, String incomingNumber) {
@@ -117,7 +118,7 @@ public class OnExitService extends Service {
                     if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
                         if (!isActiveCG(getApplicationContext()) && isRunCG(getApplicationContext())) {
                             try {
-                                Intent intent = getPackageManager().getLaunchIntentForPackage("cityguide.probki.net");
+                                Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
                                 if (intent != null)
                                     startActivity(intent);
                             } catch (Exception ex) {
@@ -140,7 +141,7 @@ public class OnExitService extends Service {
         int i;
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals("cityguide.probki.net"))
+            if (proc.processName.equals(State.CG_PACKAGE))
                 return true;
         }
         return false;
@@ -155,7 +156,7 @@ public class OnExitService extends Service {
             for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
                 if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
                         && !isRunningService(info.processName)) {
-                    return info.processName.equals("cityguide.probki.net");
+                    return info.processName.equals(State.CG_PACKAGE);
                 }
             }
         } catch (Exception ex) {

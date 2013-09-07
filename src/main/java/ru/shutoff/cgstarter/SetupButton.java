@@ -108,15 +108,22 @@ public class SetupButton extends PreferenceActivity {
                     namePref.setText(v);
                     namePref.setSummary(v);
                     itemsPref.setSummary(v);
-                    point.original = v;
-                    point.name = v;
-                    SharedPreferences.Editor ed = preferences.edit();
-                    ed.putString("name", v);
-                    ed.commit();
-                    boolean not_empty = !v.equals("");
-                    namePref.setEnabled(not_empty);
-                    setupInterval();
-                    return true;
+                    Bookmarks.Point[] points = Bookmarks.get();
+                    for (Bookmarks.Point p : points) {
+                        if (p.name.equals(v)) {
+                            point.lat = p.lat + "";
+                            point.lng = p.lng + "";
+                            point.original = v;
+                            point.name = v;
+                            SharedPreferences.Editor ed = preferences.edit();
+                            ed.putString("name", v);
+                            ed.commit();
+                            boolean not_empty = !v.equals("");
+                            namePref.setEnabled(not_empty);
+                            setupInterval();
+                            return true;
+                        }
+                    }
                 }
                 return false;
             }
@@ -242,6 +249,7 @@ public class SetupButton extends PreferenceActivity {
         }
         autoPref.setEnabled(true);
         if (!preferences.getBoolean("auto", false)) {
+            point.interval = "";
             intervalPref.setEnabled(false);
             intervalPref.setSummary(getString(R.string.interval_sum));
             daysPref.setEnabled(false);

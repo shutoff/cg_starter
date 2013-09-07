@@ -3,8 +3,8 @@ package ru.shutoff.cgstarter;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.preference.DialogPreference;
-import android.text.format.DateFormat;
 import android.util.AttributeSet;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TimePicker;
 
@@ -16,18 +16,17 @@ public class TimePreference extends DialogPreference {
     private int endHour = 0;
     private int endMinute = 0;
 
-    private boolean setEnd = false;
-
-    private TimePicker picker=null;
+    private TimePicker start_picker;
+    private TimePicker end_picker;
 
     public static int getHour(String time) {
         String[] pieces = time.split(":");
-        return(Integer.parseInt(pieces[0]));
+        return (Integer.parseInt(pieces[0]));
     }
 
     public static int getMinute(String time) {
-        String[] pieces=time.split(":");
-        return(Integer.parseInt(pieces[1]));
+        String[] pieces = time.split(":");
+        return (Integer.parseInt(pieces[1]));
     }
 
     public TimePreference(Context ctxt, AttributeSet attrs) {
@@ -39,45 +38,37 @@ public class TimePreference extends DialogPreference {
 
     @Override
     protected View onCreateDialogView() {
-        picker = new TimePicker(getContext());
-        picker.setIs24HourView(DateFormat.is24HourFormat(getContext()));
-        return(picker);
+        LayoutInflater layoutInflater = LayoutInflater.from(getContext());
+        View view = layoutInflater.inflate(R.layout.interval, null);
+        start_picker = (TimePicker) view.findViewById(R.id.start);
+        end_picker = (TimePicker) view.findViewById(R.id.end);
+        start_picker.setIs24HourView(true);
+        end_picker.setIs24HourView(true);
+        return view;
     }
 
     @Override
     protected void onBindDialogView(View v) {
         super.onBindDialogView(v);
-        if (setEnd){
-            picker.setCurrentHour(endHour);
-            picker.setCurrentMinute(endMinute);
-        }else{
-            picker.setCurrentHour(startHour);
-            picker.setCurrentMinute(startMinute);
-        }
+        start_picker.setCurrentHour(startHour);
+        start_picker.setCurrentMinute(startMinute);
+        end_picker.setCurrentHour(endHour);
+        end_picker.setCurrentMinute(endMinute);
     }
 
     @Override
     protected void onDialogClosed(boolean positiveResult) {
         super.onDialogClosed(positiveResult);
         if (positiveResult) {
-            if (setEnd){
-                endHour = picker.getCurrentHour();
-                endMinute = picker.getCurrentMinute();
-                String time = String.format("%02d:%02d-%02d:%02d",
-                        startHour, startMinute, endHour, endMinute);
-                if (callChangeListener(time)) {
-                    persistString(time);
-                }
-                setEnd = false;
-                return;
-            }
-            startHour = picker.getCurrentHour();
-            startMinute = picker.getCurrentMinute();
-            setEnd = true;
-            showDialog(null);
-            return;
+            startHour = start_picker.getCurrentHour();
+            startMinute = start_picker.getCurrentMinute();
+            endHour = end_picker.getCurrentHour();
+            endMinute = end_picker.getCurrentMinute();
+            String time = String.format("%02d:%02d-%02d:%02d",
+                    startHour, startMinute, endHour, endMinute);
+            if (callChangeListener(time))
+                persistString(time);
         }
-        setEnd = false;
     }
 
     @Override
@@ -92,12 +83,10 @@ public class TimePreference extends DialogPreference {
         if (restoreValue) {
             if (defaultValue == null) {
                 times = getPersistedString("00:00-00:00");
-            }
-            else {
+            } else {
                 times = getPersistedString(defaultValue.toString());
             }
-        }
-        else {
+        } else {
             times = defaultValue.toString();
         }
 

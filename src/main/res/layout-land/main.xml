@@ -4,6 +4,7 @@
     android:layout_height="match_parent"
     android:layoutMode="opticalBounds"
     android:longClickable="false"
+    android:keepScreenOn="true"
     android:padding="5dp"
     android:measureWithLargestChild="true">
 
@@ -103,12 +104,13 @@
             android:background="@drawable/button"
             android:gravity="center"
             android:layout_margin="5dp">
+
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:src="@drawable/settings"
                 android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"/>
+                android:layout_marginRight="10dp" />
         </LinearLayout>
 
         <Button
@@ -119,7 +121,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
-            android:layout_margin="5dp"/>
+            android:layout_margin="5dp" />
 
     </TableRow>
 </TableLayout>

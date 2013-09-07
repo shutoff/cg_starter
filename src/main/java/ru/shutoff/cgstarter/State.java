@@ -1,6 +1,7 @@
 package ru.shutoff.cgstarter;
 
 import android.content.SharedPreferences;
+/*
 import android.os.Environment;
 
 import java.io.BufferedWriter;
@@ -10,8 +11,31 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
+*/
 
 public class State {
+
+    static final String CG_PACKAGE = "cityguide.probki.net";
+
+    static final String AUTO_PAUSE = "auto_pause";
+    static final String LAUNCH_PAUSE = "launch_pause";
+    static final String CAR_MODE = "carmode";
+    static final String CAR_STATE = "car_state";
+    static final String POWER_MODE = "powermode";
+    static final String POWER_STATE = "powerstate";
+    static final String ABOUT = "about";
+    static final String BT = "bt";
+    static final String SAVE_BT = "save_bt";
+    static final String VOLUME = "volume";
+    static final String LEVEL = "level";
+    static final String PHONE = "phone";
+    static final String DATA = "data";
+    static final String POWER_START = "powerstart";
+    static final String ID = "ID";
+    static final String ROTATE = "rotate";
+    static final String SAVE_ROTATE = "save_rotate";
+    static final String SAVE_CHANNEL = "channel";
+    static final String SAVE_LEVEL = "save_level";
 
     static class Point {
         String name;
@@ -129,5 +153,4 @@ public class State {
         appendLog(s);
     }
 */
-
 }
