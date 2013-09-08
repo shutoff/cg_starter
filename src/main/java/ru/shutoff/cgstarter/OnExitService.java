@@ -85,6 +85,14 @@ public class OnExitService extends Service {
                     }
                     ed.remove(State.SAVE_ROTATE);
                 }
+                if (preferences.getBoolean(State.GPS_SAVE, false)) {
+                    try {
+                        State.turnGPSOff(this);
+                    } catch (Exception ex) {
+                        // ignore
+                    }
+                    ed.remove(State.GPS_SAVE);
+                }
                 boolean bt = preferences.getBoolean(State.SAVE_BT, false);
                 if (bt) {
                     try {

@@ -77,4 +77,19 @@
         <item>через 10 сек</item>
         <item>через 15 сек</item>
     </string-array>
+    <string name="cg_start">Запуск с маршрутом</string>
+    <string name="cg_start_sum">Для запуска СГ с предыдущим маршрутом нажмите кнопку с иконкой
+    </string>
+    <string name="no_route">Запуск без маршрута</string>
+    <string name="no_route_sum">Для запуска СГ без маршрута нажмите кнопку Старт</string>
+    <string name="gps">GPS</string>
+    <string name="gps_sum">Включить GPS</string>
+    <string name="no_gps_title">Не могу включить GPS</string>
+    <string name="no_gps_message">Из соображений безопасности в android 2.3+ изменять состояние GPS
+        могут только системные приложения
+    </string>
+    <string name="settings">Настройки</string>
+    <string name="cont">Продолжить</string>
+    <string name="intents">Обработка событий</string>
+    <string name="intents_sum">Обработка событий для интеграции с другими приложениями</string>
 </resources>

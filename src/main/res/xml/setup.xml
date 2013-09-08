@@ -7,6 +7,16 @@
         android:title="@string/button"
         android:summary="@string/button_sum" />
 
+    <Preference
+        android:key="start"
+        android:title="@string/cg_start"
+        android:summary="@string/cg_start_sum" />
+
+    <Preference
+        android:key="no_route"
+        android:title="@string/no_route"
+        android:summary="@string/no_route_sum" />
+
     <PreferenceCategory android:title="@string/auto">
 
         <ru.shutoff.cgstarter.SeekBarPreference
@@ -31,6 +41,11 @@
             android:key="rotate"
             android:title="@string/rotate"
             android:summary="@string/rotate_sum" />
+
+        <CheckBoxPreference
+            android:key="gps"
+            android:title="@string/gps"
+            android:summary="@string/gps_sum" />
 
         <CheckBoxPreference
             android:key="volume"
@@ -93,6 +108,11 @@
             android:title="@string/powerstart" />
 
     </PreferenceCategory>
+
+    <Preference
+        android:key="intents"
+        android:title="@string/intents"
+        android:summary="@string/intents_sum" />
 
     <Preference
         android:key="about"

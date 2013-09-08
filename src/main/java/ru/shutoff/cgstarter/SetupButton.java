@@ -65,10 +65,10 @@ public class SetupButton extends PreferenceActivity {
             } else {
                 ed.putString("days", "3");
                 String weekdays = null;
-                for (int i = 0; i < 7; i++){
+                for (int i = 0; i < 7; i++) {
                     if ((point.days & (1 << (i + 2))) == 0)
                         continue;
-                    if (weekdays == null){
+                    if (weekdays == null) {
                         weekdays = i + "";
                         continue;
                     }
@@ -208,7 +208,7 @@ public class SetupButton extends PreferenceActivity {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 if (newValue instanceof String[]) {
-                    String[] v = (String[])newValue;
+                    String[] v = (String[]) newValue;
                     point.days = 0;
                     for (String p : v) {
                         point.days |= (1 << (Integer.parseInt(p) + 2));

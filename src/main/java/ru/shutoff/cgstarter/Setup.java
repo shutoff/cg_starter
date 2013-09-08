@@ -1,7 +1,6 @@
 package ru.shutoff.cgstarter;
 
 import android.bluetooth.BluetoothAdapter;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -13,7 +12,6 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
-import android.telephony.TelephonyManager;
 
 public class Setup extends PreferenceActivity {
 
@@ -79,6 +77,17 @@ public class Setup extends PreferenceActivity {
             }
         });
 
+        Preference intentsPref = (Preference) findPreference(State.INTENTS);
+        intentsPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                Intent intent = new Intent(getBaseContext(), WebViewActivity.class);
+                intent.putExtra(State.URL, "file:///android_asset/html/intents.html");
+                startActivity(intent);
+                return true;
+            }
+        });
+
+
         Preference aboutPref = (Preference) findPreference(State.ABOUT);
         try {
             PackageManager pkgManager = getPackageManager();
@@ -89,11 +98,13 @@ public class Setup extends PreferenceActivity {
         }
         aboutPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
-                Intent intent = new Intent(getBaseContext(), About.class);
+                Intent intent = new Intent(getBaseContext(), WebViewActivity.class);
+                intent.putExtra(State.URL, "file:///android_asset/html/about.html");
                 startActivity(intent);
                 return true;
             }
         });
+
 
         levelPref = (SeekBarPreference) findPreference(State.LEVEL);
         levelPref.setEnabled(prefs.getBoolean(State.VOLUME, false));
@@ -102,8 +113,8 @@ public class Setup extends PreferenceActivity {
         volumePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof Boolean){
-                    levelPref.setEnabled((Boolean)newValue);
+                if (newValue instanceof Boolean) {
+                    levelPref.setEnabled((Boolean) newValue);
                     return true;
                 }
                 return false;
@@ -112,61 +123,49 @@ public class Setup extends PreferenceActivity {
 
         PreferenceScreen screen = getPreferenceScreen();
         BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
-        if (bt == null){
+        if (bt == null) {
             SharedPreferences.Editor ed = prefs.edit();
             screen.removePreference(findPreference(State.BT));
             ed.remove(State.BT);
             ed.commit();
         }
-        TelephonyManager tm = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-        if ((tm != null) && (tm.getPhoneType() == TelephonyManager.PHONE_TYPE_NONE))
-            tm = null;
-        if (tm == null){
-            screen.removePreference(findPreference(State.PHONE));
-            screen.removePreference(findPreference(State.DATA));
-            screen.removePreference(findPreference(State.SPEAKER));
-            SharedPreferences.Editor ed = prefs.edit();
-            ed.remove(State.PHONE);
-            ed.remove(State.DATA);
-            ed.commit();
-        } else {
-            Preference.OnPreferenceChangeListener listener = new Preference.OnPreferenceChangeListener() {
-                @Override
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    if (newValue instanceof Boolean) {
-                        SharedPreferences.Editor ed = prefs.edit();
-                        ed.putBoolean(preference.getKey(), (Boolean) newValue);
-                        ed.commit();
-                        setupAnswerPref();
-                        return true;
-                    }
-                    return false;
+
+        Preference.OnPreferenceChangeListener listener = new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    SharedPreferences.Editor ed = prefs.edit();
+                    ed.putBoolean(preference.getKey(), (Boolean) newValue);
+                    ed.commit();
+                    setupAnswerPref();
+                    return true;
                 }
-            };
+                return false;
+            }
+        };
 
-            CheckBoxPreference btPref = (CheckBoxPreference) findPreference(State.BT);
-            btPref.setOnPreferenceChangeListener(listener);
+        CheckBoxPreference btPref = (CheckBoxPreference) findPreference(State.BT);
+        btPref.setOnPreferenceChangeListener(listener);
 
-            CheckBoxPreference speakerPref = (CheckBoxPreference) findPreference(State.SPEAKER);
-            speakerPref.setOnPreferenceChangeListener(listener);
+        CheckBoxPreference speakerPref = (CheckBoxPreference) findPreference(State.SPEAKER);
+        speakerPref.setOnPreferenceChangeListener(listener);
 
-            answerPref = (ListPreference) findPreference(State.ANSWER_TIME);
-            answerPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-                @Override
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    if (newValue instanceof String) {
-                        SharedPreferences.Editor ed = prefs.edit();
-                        ed.putString(State.ANSWER_TIME, (String) newValue);
-                        ed.commit();
-                        setupAnswerPref();
-                        return true;
-                    }
-                    return false;
+        answerPref = (ListPreference) findPreference(State.ANSWER_TIME);
+        answerPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof String) {
+                    SharedPreferences.Editor ed = prefs.edit();
+                    ed.putString(State.ANSWER_TIME, (String) newValue);
+                    ed.commit();
+                    setupAnswerPref();
+                    return true;
                 }
-            });
+                return false;
+            }
+        });
 
-            setupAnswerPref();
-        }
+        setupAnswerPref();
 
         powerStartPref = (CheckBoxPreference) findPreference(State.POWER_START);
         powerStartPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {

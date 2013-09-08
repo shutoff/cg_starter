@@ -19,6 +19,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
         <Button
@@ -28,6 +29,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
         <Button
@@ -37,6 +39,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
         <Button
@@ -46,6 +49,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
     </TableRow>
@@ -61,6 +65,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
         <Button
@@ -70,6 +75,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
         <Button
@@ -79,6 +85,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
         <Button
@@ -88,6 +95,7 @@
             android:layout_weight="1"
             android:background="@drawable/button"
             android:textColor="@color/white"
+            android:singleLine="false"
             android:layout_margin="5dp" />
 
     </TableRow>

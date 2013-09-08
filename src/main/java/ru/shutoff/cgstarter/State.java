@@ -1,6 +1,13 @@
 package ru.shutoff.cgstarter;
 
+import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.provider.Settings;
 
 /*
 import android.os.Environment;
@@ -39,6 +46,10 @@ public class State {
     static final String SAVE_ROTATE = "save_rotate";
     static final String SAVE_CHANNEL = "channel";
     static final String SAVE_LEVEL = "save_level";
+    static final String GPS = "gps";
+    static final String GPS_SAVE = "gps_save";
+    static final String URL = "URL";
+    static final String INTENTS = "intents";
 
     static class Point {
         String name;
@@ -123,6 +134,55 @@ public class State {
             ed.putInt(DAYS + i, p.days);
         }
         ed.commit();
+    }
+
+    static boolean canToggleGPS(Context context) {
+        PackageManager pacman = context.getPackageManager();
+        PackageInfo pacInfo = null;
+
+        try {
+            pacInfo = pacman.getPackageInfo("com.android.settings", PackageManager.GET_RECEIVERS);
+        } catch (PackageManager.NameNotFoundException e) {
+            return false; //package not found
+        }
+
+        if (pacInfo != null) {
+            for (ActivityInfo actInfo : pacInfo.receivers) {
+                //test if recevier is exported. if so, we can toggle GPS.
+                if (actInfo.name.equals("com.android.settings.widget.SettingsAppWidgetProvider") && actInfo.exported) {
+                    return true;
+                }
+            }
+        }
+        return false; //default
+    }
+
+    static void turnGPSOn(Context context) {
+        String provider = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+
+        if (!provider.contains("gps")) { //if gps is disabled
+            final Intent poke = new Intent();
+            poke.setClassName("com.android.settings", "com.android.settings.widget.SettingsAppWidgetProvider");
+            poke.addCategory(Intent.CATEGORY_ALTERNATIVE);
+            poke.setData(Uri.parse("3"));
+            context.sendBroadcast(poke);
+        }
+    }
+
+    static void turnGPSOff(Context context) {
+        String provider = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+
+        if (provider.contains("gps")) { //if gps is enabled
+            final Intent poke = new Intent();
+            poke.setClassName("com.android.settings", "com.android.settings.widget.SettingsAppWidgetProvider");
+            poke.addCategory(Intent.CATEGORY_ALTERNATIVE);
+            poke.setData(Uri.parse("3"));
+            context.sendBroadcast(poke);
+        }
+    }
+
+    interface OnBadGPS {
+        abstract void gps_message(Context context);
     }
 
 /*

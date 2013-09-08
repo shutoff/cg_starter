@@ -1,11 +1,14 @@
 package ru.shutoff.cgstarter;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -36,7 +39,9 @@ import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.Calendar;
 
-public class MainActivity extends Activity implements View.OnTouchListener {
+public class MainActivity
+        extends Activity
+        implements View.OnTouchListener, State.OnBadGPS {
 
     Button[] buttons;
 
@@ -48,11 +53,13 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
     View activeButton;
     boolean set_state;
+    boolean do_launch;
 
     SharedPreferences preferences;
 
     static final int SETUP_BUTTON = 3000;
     static final int RUN_CG = 3001;
+    static final int GPS_ON = 3002;
 
     static int[][] holidays = {
             {1, 1},
@@ -229,7 +236,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
 
     @Override
     public void finish() {
-        if (set_state){
+        if (set_state) {
             Intent intent = new Intent(this, OnExitService.class);
             intent.setAction(OnExitService.START);
             startService(intent);
@@ -295,10 +302,14 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                     }
                 }
                 break;
-            case RUN_CG: {
+            case GPS_ON:
+                setStateForce();
+                if (do_launch)
+                    launch_cg();
+                break;
+            case RUN_CG:
                 finish();
                 break;
-            }
         }
     }
 
@@ -319,7 +330,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             return;
         }
         if (activeButton == findViewById(R.id.run)) {
-            removeRoute();
+            removeRoute(this);
             launch();
             return;
         }
@@ -339,6 +350,11 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         State.Point p = points[i];
         if (p.name.equals(""))
             return;
+        createRoute(this, p.lat + "|" + p.lng);
+        launch();
+    }
+
+    static void createRoute(Context context, String route) {
         try {
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
@@ -349,19 +365,16 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             writer.append("#[CURRENT]|1|1\n");
             writer.append("Start|0|0\n");
             writer.append("Finish|");
-            writer.append(p.lat);
-            writer.append("|");
-            writer.append(p.lng);
+            writer.append(route);
             writer.close();
         } catch (IOException e) {
-            Toast toast = Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG);
+            Toast toast = Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG);
             toast.show();
             return;
         }
-        launch();
     }
 
-    void removeRoute() {
+    static void removeRoute(Context context) {
         try {
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
@@ -372,18 +385,50 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             writer.append("#[CURRENT]|0|0\n");
             writer.close();
         } catch (IOException e) {
-            Toast toast = Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG);
+            Toast toast = Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG);
             toast.show();
         }
     }
 
     void setState() {
-        SharedPreferences.Editor ed = preferences.edit();
+        if (setState(this, this))
+            set_state = true;
+    }
+
+    void setStateForce() {
+        setState(this, null);
         set_state = true;
+    }
+
+    static boolean setState(Context context, State.OnBadGPS badGPS) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor ed = preferences.edit();
+        if (preferences.getBoolean(State.GPS, false)) {
+            boolean gps_enabled = false;
+            LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            try {
+                gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            } catch (Exception ex) {
+                // ignore
+            }
+            if (!gps_enabled) {
+                if (State.canToggleGPS(context)) {
+                    try {
+                        State.turnGPSOn(context);
+                        ed.putBoolean(State.GPS_SAVE, true);
+                    } catch (Exception ex) {
+                        // ignore
+                    }
+                } else if (badGPS != null) {
+                    badGPS.gps_message(context);
+                    return false;
+                }
+            }
+        }
         if (preferences.getBoolean(State.ROTATE, false)) {
             try {
-                int save_rotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
-                Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                int save_rotation = Settings.System.getInt(context.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
+                Settings.System.putInt(context.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
                 if (!preferences.contains(State.SAVE_ROTATE))
                     ed.putInt(State.SAVE_ROTATE, save_rotation);
             } catch (Exception ex) {
@@ -403,18 +448,18 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         }
         if (preferences.getBoolean(State.DATA, false)) {
             try {
-                WifiManager wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
+                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
                 if (wifiManager != null)
                     wifiManager.setWifiEnabled(false);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
             try {
-                ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
                 if ((activeNetwork == null) ||
-                    (activeNetwork.getType() != ConnectivityManager.TYPE_MOBILE) ||
-                    !activeNetwork.isConnected()) {
+                        (activeNetwork.getType() != ConnectivityManager.TYPE_MOBILE) ||
+                        !activeNetwork.isConnected()) {
                     Class conmanClass = Class.forName(conman.getClass().getName());
                     Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
                     iConnectivityManagerField.setAccessible(true);
@@ -468,7 +513,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
                 reader.close();
                 if (channel > 0) {
                     ed.putInt(State.SAVE_CHANNEL, channel);
-                    AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                    AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
                     if (!preferences.contains(State.SAVE_LEVEL)) {
                         int prev_level = audio.getStreamVolume(channel);
                         ed.putInt(State.SAVE_LEVEL, prev_level);
@@ -482,6 +527,7 @@ public class MainActivity extends Activity implements View.OnTouchListener {
             }
         }
         ed.commit();
+        return true;
     }
 
     void launch() {
@@ -489,6 +535,14 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         autostart.cancel();
         launchTimer.cancel();
         setState();
+        if (!set_state) {
+            do_launch = true;
+            return;
+        }
+        launch_cg();
+    }
+
+    void launch_cg() {
         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
         if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
@@ -525,4 +579,25 @@ public class MainActivity extends Activity implements View.OnTouchListener {
         startActivity(intent);
     }
 
+    @Override
+    public void gps_message(Context context) {
+        AlertDialog.Builder ad = new AlertDialog.Builder(this);
+        ad.setTitle(R.string.no_gps_title);
+        ad.setMessage(R.string.no_gps_message);
+        ad.setPositiveButton(R.string.settings, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(intent);
+            }
+        });
+        ad.setNegativeButton(R.string.cont, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                setStateForce();
+            }
+        });
+        ad.show();
+    }
 }
