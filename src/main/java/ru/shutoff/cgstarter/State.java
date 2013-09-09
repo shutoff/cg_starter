@@ -50,6 +50,8 @@ public class State {
     static final String GPS_SAVE = "gps_save";
     static final String URL = "URL";
     static final String INTENTS = "intents";
+    static final String SAVE_WIFI = "save_wifi";
+    static final String SAVE_DATA = "save_data";
 
     static class Point {
         String name;

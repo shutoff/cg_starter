@@ -92,4 +92,7 @@
     <string name="cont">Продолжить</string>
     <string name="intents">Обработка событий</string>
     <string name="intents_sum">Обработка событий для интеграции с другими приложениями</string>
+    <string name="restore_data">Восстановления состояние данных</string>
+    <string name="restore_data_sum">Восстановить состояние мобильного интернета после выхода из СГ
+    </string>
 </resources>

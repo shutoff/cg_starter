@@ -110,4 +110,6 @@
     <string name="cont">Continue</string>
     <string name="intents">Intents processing</string>
     <string name="intents_sum">Processing intents for Tasker integration</string>
+    <string name="restore_data">Restore data state</string>
+    <string name="restore_data_sum">Restore mobile data state after finish CG</string>
 </resources>

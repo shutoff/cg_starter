@@ -181,7 +181,6 @@ public class Setup extends PreferenceActivity {
                 return false;
             }
         });
-
         setupPowerStart();
     }
 

@@ -449,8 +449,10 @@ public class MainActivity
         if (preferences.getBoolean(State.DATA, false)) {
             try {
                 WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                if (wifiManager != null)
+                if ((wifiManager != null) && !wifiManager.isWifiEnabled()) {
                     wifiManager.setWifiEnabled(false);
+                    ed.putBoolean(State.SAVE_WIFI, true);
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -465,9 +467,16 @@ public class MainActivity
                     iConnectivityManagerField.setAccessible(true);
                     Object iConnectivityManager = iConnectivityManagerField.get(conman);
                     Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
-                    Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
-                    setMobileDataEnabledMethod.setAccessible(true);
-                    setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+
+                    Method getMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("getMobileDataEnabled");
+                    getMobileDataEnabledMethod.setAccessible(true); // Make the method callable
+
+                    if (!(Boolean) getMobileDataEnabledMethod.invoke(iConnectivityManager)) {
+                        Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
+                        setMobileDataEnabledMethod.setAccessible(true);
+                        setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+                        ed.putBoolean(State.SAVE_DATA, true);
+                    }
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
