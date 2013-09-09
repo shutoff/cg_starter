@@ -302,11 +302,6 @@ public class MainActivity
                     }
                 }
                 break;
-            case GPS_ON:
-                setStateForce();
-                if (do_launch)
-                    launch_cg();
-                break;
             case RUN_CG:
                 finish();
                 break;
@@ -594,8 +589,10 @@ public class MainActivity
         ad.setNegativeButton(R.string.cont, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
                 setStateForce();
+                if (do_launch)
+                    launch_cg();
+                dialog.cancel();
             }
         });
         ad.show();
