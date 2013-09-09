@@ -9,6 +9,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -18,6 +20,7 @@ import android.view.KeyEvent;
 
 import com.android.internal.telephony.ITelephony;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -111,6 +114,33 @@ public class OnExitService extends Service {
                     audio.setStreamVolume(channel, level, 0);
                     ed.remove(State.SAVE_LEVEL);
                     ed.remove(State.SAVE_CHANNEL);
+                }
+                if (preferences.getBoolean(State.SAVE_WIFI, false)) {
+                    try {
+                        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                        if (wifiManager != null)
+                            wifiManager.setWifiEnabled(true);
+                    } catch (Exception ex) {
+                        // ignore
+                    }
+                    ed.remove(State.SAVE_WIFI);
+                }
+                if (preferences.getBoolean(State.SAVE_DATA, false)) {
+                    try {
+                        ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                        Class conmanClass = Class.forName(conman.getClass().getName());
+                        Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
+                        iConnectivityManagerField.setAccessible(true);
+                        Object iConnectivityManager = iConnectivityManagerField.get(conman);
+                        Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
+
+                        Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
+                        setMobileDataEnabledMethod.setAccessible(true);
+                        setMobileDataEnabledMethod.invoke(iConnectivityManager, false);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    ed.remove(State.SAVE_DATA);
                 }
                 ed.commit();
                 stopSelf();

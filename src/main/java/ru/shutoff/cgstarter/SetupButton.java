@@ -158,6 +158,8 @@ public class SetupButton extends PreferenceActivity {
                     SharedPreferences.Editor ed = preferences.edit();
                     ed.putBoolean("auto", v);
                     ed.commit();
+                    if (point.days == 0)
+                        point.days = State.WORKDAYS | State.HOLIDAYS;
                     setupInterval();
                     return true;
                 }
