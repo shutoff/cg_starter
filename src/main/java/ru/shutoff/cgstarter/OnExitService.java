@@ -142,6 +142,7 @@ public class OnExitService extends Service {
                     }
                     ed.remove(State.SAVE_DATA);
                 }
+                ed.remove(State.CAR_START_CG);
                 ed.commit();
                 stopSelf();
             } else {
@@ -177,6 +178,9 @@ public class OnExitService extends Service {
         return START_STICKY;
     }
 
+    static int prev_state;
+    static boolean cg_run;
+
     void setPhoneListener() {
         if (phoneListener != null)
             return;
@@ -197,13 +201,17 @@ public class OnExitService extends Service {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
                             if (piAnswer != null)
                                 alarmMgr.cancel(piAnswer);
-                            if (phone && !isActiveCG(getApplicationContext()) && isRunCG(getApplicationContext())) {
-                                try {
-                                    Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
-                                    if (intent != null)
-                                        startActivity(intent);
-                                } catch (Exception ex) {
-                                    // ignore
+                            if (phone) {
+                                if (prev_state != TelephonyManager.CALL_STATE_RINGING)
+                                    cg_run = isRunCG(getApplicationContext());
+                                if (cg_run && !isActiveCG(getApplicationContext())) {
+                                    try {
+                                        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                                        if (intent != null)
+                                            startActivity(intent);
+                                    } catch (Exception ex) {
+                                        // ignore
+                                    }
                                 }
                             }
                             if (speaker) {
@@ -213,6 +221,7 @@ public class OnExitService extends Service {
                             }
                             break;
                         case TelephonyManager.CALL_STATE_RINGING:
+                            cg_run = isRunCG(getApplicationContext());
                             if (autoanswer > 0) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 if (speaker || audio.isBluetoothScoOn()) {
@@ -226,8 +235,20 @@ public class OnExitService extends Service {
                         case TelephonyManager.CALL_STATE_IDLE:
                             if (piAnswer != null)
                                 alarmMgr.cancel(piAnswer);
+                            if (phone) {
+                                if (isRunCG(getApplicationContext()) && !isActiveCG(getApplicationContext())) {
+                                    try {
+                                        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                                        if (intent != null)
+                                            startActivity(intent);
+                                    } catch (Exception ex) {
+                                        // ignore
+                                    }
+                                }
+                            }
                             break;
                     }
+                    prev_state = state;
                 }
             };
             tm = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
@@ -263,14 +284,31 @@ public class OnExitService extends Service {
         try {
             for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
                 if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-                        && !isRunningService(info.processName)) {
-                    return info.processName.equals(State.CG_PACKAGE);
-                }
+                        && !isRunningService(info.processName)
+                        && info.processName.equals(State.CG_PACKAGE))
+                    return true;
             }
         } catch (Exception ex) {
             // ignore
         }
         return false;
+    }
+
+    static void killCG(Context context) {
+        if (mActivityManager == null)
+            mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        try {
+            for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
+                if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                        && !isRunningService(info.processName)
+                        && info.processName.equals(State.CG_PACKAGE)) {
+                    int pid = android.os.Process.getUidForName(State.CG_PACKAGE);
+                    android.os.Process.killProcess(pid);
+                }
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
     }
 
     static boolean isRunningService(String processname) {

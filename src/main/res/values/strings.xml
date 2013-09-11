@@ -17,45 +17,13 @@
     <string name="clear">Clear</string>
     <string name="clear_sum">Clear button</string>
     <string name="days">Days for run</string>
-    <string-array name="days_list">
-        <item>All days</item>
-        <item>Working days</item>
-        <item>Holidays</item>
-        <item>Days of week</item>
-    </string-array>
-    <string-array name="days_values">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-    </string-array>
-    <string name="weekdays">Week days for run</string>
-    <string-array name="weekdays_list">
-        <item>Monday</item>
-        <item>Tuesday</item>
-        <item>Wednesday</item>
-        <item>Thursday</item>
-        <item>Friday</item>
-        <item>Saturday</item>
-        <item>Sunday</item>
-    </string-array>
-    <string-array name="weekdays_values">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>4</item>
-        <item>5</item>
-        <item>6</item>
-    </string-array>
-    <string name="days_sum">Select days for auto run</string>
     <string name="button">Button settings</string>
     <string name="button_sum">For setup button press and hold it</string>
     <string name="about">About</string>
     <string name="version">Version</string>
     <string name="run">Start</string>
     <string name="auto_pause">Autostart pause</string>
-    <string name="launch_pause">Launch pause</string>
+    <string name="inactive_pause">If not any buttons pressed</string>
     <string name="sec">sec</string>
     <string name="rotate">Screen rotate</string>
     <string name="rotate_sum">Disable screen rotate on run CituGuide</string>
@@ -63,17 +31,12 @@
     <string name="bt_sum">Turn ON bluetooth</string>
     <string name="data">Mobile data control</string>
     <string name="data_sum">Turn ON mobile data</string>
-    <string name="volume">Volume control</string>
-    <string name="volume_sum">Set volume on run CityGuide</string>
-    <string name="level">Volume level</string>
-    <string name="level_sum">Set volume level</string>
+    <string name="level">Volume control</string>
+    <string name="no_volume">No change volume</string>
+    <string name="set_volume">Set level</string>
     <string name="carmode">Car mode</string>
     <string name="carmode_sum">Launch application on car mode</string>
-    <string name="powermode">Power mode</string>
-    <string name="powermode_sum">Launch application on AC power</string>
-    <string name="powerstart">Launch CG on power</string>
-    <string name="powerstart_sum">Launch CG when starting on power</string>
-    <string name="powerexit_sum">Don\'t launch CG when starting on power</string>
+    <string name="powermode">Launch on power</string>
     <string name="phone">Phone control</string>
     <string name="phone_sum">Show CityGuide while phone call</string>
     <string name="control">Control</string>
@@ -81,7 +44,6 @@
     <string name="speaker">Speakerphone</string>
     <string name="speaker_sum">Turn on speakerphone</string>
     <string name="autoanswer">Auto answer</string>
-    <string name="autoanswer_sum">Auto answer on incomming call after 12 sec</string>
     <string-array name="answer_times">
         <item>0</item>
         <item>2</item>
@@ -110,6 +72,22 @@
     <string name="cont">Continue</string>
     <string name="intents">Intents processing</string>
     <string name="intents_sum">Processing intents for Tasker integration</string>
-    <string name="restore_data">Restore data state</string>
-    <string name="restore_data_sum">Restore mobile data state after finish CG</string>
+    <string-array name="days">
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+    <string name="alldays">All days</string>
+    <string name="workdays">Working days</string>
+    <string name="holidays">Holidays</string>
+    <string name="weekdays">Days of week</string>
+    <string name="launch">Launch CG</string>
+    <string name="exit">Exit</string>
+    <string name="after">after</string>
+    <string name="newer">Newer</string>
+    <string name="allways">Allways</string>
 </resources>

@@ -101,7 +101,7 @@ public class MainActivity
         if (auto_pause < 3)
             auto_pause = 3;
         auto_pause = auto_pause * 1000;
-        int launch_pause = preferences.getInt(State.LAUNCH_PAUSE, 30);
+        int launch_pause = preferences.getInt(State.INACTIVE_PAUSE, 30);
         if (launch_pause < 10)
             launch_pause = 10;
         launch_pause = launch_pause * 1000;
@@ -109,8 +109,6 @@ public class MainActivity
         points = State.get(preferences);
 
         Calendar calendar = Calendar.getInstance();
-        int now_h = calendar.get(Calendar.HOUR_OF_DAY);
-        int now_m = calendar.get(Calendar.MINUTE);
         int now_day = calendar.get(Calendar.DAY_OF_MONTH);
         int now_month = calendar.get(Calendar.MONTH) + 1;
         int now_wday = calendar.get(Calendar.DAY_OF_WEEK) - 2;
@@ -147,16 +145,11 @@ public class MainActivity
 
             @Override
             public void onFinish() {
-                if (!preferences.getBoolean(State.POWER_START, false)) {
-                    Intent intent = getIntent();
-                    if (intent != null) {
-                        if (intent.getBooleanExtra(State.POWER_STATE, false)) {
-                            finish();
-                            return;
-                        }
-                    }
+                if (preferences.getBoolean(State.INACTIVE_LAUNCH, false)) {
+                    launch();
+                } else {
+                    finish();
                 }
-                launch();
             }
         };
         launchTimer.start();
@@ -171,27 +164,7 @@ public class MainActivity
                 continue;
             if ((days & p.days) == 0)
                 continue;
-            if (p.interval.equals(""))
-                continue;
-            String[] times = p.interval.split("-");
-            String[] time = times[0].split(":");
-            int start_h = Integer.parseInt(time[0]);
-            int start_m = Integer.parseInt(time[1]);
-            time = times[1].split(":");
-            int end_h = Integer.parseInt(time[0]);
-            int end_m = Integer.parseInt(time[1]);
-            boolean is_ok = false;
-            if ((end_h > start_h) || ((end_h == start_h) && (end_m >= start_m))) {
-                is_ok = (now_h > start_h) || ((now_h == start_h) && (now_m >= start_m));
-                if ((now_h > end_h) || ((now_h == end_h) && (now_m > end_m)))
-                    is_ok = false;
-            } else {
-                if ((now_h < end_h) || ((now_h == end_h) && (now_m <= end_m)))
-                    is_ok = true;
-                if ((now_h > start_h) || ((now_h == start_h) && (now_m >= start_m)))
-                    is_ok = true;
-            }
-            if (is_ok) {
+            if (State.inInterval(p.interval)) {
                 activeButton = buttons[i];
                 buttons[i].setBackgroundResource(R.drawable.auto);
                 autostart.start();
@@ -444,9 +417,11 @@ public class MainActivity
         if (preferences.getBoolean(State.DATA, false)) {
             try {
                 WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                if ((wifiManager != null) && !wifiManager.isWifiEnabled()) {
-                    wifiManager.setWifiEnabled(false);
-                    ed.putBoolean(State.SAVE_WIFI, true);
+                if (wifiManager != null) {
+                    if (wifiManager.isWifiEnabled()) {
+                        wifiManager.setWifiEnabled(false);
+                        ed.putBoolean(State.SAVE_WIFI, true);
+                    }
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();

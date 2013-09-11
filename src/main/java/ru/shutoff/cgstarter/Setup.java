@@ -17,8 +17,6 @@ public class Setup extends PreferenceActivity {
 
     SeekBarPreference autoPref;
     SeekBarPreference launchPref;
-    SeekBarPreference levelPref;
-    CheckBoxPreference powerStartPref;
     ListPreference answerPref;
     SharedPreferences prefs;
 
@@ -31,25 +29,9 @@ public class Setup extends PreferenceActivity {
 
         autoPref = (SeekBarPreference) findPreference(State.AUTO_PAUSE);
         autoPref.setMin(3);
-        autoPref.setSummary(prefs.getInt(State.AUTO_PAUSE, 5) + " " + getString(R.string.sec));
-        autoPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                autoPref.setSummary(String.valueOf(newValue) + " " + getString(R.string.sec));
-                return true;
-            }
-        });
 
-        launchPref = (SeekBarPreference) findPreference(State.LAUNCH_PAUSE);
+        launchPref = (SeekBarPreference) findPreference(State.INACTIVE_PAUSE);
         launchPref.setMin(10);
-        launchPref.setSummary(prefs.getInt(State.LAUNCH_PAUSE, 30) + " " + getString(R.string.sec));
-        launchPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                launchPref.setSummary(String.valueOf(newValue) + " " + getString(R.string.sec));
-                return true;
-            }
-        });
 
         CheckBoxPreference carMode = (CheckBoxPreference) findPreference(State.CAR_MODE);
         carMode.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
@@ -58,21 +40,6 @@ public class Setup extends PreferenceActivity {
                 SharedPreferences.Editor ed = preference.getEditor();
                 ed.putBoolean(State.CAR_STATE, false);
                 ed.commit();
-                return true;
-            }
-        });
-
-        CheckBoxPreference powerMode = (CheckBoxPreference) findPreference(State.POWER_MODE);
-        powerMode.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof Boolean) {
-                    SharedPreferences.Editor ed = preference.getEditor();
-                    ed.putBoolean(State.POWER_STATE, false);
-                    ed.putBoolean(State.POWER_MODE, (Boolean) newValue);
-                    ed.commit();
-                    setupPowerStart();
-                }
                 return true;
             }
         });
@@ -102,22 +69,6 @@ public class Setup extends PreferenceActivity {
                 intent.putExtra(State.URL, "file:///android_asset/html/about.html");
                 startActivity(intent);
                 return true;
-            }
-        });
-
-
-        levelPref = (SeekBarPreference) findPreference(State.LEVEL);
-        levelPref.setEnabled(prefs.getBoolean(State.VOLUME, false));
-
-        CheckBoxPreference volumePref = (CheckBoxPreference) findPreference(State.VOLUME);
-        volumePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof Boolean) {
-                    levelPref.setEnabled((Boolean) newValue);
-                    return true;
-                }
-                return false;
             }
         });
 
@@ -166,29 +117,6 @@ public class Setup extends PreferenceActivity {
         });
 
         setupAnswerPref();
-
-        powerStartPref = (CheckBoxPreference) findPreference(State.POWER_START);
-        powerStartPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof Boolean) {
-                    SharedPreferences.Editor ed = preference.getEditor();
-                    ed.putBoolean(State.POWER_START, (Boolean) newValue);
-                    ed.commit();
-                    setupPowerStart();
-                    return true;
-                }
-                return false;
-            }
-        });
-        setupPowerStart();
-    }
-
-    void setupPowerStart() {
-        powerStartPref.setEnabled(prefs.getBoolean(State.POWER_MODE, false));
-        powerStartPref.setSummary(getString(
-                prefs.getBoolean(State.POWER_START, false) ?
-                        R.string.powerstart_sum : R.string.powerexit_sum));
     }
 
     void setupAnswerPref() {

@@ -6,7 +6,8 @@
     android:longClickable="false"
     android:keepScreenOn="true"
     android:padding="5dp"
-    android:measureWithLargestChild="true">
+    android:measureWithLargestChild="true"
+    android:shrinkColumns="*">
 
     <TableRow
         android:layout_height="0dp"

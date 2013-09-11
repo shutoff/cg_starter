@@ -9,6 +9,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.Settings;
 
+import java.util.Calendar;
+
 /*
 import android.os.Environment;
 
@@ -26,11 +28,11 @@ public class State {
     static final String CG_PACKAGE = "cityguide.probki.net";
 
     static final String AUTO_PAUSE = "auto_pause";
-    static final String LAUNCH_PAUSE = "launch_pause";
+    static final String INACTIVE_PAUSE = "inactive_pause";
+    static final String INACTIVE_LAUNCH = "inactive_launch";
     static final String CAR_MODE = "carmode";
     static final String CAR_STATE = "car_state";
-    static final String POWER_MODE = "powermode";
-    static final String POWER_STATE = "powerstate";
+    static final String POWER_TIME = "powertime";
     static final String ABOUT = "about";
     static final String BT = "bt";
     static final String SAVE_BT = "save_bt";
@@ -40,7 +42,6 @@ public class State {
     static final String DATA = "data";
     static final String SPEAKER = "speaker";
     static final String ANSWER_TIME = "answertime";
-    static final String POWER_START = "powerstart";
     static final String ID = "ID";
     static final String ROTATE = "rotate";
     static final String SAVE_ROTATE = "save_rotate";
@@ -52,6 +53,7 @@ public class State {
     static final String INTENTS = "intents";
     static final String SAVE_WIFI = "save_wifi";
     static final String SAVE_DATA = "save_data";
+    static final String CAR_START_CG = "car_start_cg";
 
     static class Point {
         String name;
@@ -71,6 +73,7 @@ public class State {
 
     static final int WORKDAYS = 1;
     static final int HOLIDAYS = 2;
+    static final int ALLDAYS = 3;
 
     static Point[] points;
 
@@ -86,7 +89,7 @@ public class State {
                 p.lng = preferences.getString(LONGITUDE + i, "");
                 p.interval = preferences.getString(INTERVAL + i, "");
                 p.days = preferences.getInt(DAYS + i, 0);
-                if (p.lat.equals("") || p.lng.equals("")){
+                if (p.lat.equals("") || p.lng.equals("")) {
                     p.name = "";
                     p.original = "";
                     p.lat = "";
@@ -187,6 +190,31 @@ public class State {
         abstract void gps_message(Context context);
     }
 
+    static boolean inInterval(String interval) {
+        if (interval.equals(""))
+            return false;
+        Calendar calendar = Calendar.getInstance();
+        int now_h = calendar.get(Calendar.HOUR_OF_DAY);
+        int now_m = calendar.get(Calendar.MINUTE);
+        String[] times = interval.split("-");
+        String[] time = times[0].split(":");
+        int start_h = Integer.parseInt(time[0]);
+        int start_m = Integer.parseInt(time[1]);
+        time = times[1].split(":");
+        int end_h = Integer.parseInt(time[0]);
+        int end_m = Integer.parseInt(time[1]);
+        if ((end_h > start_h) || ((end_h == start_h) && (end_m >= start_m))) {
+            if ((now_h < start_h) || ((now_h == start_h) && (now_m < start_m)))
+                return false;
+            return ((now_h < end_h) || ((now_h == end_h) && (now_m < end_m)));
+        }
+        if ((now_h < end_h) || ((now_h == end_h) && (now_m <= end_m)))
+            return true;
+        if ((now_h > start_h) || ((now_h == start_h) && (now_m >= start_m)))
+            return true;
+        return false;
+    }
+
 /*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
@@ -218,5 +246,4 @@ public class State {
         appendLog(s);
     }
 */
-
 }

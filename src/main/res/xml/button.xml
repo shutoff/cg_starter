@@ -27,17 +27,9 @@
             android:title="@string/interval"
             android:summary="@string/interval_sum" />
 
-        <ListPreference
+        <ru.shutoff.cgstarter.DaysPreference
             android:key="days"
-            android:title="@string/days"
-            android:entries="@array/days_list"
-            android:entryValues="@array/days_values" />
-
-        <ru.shutoff.cgstarter.DaysListPreference
-            android:key="weekdays"
-            android:title="@string/weekdays"
-            android:entries="@array/weekdays_list"
-            android:entryValues="@array/weekdays_values" />
+            android:title="@string/days" />
 
     </PreferenceCategory>
 

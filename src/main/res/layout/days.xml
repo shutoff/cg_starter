@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RadioGroup
+        android:id="@+id/days"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <RadioButton
+            android:id="@+id/alldays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/alldays"
+            android:layout_gravity="center" />
+
+        <RadioButton
+            android:id="@+id/workdays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/workdays"
+            android:layout_gravity="center" />
+
+        <RadioButton
+            android:id="@+id/holidays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/holidays"
+            android:layout_gravity="center" />
+
+        <RadioButton
+            android:id="@+id/weekdays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/weekdays"
+            android:layout_gravity="center" />
+
+    </RadioGroup>
+
+    <TableLayout
+        android:id="@+id/week_table"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginLeft="40dp"
+        android:layout_marginRight="20dp"
+        android:stretchColumns="*">
+
+    </TableLayout>
+
+</LinearLayout>

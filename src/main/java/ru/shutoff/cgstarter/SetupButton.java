@@ -16,8 +16,7 @@ public class SetupButton extends PreferenceActivity {
     EditTextPreference namePref;
     CheckBoxPreference autoPref;
     TimePreference intervalPref;
-    ListPreference daysPref;
-    DaysListPreference weekPref;
+    DaysPreference daysPref;
 
     int id;
     State.Point point;
@@ -44,38 +43,16 @@ public class SetupButton extends PreferenceActivity {
         SharedPreferences.Editor ed = preferences.edit();
         ed.putString("item", point.original);
         ed.putString("name", point.name);
-        ed.putString("weekdays", "");
         if (point.days == 0)
             point.interval = "";
         if (point.interval.equals("")) {
             ed.putBoolean("auto", false);
             ed.putString("period", "00:00-00:00");
-            ed.putString("days", "0");
+            ed.putInt("days", 0);
         } else {
             ed.putBoolean("auto", true);
             ed.putString("period", point.interval);
-            if ((point.days & (State.HOLIDAYS | State.WORKDAYS)) == (State.HOLIDAYS | State.WORKDAYS)) {
-                ed.putString("days", "0");
-            } else if ((point.days & State.WORKDAYS) == State.WORKDAYS) {
-                ed.putString("days", "1");
-            } else if ((point.days & State.WORKDAYS) == State.WORKDAYS) {
-                ed.putString("days", "2");
-            } else if (point.days == 0) {
-                ed.putString("days", "0");
-            } else {
-                ed.putString("days", "3");
-                String weekdays = null;
-                for (int i = 0; i < 7; i++) {
-                    if ((point.days & (1 << (i + 2))) == 0)
-                        continue;
-                    if (weekdays == null) {
-                        weekdays = i + "";
-                        continue;
-                    }
-                    weekdays += DaysListPreference.DEFAULT_SEPARATOR + i;
-                }
-                ed.putString("weekdays", weekdays);
-            }
+            ed.putInt("days", point.days);
         }
         ed.commit();
 
@@ -86,8 +63,7 @@ public class SetupButton extends PreferenceActivity {
         namePref = (EditTextPreference) findPreference("name");
         autoPref = (CheckBoxPreference) findPreference("auto");
         intervalPref = (TimePreference) findPreference("period");
-        daysPref = (ListPreference) findPreference("days");
-        weekPref = (DaysListPreference) findPreference("weekdays");
+        daysPref = (DaysPreference) findPreference("days");
 
         setupInterval();
 
@@ -183,39 +159,9 @@ public class SetupButton extends PreferenceActivity {
         daysPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof String) {
-                    switch (Integer.parseInt((String) newValue)) {
-                        case 0:
-                            point.days = State.WORKDAYS | State.HOLIDAYS;
-                            break;
-                        case 1:
-                            point.days = State.WORKDAYS;
-                            break;
-                        case 2:
-                            point.days = State.HOLIDAYS;
-                            break;
-                        default:
-                            point.days = (point.days & 0x1FC);
-                            if (point.days == 0)
-                                point.days = 0x1FC;
-                    }
-                    setupInterval();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        weekPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof String[]) {
-                    String[] v = (String[]) newValue;
-                    point.days = 0;
-                    for (String p : v) {
-                        point.days |= (1 << (Integer.parseInt(p) + 2));
-                    }
-                    setupInterval();
+                if (newValue instanceof Integer) {
+                    preference.setSummary(DaysPreference.getSummary(preference.getContext(), (Integer) newValue));
+                    point.days = (Integer) newValue;
                     return true;
                 }
                 return false;
@@ -246,7 +192,6 @@ public class SetupButton extends PreferenceActivity {
             intervalPref.setEnabled(false);
             intervalPref.setSummary(getString(R.string.interval_sum));
             daysPref.setEnabled(false);
-            daysPref.setSummary(getString(R.string.days_sum));
             return;
         }
         autoPref.setEnabled(true);
@@ -255,40 +200,13 @@ public class SetupButton extends PreferenceActivity {
             intervalPref.setEnabled(false);
             intervalPref.setSummary(getString(R.string.interval_sum));
             daysPref.setEnabled(false);
-            daysPref.setSummary(getString(R.string.days_sum));
             return;
         }
         intervalPref.setEnabled(true);
         daysPref.setEnabled(true);
-        weekPref.setEnabled(false);
-        weekPref.setSummary(getString(R.string.days_sum));
+        daysPref.setSummary(DaysPreference.getSummary(this, preferences.getInt("days", 0)));
         if (point.interval.equals(""))
             point.interval = "00:00-00:00";
         intervalPref.setSummary(point.interval);
-        String[] days = getResources().getStringArray(R.array.days_list);
-        String[] weekdays = getResources().getStringArray(R.array.weekdays_list);
-        if (point.days == 0) {
-            daysPref.setSummary(days[0]);
-        } else if ((point.days & (State.HOLIDAYS | State.WORKDAYS)) == (State.HOLIDAYS | State.WORKDAYS)) {
-            daysPref.setSummary(days[0]);
-        } else if ((point.days & State.WORKDAYS) == State.WORKDAYS) {
-            daysPref.setSummary(days[1]);
-        } else if ((point.days & State.HOLIDAYS) == State.HOLIDAYS) {
-            daysPref.setSummary(days[2]);
-        } else {
-            String sum = null;
-            for (int i = 0; i < 7; i++) {
-                if ((point.days & (1 << (i + 2))) == 0)
-                    continue;
-                if (sum == null) {
-                    sum = weekdays[i];
-                    continue;
-                }
-                sum += "," + weekdays[i];
-            }
-            daysPref.setSummary(sum);
-            weekPref.setEnabled(true);
-            weekPref.setSummary(sum);
-        }
     }
 }

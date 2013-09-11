@@ -26,9 +26,9 @@
             android:max="20"
             android:text="@string/sec" />
 
-        <ru.shutoff.cgstarter.SeekBarPreference
-            android:key="launch_pause"
-            android:title="@string/launch_pause"
+        <ru.shutoff.cgstarter.InactivePreference
+            android:key="inactive_pause"
+            android:title="@string/inactive_pause"
             android:defaultValue="30"
             android:max="120"
             android:text="@string/sec" />
@@ -47,16 +47,12 @@
             android:title="@string/gps"
             android:summary="@string/gps_sum" />
 
-        <CheckBoxPreference
-            android:key="volume"
-            android:title="@string/volume"
-            android:summary="@string/volume_sum" />
-
-        <ru.shutoff.cgstarter.SeekBarPreference
+        <ru.shutoff.cgstarter.VolumePreference
             android:key="level"
             android:title="@string/level"
             android:defaultValue="100"
-            android:max="100" />
+            android:max="100"
+            android:text="%" />
 
     </PreferenceCategory>
 
@@ -98,14 +94,9 @@
             android:title="@string/carmode"
             android:summary="@string/carmode_sum" />
 
-        <CheckBoxPreference
-            android:key="powermode"
-            android:title="@string/powermode"
-            android:summary="@string/powermode_sum" />
-
-        <CheckBoxPreference
-            android:key="powerstart"
-            android:title="@string/powerstart" />
+        <ru.shutoff.cgstarter.TimePreference
+            android:key="powertime"
+            android:title="@string/powermode" />
 
     </PreferenceCategory>
 

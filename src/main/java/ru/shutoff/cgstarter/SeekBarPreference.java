@@ -16,22 +16,15 @@ public class SeekBarPreference
         extends DialogPreference
         implements SeekBar.OnSeekBarChangeListener, View.OnClickListener
 {
-    // ------------------------------------------------------------------------------------------
-    // Private attributes :
     private static final String androidns="http://schemas.android.com/apk/res/android";
 
-    private SeekBar mSeekBar;
-    private TextView mSplashText,mValueText;
-    private Context mContext;
+    public SeekBar mSeekBar;
+    public TextView mSplashText, mValueText;
+    public Context mContext;
 
-    private String mDialogMessage, mSuffix;
-    private int mDefault, mMin, mMax, mValue = 0;
-    // ------------------------------------------------------------------------------------------
+    public String mDialogMessage, mSuffix;
+    public int mMin, mMax, mValue, mDefault = 0;
 
-
-
-    // ------------------------------------------------------------------------------------------
-    // Constructor :
     public SeekBarPreference(Context context, AttributeSet attrs) {
 
         super(context,attrs);
@@ -50,13 +43,9 @@ public class SeekBarPreference
         // Get default and max seekbar values :
         mDefault = attrs.getAttributeIntValue(androidns, "defaultValue", 0);
         mMax = attrs.getAttributeIntValue(androidns, "max", 100);
+        setDefaultValue(mDefault);
     }
-    // ------------------------------------------------------------------------------------------
 
-
-
-    // ------------------------------------------------------------------------------------------
-    // DialogPreference methods :
     @Override
     protected View onCreateDialogView() {
 
@@ -69,6 +58,8 @@ public class SeekBarPreference
         if (mDialogMessage != null)
             mSplashText.setText(mDialogMessage);
         layout.addView(mSplashText);
+
+        createExtraControls(layout);
 
         mValueText = new TextView(mContext);
         mValueText.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -106,13 +97,9 @@ public class SeekBarPreference
             mValue = shouldPersist() ? getPersistedInt(mDefault) : 0;
         else
             mValue = (Integer)defaultValue;
+        setSummary(summary());
     }
-    // ------------------------------------------------------------------------------------------
 
-
-
-    // ------------------------------------------------------------------------------------------
-    // OnSeekBarChangeListener methods :
     @Override
     public void onProgressChanged(SeekBar seek, int value, boolean fromTouch)
     {
@@ -125,21 +112,6 @@ public class SeekBarPreference
     @Override
     public void onStopTrackingTouch(SeekBar seek) {}
 
-    public void setMax(int max) { mMax = max; }
-    public int getMax() { return mMax; }
-
-    public void setProgress(int progress) {
-        mValue = progress;
-        if (mSeekBar != null)
-            mSeekBar.setProgress(progress - mMin);
-    }
-    public int getProgress() { return mValue; }
-    // ------------------------------------------------------------------------------------------
-
-
-
-    // ------------------------------------------------------------------------------------------
-    // Set the positive button listener and onClick action :
     @Override
     public void showDialog(Bundle state) {
 
@@ -154,13 +126,21 @@ public class SeekBarPreference
 
         if (shouldPersist())
             persistInt(mSeekBar.getProgress() + mMin);
-        callChangeListener(Integer.valueOf(mSeekBar.getProgress() + mMin));
-
+        mValue = Integer.valueOf(mSeekBar.getProgress() + mMin);
+        callChangeListener(mValue);
+        setSummary(summary());
         ((AlertDialog) getDialog()).dismiss();
     }
 
     public void setMin(int min){
         mMin = min;
     }
-    // ------------------------------------------------------------------------------------------
+
+    void createExtraControls(LinearLayout layout) {
+    }
+
+    String summary() {
+        return mContext.getString(R.string.after) + " " + mValue + " " + mSuffix;
+    }
+
 }

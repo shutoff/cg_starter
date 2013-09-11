@@ -17,30 +17,13 @@
     <string name="clear">Очистить</string>
     <string name="clear_sum">Очистить кнопку</string>
     <string name="days">Запускать по дням</string>
-    <string-array name="days_list">
-        <item>Всегда</item>
-        <item>Рабочие дни</item>
-        <item>Выходные дни</item>
-        <item>Определенные дни недели</item>
-    </string-array>
-    <string name="weekdays">Дни недели</string>
-    <string-array name="weekdays_list">
-        <item>Понедельник</item>
-        <item>Вторник</item>
-        <item>Среда</item>
-        <item>Четверг</item>
-        <item>Пятница</item>
-        <item>Суббота</item>
-        <item>Воскресенье</item>
-    </string-array>
-    <string name="days_sum">Выберите дни для автоматического запуска</string>
     <string name="button">Настройки кнопок</string>
     <string name="button_sum">Нажмите и удерживайте кнопку для настройки</string>
     <string name="about">О программе</string>
     <string name="version">Версия</string>
     <string name="run">Поехали</string>
     <string name="auto_pause">Запуск точки</string>
-    <string name="launch_pause">Запуск CityGuide</string>
+    <string name="inactive_pause">Если ничего не выбрали</string>
     <string name="sec">сек</string>
     <string name="rotate">Поворот экрана</string>
     <string name="rotate_sum">Запретить поворот экрана при запуске CituGuide</string>
@@ -48,19 +31,12 @@
     <string name="bt_sum">Включить bluetooth при запуске CityGuide</string>
     <string name="data">Управление данными</string>
     <string name="data_sum">Включить мобильный интернет</string>
-    <string name="volume">Управление звуком</string>
-    <string name="volume_sum">Установить громкость при запуске CityGuide</string>
-    <string name="level">Громкость</string>
-    <string name="level_sum">Регулировка громкости звука</string>
+    <string name="level">Управление звуком</string>
+    <string name="no_volume">Не изменять</string>
+    <string name="set_volume">Установить громкость</string>
     <string name="carmode">Автомобильный режим</string>
     <string name="carmode_sum">Запускать приложение при включении автомобильного режима</string>
-    <string name="powermode">Зарядное устройство</string>
-    <string name="powermode_sum">Запускать приложение при подключении зарядного устройства</string>
-    <string name="powerstart">Запуск СГ от зарядного устройства</string>
-    <string name="powerstart_sum">Автоматически запускать СГ при старте от зарядного устройства
-    </string>
-    <string name="powerexit_sum">Не запускать автоматически СГ при старте от зарядного устройства
-    </string>
+    <string name="powermode">Запуск от зарядки</string>
     <string name="phone">Телефон</string>
     <string name="phone_sum">Показывать CityGuide во время разговора по телефону</string>
     <string name="control">Управление</string>
@@ -69,7 +45,6 @@
     <string name="speaker">Громкая связь</string>
     <string name="speaker_sum">Включать громкую связь</string>
     <string name="autoanswer">Автоответ</string>
-    <string name="autoanswer_sum">Автоответ на входящие звонки через 12 секунд</string>
     <string-array name="times">
         <item>не отвечать</item>
         <item>через 2 сек</item>
@@ -86,13 +61,28 @@
     <string name="gps_sum">Включить GPS</string>
     <string name="no_gps_title">Не могу включить GPS</string>
     <string name="no_gps_message">Из соображений безопасности в android 2.3+ изменять состояние GPS
-        могут только системные приложения
+        могут только системные приложения.
     </string>
     <string name="settings">Настройки</string>
     <string name="cont">Продолжить</string>
     <string name="intents">Обработка событий</string>
     <string name="intents_sum">Обработка событий для интеграции с другими приложениями</string>
-    <string name="restore_data">Восстановления состояние данных</string>
-    <string name="restore_data_sum">Восстановить состояние мобильного интернета после выхода из СГ
-    </string>
+    <string-array name="days">
+        <item>Пн</item>
+        <item>Вт</item>
+        <item>Ср</item>
+        <item>Чт</item>
+        <item>Пт</item>
+        <item>Сб</item>
+        <item>Вс</item>
+    </string-array>
+    <string name="alldays">Все дни</string>
+    <string name="workdays">Рабочие дни</string>
+    <string name="holidays">Выходные</string>
+    <string name="weekdays">Дни недели</string>
+    <string name="launch">Запустить СГ</string>
+    <string name="exit">Завершить приложение</string>
+    <string name="after">после</string>
+    <string name="newer">Никогда</string>
+    <string name="allways">Всегда</string>
 </resources>
