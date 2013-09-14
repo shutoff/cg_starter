@@ -21,6 +21,7 @@ public class TimePreference extends DialogPreference {
     private TimePicker end_picker;
 
     RadioGroup state;
+    Context mContext;
 
     public static int getHour(String time) {
         try {
@@ -46,6 +47,8 @@ public class TimePreference extends DialogPreference {
         super(ctxt, attrs);
         setPositiveButtonText(ctxt.getString(R.string.set));
         setNegativeButtonText(ctxt.getString(R.string.cancel));
+        setDefaultValue("00:00-00:00");
+        mContext = ctxt;
     }
 
     @Override
@@ -57,12 +60,20 @@ public class TimePreference extends DialogPreference {
         start_picker.setIs24HourView(true);
         end_picker.setIs24HourView(true);
         state = (RadioGroup) view.findViewById(R.id.state);
+        TimePicker.OnTimeChangedListener changeListener = new TimePicker.OnTimeChangedListener() {
+
+            @Override
+            public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
+                state.check(R.id.interval);
+            }
+        };
+        start_picker.setOnTimeChangedListener(changeListener);
+        end_picker.setOnTimeChangedListener(changeListener);
         return view;
     }
 
     @Override
     protected void onBindDialogView(View v) {
-        super.onBindDialogView(v);
         start_picker.setCurrentHour(startHour);
         start_picker.setCurrentMinute(startMinute);
         end_picker.setCurrentHour(endHour);
@@ -70,10 +81,11 @@ public class TimePreference extends DialogPreference {
         if ((startHour == 0) && (startMinute == 0) && (endHour == 0) && (endMinute == 0)) {
             state.check(R.id.never);
         } else if ((startHour == 0) && (startMinute == 0) && (endHour == 24) && (endMinute == 0)) {
-            state.check(R.id.allways);
+            state.check(R.id.always);
         } else {
             state.check(R.id.interval);
         }
+        super.onBindDialogView(v);
     }
 
     @Override
@@ -82,8 +94,18 @@ public class TimePreference extends DialogPreference {
         if (positiveResult) {
             String res = "";
             switch (state.getCheckedRadioButtonId()) {
-                case R.id.allways:
+                case R.id.never:
+                    startHour = 0;
+                    startMinute = 0;
+                    endHour = 0;
+                    endMinute = 0;
+                    break;
+                case R.id.always:
                     res = "00:00-24:00";
+                    startHour = 0;
+                    startMinute = 0;
+                    endHour = 24;
+                    endMinute = 0;
                     break;
                 case R.id.interval:
                     startHour = start_picker.getCurrentHour();
@@ -95,6 +117,7 @@ public class TimePreference extends DialogPreference {
             }
             if (callChangeListener(res))
                 persistString(res);
+            setSummary(summary(res));
         }
     }
 
@@ -119,14 +142,26 @@ public class TimePreference extends DialogPreference {
 
         String[] time = times.split("-");
 
-        if (time[0] != null) {
+        if (time.length > 0) {
             startHour = getHour(time[0]);
             startMinute = getMinute(time[0]);
         }
 
-        if (time[1] != null) {
+        if (time.length > 1) {
             endHour = getHour(time[1]);
             endMinute = getMinute(time[1]);
         }
+
+        setSummary(summary(times));
+    }
+
+    String summary(String value) {
+        if (value.equals(""))
+            value = "00:00-00:00";
+        if (value.equals("00:00-00:00"))
+            return mContext.getString(R.string.never);
+        if (value.equals("00:00-24:00"))
+            return mContext.getString(R.string.always);
+        return mContext.getString(R.string.interval) + " " + value;
     }
 }

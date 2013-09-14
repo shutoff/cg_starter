@@ -11,14 +11,14 @@
         android:layout_height="wrap_content">
 
         <RadioButton
-            android:id="@+id/newer"
-            android:text="@string/newer"
+            android:id="@+id/never"
+            android:text="@string/never"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <RadioButton
-            android:id="@+id/allways"
-            android:text="@string/allways"
+            android:id="@+id/always"
+            android:text="@string/always"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 

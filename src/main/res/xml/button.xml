@@ -17,15 +17,9 @@
 
     <PreferenceCategory android:title="@string/auto">
 
-        <CheckBoxPreference
-            android:key="auto"
-            android:title="@string/auto"
-            android:summary="@string/auto_sum" />
-
         <ru.shutoff.cgstarter.TimePreference
             android:key="period"
-            android:title="@string/interval"
-            android:summary="@string/interval_sum" />
+            android:title="@string/auto" />
 
         <ru.shutoff.cgstarter.DaysPreference
             android:key="days"

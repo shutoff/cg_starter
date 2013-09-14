@@ -3,7 +3,6 @@ package ru.shutoff.cgstarter;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -14,7 +13,6 @@ public class SetupButton extends PreferenceActivity {
 
     ListPreference itemsPref;
     EditTextPreference namePref;
-    CheckBoxPreference autoPref;
     TimePreference intervalPref;
     DaysPreference daysPref;
 
@@ -46,11 +44,9 @@ public class SetupButton extends PreferenceActivity {
         if (point.days == 0)
             point.interval = "";
         if (point.interval.equals("")) {
-            ed.putBoolean("auto", false);
             ed.putString("period", "00:00-00:00");
             ed.putInt("days", 0);
         } else {
-            ed.putBoolean("auto", true);
             ed.putString("period", point.interval);
             ed.putInt("days", point.days);
         }
@@ -61,7 +57,6 @@ public class SetupButton extends PreferenceActivity {
 
         itemsPref = (ListPreference) findPreference("item");
         namePref = (EditTextPreference) findPreference("name");
-        autoPref = (CheckBoxPreference) findPreference("auto");
         intervalPref = (TimePreference) findPreference("period");
         daysPref = (DaysPreference) findPreference("days");
 
@@ -120,23 +115,8 @@ public class SetupButton extends PreferenceActivity {
                     String v = (String) newValue;
                     point.name = v;
                     namePref.setSummary(v);
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        autoPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof Boolean) {
-                    Boolean v = (Boolean) newValue;
-                    SharedPreferences.Editor ed = preferences.edit();
-                    ed.putBoolean("auto", v);
-                    ed.commit();
                     if (point.days == 0)
-                        point.days = State.WORKDAYS | State.HOLIDAYS;
-                    setupInterval();
+                        point.days = State.ALLDAYS;
                     return true;
                 }
                 return false;
@@ -148,8 +128,14 @@ public class SetupButton extends PreferenceActivity {
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 if (newValue instanceof String) {
                     String v = (String) newValue;
+                    if (v.equals("") || v.equals("00:00-00:00")) {
+                        daysPref.setEnabled(false);
+                    } else {
+                        daysPref.setEnabled(true);
+                    }
                     point.interval = v;
-                    intervalPref.setSummary(v);
+                    if (point.days == 0)
+                        point.days = State.ALLDAYS;
                     return true;
                 }
                 return false;
@@ -188,25 +174,18 @@ public class SetupButton extends PreferenceActivity {
 
     void setupInterval() {
         if (preferences.getString("name", "").equals("")) {
-            autoPref.setEnabled(false);
-            intervalPref.setEnabled(false);
-            intervalPref.setSummary(getString(R.string.interval_sum));
-            daysPref.setEnabled(false);
-            return;
-        }
-        autoPref.setEnabled(true);
-        if (!preferences.getBoolean("auto", false)) {
-            point.interval = "";
             intervalPref.setEnabled(false);
             intervalPref.setSummary(getString(R.string.interval_sum));
             daysPref.setEnabled(false);
             return;
         }
         intervalPref.setEnabled(true);
-        daysPref.setEnabled(true);
+        String v = point.interval;
+        if (v.equals("") || v.equals("00:00-00:00")) {
+            daysPref.setEnabled(false);
+        } else {
+            daysPref.setEnabled(true);
+        }
         daysPref.setSummary(DaysPreference.getSummary(this, preferences.getInt("days", 0)));
-        if (point.interval.equals(""))
-            point.interval = "00:00-00:00";
-        intervalPref.setSummary(point.interval);
     }
 }

@@ -83,6 +83,6 @@
     <string name="launch">Запустить СГ</string>
     <string name="exit">Завершить приложение</string>
     <string name="after">после</string>
-    <string name="newer">Никогда</string>
-    <string name="allways">Всегда</string>
+    <string name="never">Никогда</string>
+    <string name="always">Всегда</string>
 </resources>

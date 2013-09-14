@@ -88,6 +88,6 @@
     <string name="launch">Launch CG</string>
     <string name="exit">Exit</string>
     <string name="after">after</string>
-    <string name="newer">Newer</string>
-    <string name="allways">Allways</string>
+    <string name="never">Newer</string>
+    <string name="always">Always</string>
 </resources>
