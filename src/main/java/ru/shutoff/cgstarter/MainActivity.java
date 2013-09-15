@@ -409,6 +409,7 @@ public class MainActivity
                 if ((bt != null) && !bt.isEnabled()) {
                     bt.enable();
                     ed.putBoolean(State.SAVE_BT, true);
+                    ed.remove(State.BT_CONNECTED);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();

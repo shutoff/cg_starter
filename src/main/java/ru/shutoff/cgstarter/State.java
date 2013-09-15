@@ -35,6 +35,7 @@ public class State {
     static final String POWER_TIME = "powertime";
     static final String ABOUT = "about";
     static final String BT = "bt";
+    static final String BT_CONNECTED = "bt_connected";
     static final String SAVE_BT = "save_bt";
     static final String VOLUME = "volume";
     static final String LEVEL = "level";

@@ -1,5 +1,6 @@
 package ru.shutoff.cgstarter;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +19,24 @@ public class CarMonitor extends BroadcastReceiver {
         String action = intent.getAction();
         if (action == null)
             return;
+        if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
+            String state = intent.getStringExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE);
+            if (state == null)
+                return;
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            SharedPreferences.Editor ed = preferences.edit();
+            if (state.equals(BluetoothAdapter.STATE_CONNECTED) ||
+                    state.equals(BluetoothAdapter.STATE_CONNECTING)) {
+                ed.putBoolean(State.BT_CONNECTED, true);
+            } else {
+                ed.remove(State.BT_CONNECTED);
+            }
+            ed.commit();
+            if (OnExitService.isRunCG(context))
+                return;
+            OnExitService.turnOffBT(context);
+            return;
+        }
         if (action.equals(Intent.ACTION_DOCK_EVENT)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             if (preferences.getBoolean(State.CAR_MODE, false)) {

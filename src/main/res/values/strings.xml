@@ -26,7 +26,7 @@
     <string name="inactive_pause">If not any buttons pressed</string>
     <string name="sec">sec</string>
     <string name="rotate">Screen rotate</string>
-    <string name="rotate_sum">Disable screen rotate on run CituGuide</string>
+    <string name="rotate_sum">Disable screen rotate on run CityGuide</string>
     <string name="bt">Bluetooth control</string>
     <string name="bt_sum">Turn ON bluetooth</string>
     <string name="data">Mobile data control</string>
@@ -88,6 +88,6 @@
     <string name="launch">Launch CG</string>
     <string name="exit">Exit</string>
     <string name="after">after</string>
-    <string name="never">Newer</string>
+    <string name="never">Never</string>
     <string name="always">Always</string>
 </resources>

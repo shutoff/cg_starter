@@ -96,17 +96,7 @@ public class OnExitService extends Service {
                     }
                     ed.remove(State.GPS_SAVE);
                 }
-                boolean bt = preferences.getBoolean(State.SAVE_BT, false);
-                if (bt) {
-                    try {
-                        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
-                        if (btAdapter != null)
-                            btAdapter.disable();
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                    ed.remove(State.SAVE_BT);
-                }
+                turnOffBT(this);
                 int channel = preferences.getInt(State.SAVE_CHANNEL, 0);
                 if (channel > 0) {
                     int level = preferences.getInt(State.SAVE_LEVEL, 0);
@@ -176,6 +166,29 @@ public class OnExitService extends Service {
 
         }
         return START_STICKY;
+    }
+
+    static void turnOffBT(Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean bt = preferences.getBoolean(State.SAVE_BT, false);
+        if (!bt)
+            return;
+        boolean bt_connected = preferences.getBoolean(State.BT_CONNECTED, false);
+        if (bt_connected)
+            return;
+        BluetoothAdapter btAdapter;
+        try {
+            btAdapter = BluetoothAdapter.getDefaultAdapter();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return;
+        }
+        if (btAdapter == null)
+            return;
+        btAdapter.disable();
+        SharedPreferences.Editor ed = preferences.edit();
+        ed.remove(State.SAVE_BT);
+        ed.commit();
     }
 
     static int prev_state;

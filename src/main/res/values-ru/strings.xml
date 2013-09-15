@@ -26,7 +26,7 @@
     <string name="inactive_pause">Если ничего не выбрали</string>
     <string name="sec">сек</string>
     <string name="rotate">Поворот экрана</string>
-    <string name="rotate_sum">Запретить поворот экрана при запуске CituGuide</string>
+    <string name="rotate_sum">Запретить поворот экрана при запуске CityGuide</string>
     <string name="bt">Управление bluetooth</string>
     <string name="bt_sum">Включить bluetooth при запуске CityGuide</string>
     <string name="data">Управление данными</string>
