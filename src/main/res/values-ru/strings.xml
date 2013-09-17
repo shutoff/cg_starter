@@ -52,10 +52,10 @@
         <item>через 15 сек</item>
     </string-array>
     <string name="cg_start">Запуск с маршрутом</string>
-    <string name="cg_start_sum">Для запуска СГ с предыдущим маршрутом нажмите кнопку с иконкой
+    <string name="cg_start_sum">Для запуска СГ с предыдущим маршрутом нажмите кнопку Продолжить маршрут
     </string>
     <string name="no_route">Запуск без маршрута</string>
-    <string name="no_route_sum">Для запуска СГ без маршрута нажмите кнопку Поехали</string>
+    <string name="no_route_sum">Для запуска СГ без маршрута нажмите кнопку с иконкой</string>
     <string name="gps">GPS</string>
     <string name="gps_sum">Включить GPS</string>
     <string name="no_gps_title">Не могу включить GPS</string>

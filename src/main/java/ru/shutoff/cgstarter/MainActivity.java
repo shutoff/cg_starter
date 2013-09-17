@@ -86,6 +86,8 @@ public class MainActivity
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
+        State.appendLog("create");
+
         buttons = new Button[8];
         buttons[0] = (Button) findViewById(R.id.btn1);
         buttons[1] = (Button) findViewById(R.id.btn2);

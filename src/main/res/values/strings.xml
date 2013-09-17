@@ -58,9 +58,9 @@
         <item>after 15 sec</item>
     </string-array>
     <string name="cg_start">Start with previous route</string>
-    <string name="cg_start_sum">For launch CG with previous route press button with CG icon</string>
+    <string name="cg_start_sum">For launch CG with previous route press button Continue route</string>
     <string name="no_route">Start without route</string>
-    <string name="no_route_sum">For launch CG without route press button Start</string>
+    <string name="no_route_sum">For launch CG without route press button with CG icon</string>
     <string name="gps">GPS</string>
     <string name="gps_sum">Enable GPS</string>
     <string name="no_gps_title">Can\'t control GPS</string>
