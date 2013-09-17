@@ -206,12 +206,15 @@ public class OnExitService extends Service {
             // ignore
         }
         if (phone || speaker || (autoanswer > 0)) {
+            State.appendLog("Set phone listener");
             phoneListener = new PhoneStateListener() {
                 @Override
                 public void onCallStateChanged(int state, String incomingNumber) {
                     super.onCallStateChanged(state, incomingNumber);
+                    State.appendLog("state=" + state + ", prev=" + prev_state);
                     switch (state) {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
+                            State.appendLog("offhook");
                             if (piAnswer != null)
                                 alarmMgr.cancel(piAnswer);
                             if (phone) {
@@ -219,6 +222,7 @@ public class OnExitService extends Service {
                                     cg_run = isRunCG(getApplicationContext());
                                 if (cg_run && !isActiveCG(getApplicationContext())) {
                                     try {
+                                        State.appendLog("launch");
                                         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
                                         if (intent != null)
                                             startActivity(intent);
@@ -251,6 +255,7 @@ public class OnExitService extends Service {
                             if (phone) {
                                 if (isRunCG(getApplicationContext()) && !isActiveCG(getApplicationContext())) {
                                     try {
+                                        State.appendLog("Launch");
                                         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
                                         if (intent != null)
                                             startActivity(intent);

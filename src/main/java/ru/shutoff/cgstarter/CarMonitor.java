@@ -1,5 +1,6 @@
 package ru.shutoff.cgstarter;
 
+import android.app.UiModeManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -19,6 +20,7 @@ public class CarMonitor extends BroadcastReceiver {
         String action = intent.getAction();
         if (action == null)
             return;
+        State.appendLog("action " + action);
         if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
             String state = intent.getStringExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE);
             if (state == null)
@@ -37,26 +39,18 @@ public class CarMonitor extends BroadcastReceiver {
             OnExitService.turnOffBT(context);
             return;
         }
+        if (action.equals(UiModeManager.ACTION_ENTER_CAR_MODE)) {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            if (preferences.getBoolean(State.CAR_MODE, false)) {
+                setCarMode(context, true);
+                abortBroadcast();
+            }
+        }
         if (action.equals(Intent.ACTION_DOCK_EVENT)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             if (preferences.getBoolean(State.CAR_MODE, false)) {
                 int dockState = intent.getIntExtra(Intent.EXTRA_DOCK_STATE, -1);
-                boolean newMode = (dockState == Intent.EXTRA_DOCK_STATE_CAR);
-                boolean curMode = preferences.getBoolean(State.CAR_STATE, false);
-                if (curMode != newMode) {
-                    SharedPreferences.Editor ed = preferences.edit();
-                    ed.putBoolean(State.CAR_STATE, newMode);
-                    ed.commit();
-                    if (newMode && !OnExitService.isRunCG(context)) {
-                        Intent run = new Intent(context, MainActivity.class);
-                        run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(run);
-                        ed.putBoolean(State.CAR_START_CG, true);
-                        ed.commit();
-                    }
-                }
-            } else if (preferences.getBoolean(State.CAR_START_CG, false)) {
-                OnExitService.killCG(context);
+                setCarMode(context, (dockState == Intent.EXTRA_DOCK_STATE_CAR));
             }
         }
         if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
@@ -109,6 +103,27 @@ public class CarMonitor extends BroadcastReceiver {
             Intent service = new Intent(context, OnExitService.class);
             service.setAction(OnExitService.START);
             context.startService(service);
+        }
+    }
+
+    void setCarMode(Context context, boolean newMode) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean curMode = preferences.getBoolean(State.CAR_STATE, false);
+        if (curMode != newMode) {
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.putBoolean(State.CAR_STATE, newMode);
+            ed.commit();
+            if (newMode) {
+                if (!OnExitService.isRunCG(context)) {
+                    Intent run = new Intent(context, MainActivity.class);
+                    run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(run);
+                    ed.putBoolean(State.CAR_START_CG, true);
+                    ed.commit();
+                }
+            } else if (preferences.getBoolean(State.CAR_START_CG, false)) {
+                OnExitService.killCG(context);
+            }
         }
     }
 }
