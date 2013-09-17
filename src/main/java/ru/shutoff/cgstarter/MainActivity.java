@@ -31,6 +31,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -298,11 +299,11 @@ public class MainActivity
             return;
         }
         if (activeButton == findViewById(R.id.run)) {
-            removeRoute(this);
             launch();
             return;
         }
         if (activeButton == findViewById(R.id.cg)) {
+            removeRoute(this);
             launch();
             return;
         }
@@ -318,12 +319,47 @@ public class MainActivity
         State.Point p = points[i];
         if (p.name.equals(""))
             return;
-        createRoute(this, p.lat + "|" + p.lng);
+        createRoute(this, p.lat + "|" + p.lng, p.points);
         launch();
     }
 
-    static void createRoute(Context context, String route) {
+    static String routes() {
         try {
+            File routes_dat = Environment.getExternalStorageDirectory();
+            routes_dat = new File(routes_dat, "CityGuide/routes.dat");
+            BufferedReader reader = new BufferedReader(new FileReader(routes_dat));
+            String line = reader.readLine();
+            if (line == null)
+                return "";
+            boolean in_current = false;
+            String res = "";
+            for (; ; ) {
+                line = reader.readLine();
+                if (line == null)
+                    break;
+                if (in_current) {
+                    if ((line.length() > 0) && line.substring(0, 1).equals("#"))
+                        in_current = false;
+                } else {
+                    if ((line.length() > 11) && line.substring(0, 11).equals("#[CURRENT]|"))
+                        in_current = true;
+                }
+                if (in_current)
+                    continue;
+                res += "\n";
+                res += line;
+            }
+            return res;
+
+        } catch (IOException e) {
+            // ignore
+        }
+        return "";
+    }
+
+    static void createRoute(Context context, String route, String points_str) {
+        try {
+            String tail = routes();
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
             if (!routes_dat.exists())
@@ -332,8 +368,17 @@ public class MainActivity
             writer.append("1|router|65001\n");
             writer.append("#[CURRENT]|1|1\n");
             writer.append("Start|0|0\n");
+            if (!points_str.equals("")) {
+                String[] points = points_str.split(";");
+                for (String point : points) {
+                    writer.append("Point|");
+                    writer.append(point);
+                    writer.append("\n");
+                }
+            }
             writer.append("Finish|");
             writer.append(route);
+            writer.append(tail);
             writer.close();
         } catch (IOException e) {
             Toast toast = Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG);
@@ -344,6 +389,7 @@ public class MainActivity
 
     static void removeRoute(Context context) {
         try {
+            String tail = routes();
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
             if (!routes_dat.exists())
@@ -351,6 +397,7 @@ public class MainActivity
             BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
             writer.append("1|router|65001\n");
             writer.append("#[CURRENT]|0|0\n");
+            writer.append(tail);
             writer.close();
         } catch (IOException e) {
             Toast toast = Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG);

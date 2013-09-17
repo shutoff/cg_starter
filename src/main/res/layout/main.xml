@@ -133,7 +133,7 @@
 
         <Button
             android:id="@+id/run"
-            android:text="@string/run"
+            android:text="@string/cont_route"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"

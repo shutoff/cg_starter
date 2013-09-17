@@ -7,12 +7,8 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.provider.Settings;
-
-import java.util.Calendar;
-
-/*
 import android.os.Environment;
+import android.provider.Settings;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -20,8 +16,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Calendar;
 import java.util.Date;
-*/
 
 public class State {
 
@@ -62,6 +58,7 @@ public class State {
         String lat;
         String lng;
         String interval;
+        String points;
         int days;
     }
 
@@ -71,6 +68,7 @@ public class State {
     static final String LONGITUDE = "Longitude";
     static final String INTERVAL = "Interval";
     static final String DAYS = "Days";
+    static final String POINTS = "Points";
 
     static final int WORKDAYS = 1;
     static final int HOLIDAYS = 2;
@@ -90,6 +88,7 @@ public class State {
                 p.lng = preferences.getString(LONGITUDE + i, "");
                 p.interval = preferences.getString(INTERVAL + i, "");
                 p.days = preferences.getInt(DAYS + i, 0);
+                p.points = preferences.getString(POINTS + i, "");
                 if (p.lat.equals("") || p.lng.equals("")) {
                     p.name = "";
                     p.original = "";
@@ -97,6 +96,7 @@ public class State {
                     p.lng = "";
                     p.interval = "";
                     p.days = 0;
+                    p.points = "";
                 }
                 if (!p.name.equals(""))
                     is_init = true;
@@ -112,6 +112,7 @@ public class State {
                     p.original = from[i].name;
                     p.lat = from[i].lat + "";
                     p.lng = from[i].lng + "";
+                    p.points = from[i].points;
                 }
                 save(preferences);
             }
@@ -130,6 +131,7 @@ public class State {
                 ed.remove(LONGITUDE + i);
                 ed.remove(INTERVAL + i);
                 ed.remove(DAYS + i);
+                ed.remove(POINTS + i);
                 continue;
             }
             ed.putString(NAME + i, p.name);
@@ -137,6 +139,7 @@ public class State {
             ed.putString(LATITUDE + i, p.lat);
             ed.putString(LONGITUDE + i, p.lng);
             ed.putString(INTERVAL + i, p.interval);
+            ed.putString(POINTS + i, p.points);
             ed.putInt(DAYS + i, p.days);
         }
         ed.commit();
@@ -216,7 +219,6 @@ public class State {
         return false;
     }
 
-/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -246,5 +248,5 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
-*/
+
 }

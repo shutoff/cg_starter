@@ -19,6 +19,7 @@ public class CarMonitor extends BroadcastReceiver {
         String action = intent.getAction();
         if (action == null)
             return;
+        State.appendLog(action);
         if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
             String state = intent.getStringExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE);
             if (state == null)
@@ -73,8 +74,11 @@ public class CarMonitor extends BroadcastReceiver {
         if (action.equals(START)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String route = intent.getStringExtra("ROUTE");
+            String route_points = intent.getStringExtra("POINTS");
             if (route == null)
                 route = "";
+            if (route_points == null)
+                route_points = "";
             int n_route = intent.getIntExtra("ROUTE", 0);
             if (n_route > 0) {
                 State.Point[] points = State.get(preferences);
@@ -84,12 +88,13 @@ public class CarMonitor extends BroadcastReceiver {
                 if ((p.lat.equals("")) && (p.lng.equals("")))
                     return;
                 route = p.lat + "|" + p.lng;
+                route_points = p.points;
             } else if (n_route < 0) {
                 MainActivity.removeRoute(context);
                 route = "";
             }
             if (!route.equals(""))
-                MainActivity.createRoute(context, route);
+                MainActivity.createRoute(context, route, route_points);
             if (!MainActivity.setState(context, new State.OnBadGPS() {
                 @Override
                 public void gps_message(Context context) {

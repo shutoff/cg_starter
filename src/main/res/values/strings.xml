@@ -21,7 +21,6 @@
     <string name="button_sum">For setup button press and hold it</string>
     <string name="about">About</string>
     <string name="version">Version</string>
-    <string name="run">Start</string>
     <string name="auto_pause">Autostart pause</string>
     <string name="inactive_pause">If not any buttons pressed</string>
     <string name="sec">sec</string>
@@ -90,4 +89,5 @@
     <string name="after">after</string>
     <string name="never">Never</string>
     <string name="always">Always</string>
+    <string name="cont_route">Continue route</string>
 </resources>

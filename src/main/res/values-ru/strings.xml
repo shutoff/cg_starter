@@ -21,7 +21,6 @@
     <string name="button_sum">Нажмите и удерживайте кнопку для настройки</string>
     <string name="about">О программе</string>
     <string name="version">Версия</string>
-    <string name="run">Поехали</string>
     <string name="auto_pause">Запуск точки</string>
     <string name="inactive_pause">Если ничего не выбрали</string>
     <string name="sec">сек</string>
@@ -85,4 +84,5 @@
     <string name="after">после</string>
     <string name="never">Никогда</string>
     <string name="always">Всегда</string>
+    <string name="cont_route">Продолжить маршрут</string>
 </resources>

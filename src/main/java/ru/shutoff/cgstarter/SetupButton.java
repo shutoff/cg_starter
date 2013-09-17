@@ -86,6 +86,7 @@ public class SetupButton extends PreferenceActivity {
                             point.lng = p.lng + "";
                             point.original = v;
                             point.name = v;
+                            point.points = p.points;
                             SharedPreferences.Editor ed = preferences.edit();
                             ed.putString("name", v);
                             ed.commit();

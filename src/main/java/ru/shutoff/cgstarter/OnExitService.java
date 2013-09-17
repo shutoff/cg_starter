@@ -197,6 +197,7 @@ public class OnExitService extends Service {
     void setPhoneListener() {
         if (phoneListener != null)
             return;
+        State.appendLog("set phone listener");
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         phone = preferences.getBoolean(State.PHONE, false);
         speaker = preferences.getBoolean(State.SPEAKER, false);
@@ -212,12 +213,14 @@ public class OnExitService extends Service {
                     super.onCallStateChanged(state, incomingNumber);
                     switch (state) {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
+                            State.appendLog("Call state offhook " + prev_state);
                             if (piAnswer != null)
                                 alarmMgr.cancel(piAnswer);
                             if (phone) {
                                 if (prev_state != TelephonyManager.CALL_STATE_RINGING)
                                     cg_run = isRunCG(getApplicationContext());
                                 if (cg_run && !isActiveCG(getApplicationContext())) {
+                                    State.appendLog("launch CG");
                                     try {
                                         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
                                         if (intent != null)
@@ -235,6 +238,7 @@ public class OnExitService extends Service {
                             break;
                         case TelephonyManager.CALL_STATE_RINGING:
                             cg_run = isRunCG(getApplicationContext());
+                            State.appendLog("call state rinigng " + cg_run);
                             if (autoanswer > 0) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 if (speaker || audio.isBluetoothScoOn()) {
@@ -246,6 +250,7 @@ public class OnExitService extends Service {
                             }
                             break;
                         case TelephonyManager.CALL_STATE_IDLE:
+                            State.appendLog("call state idle");
                             if (piAnswer != null)
                                 alarmMgr.cancel(piAnswer);
                             if (phone) {
