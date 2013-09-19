@@ -11,6 +11,7 @@
     <string name="set">Set</string>
     <string name="cancel">Cancel</string>
     <string name="interval">Interval</string>
+    <string name="interval2">Second interval</string>
     <string name="interval_sum">Select interval for autostart</string>
     <string name="item_sum">Select point</string>
     <string name="name_sum">Input point name</string>

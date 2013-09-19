@@ -11,6 +11,7 @@
     <string name="set">Установить</string>
     <string name="cancel">Отменить</string>
     <string name="interval">Интервал</string>
+    <string name="interval2">Второй интервал</string>
     <string name="interval_sum">Укажите интервал для автоматического запуска</string>
     <string name="item_sum">Выберите точку из избранного</string>
     <string name="name_sum">Введите имя точки</string>

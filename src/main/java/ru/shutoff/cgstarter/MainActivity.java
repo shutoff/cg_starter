@@ -13,6 +13,7 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
@@ -39,6 +40,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.Calendar;
+import java.util.Date;
 
 public class MainActivity
         extends Activity
@@ -47,14 +49,15 @@ public class MainActivity
     Button[] buttons;
 
     CountDownTimer timer;
-    CountDownTimer autostart;
-    CountDownTimer launchTimer;
+    CountDownTimer autostart_timer;
+    CountDownTimer launch_timer;
 
     State.Point[] points;
 
     View activeButton;
     boolean set_state;
     boolean do_launch;
+    double start;
 
     SharedPreferences preferences;
 
@@ -86,7 +89,9 @@ public class MainActivity
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
-        State.appendLog("create");
+        double work_time = 0;
+        if (savedInstanceState != null)
+            work_time = savedInstanceState.getDouble(State.START, -1);
 
         buttons = new Button[8];
         buttons[0] = (Button) findViewById(R.id.btn1);
@@ -129,33 +134,37 @@ public class MainActivity
         int days = (is_holiday ? State.HOLIDAYS : State.WORKDAYS);
         days |= (1 << (now_wday + 2));
 
-        autostart = new CountDownTimer(auto_pause, auto_pause) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-            }
+        if (work_time >= 0) {
+            auto_pause -= work_time;
+            launch_pause -= work_time;
 
-            @Override
-            public void onFinish() {
-                action();
-                activeButton = null;
-            }
-        };
-        launchTimer = new CountDownTimer(launch_pause, launch_pause) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-
-            }
-
-            @Override
-            public void onFinish() {
-                if (preferences.getBoolean(State.INACTIVE_LAUNCH, false)) {
-                    launch();
-                } else {
-                    finish();
+            autostart_timer = new CountDownTimer(auto_pause, auto_pause) {
+                @Override
+                public void onTick(long millisUntilFinished) {
                 }
-            }
-        };
-        launchTimer.start();
+
+                @Override
+                public void onFinish() {
+                    action();
+                    activeButton = null;
+                }
+            };
+            launch_timer = new CountDownTimer(launch_pause, launch_pause) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+                }
+
+                @Override
+                public void onFinish() {
+                    if (preferences.getBoolean(State.INACTIVE_LAUNCH, false)) {
+                        launch();
+                    } else {
+                        finish();
+                    }
+                }
+            };
+            launch_timer.start();
+        }
 
         for (int i = 0; i < 8; i++) {
             buttons[i].setText(points[i].name);
@@ -167,10 +176,12 @@ public class MainActivity
                 continue;
             if ((days & p.days) == 0)
                 continue;
+            if (autostart_timer == null)
+                continue;
             if (State.inInterval(p.interval)) {
                 activeButton = buttons[i];
                 buttons[i].setBackgroundResource(R.drawable.auto);
-                autostart.start();
+                autostart_timer.start();
             }
         }
 
@@ -208,6 +219,11 @@ public class MainActivity
 
         if (preferences.getBoolean(State.CAR_MODE, false) && preferences.getBoolean(State.CAR_STATE, false))
             setState();
+
+        if (launch_timer != null) {
+            Date now = new Date();
+            start = now.getTime() - work_time;
+        }
     }
 
     @Override
@@ -224,8 +240,7 @@ public class MainActivity
     protected void onStop() {
         super.onStop();
         timer.cancel();
-        autostart.cancel();
-        launchTimer.cancel();
+        stopTimers();
     }
 
     @Override
@@ -238,9 +253,10 @@ public class MainActivity
                 }
                 activeButton = v;
                 v.setBackgroundResource(R.drawable.pressed);
-                autostart.cancel();
+                stopTimers();
                 timer.cancel();
                 timer.start();
+                start = 0;
                 return true;
             case MotionEvent.ACTION_UP:
                 if (activeButton != null)
@@ -291,6 +307,29 @@ public class MainActivity
             return true;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        double work_time = -1;
+        if (start > 0) {
+            Date now = new Date();
+            work_time = now.getTime() - start;
+        }
+        outState.putDouble(State.START, work_time);
+    }
+
+    void stopTimers() {
+        start = 0;
+        if (autostart_timer != null) {
+            autostart_timer.cancel();
+            autostart_timer = null;
+        }
+        if (launch_timer != null) {
+            launch_timer.cancel();
+            launch_timer = null;
+        }
     }
 
     void action() {
@@ -417,6 +456,35 @@ public class MainActivity
         set_state = true;
     }
 
+    static class TestDataTask extends AsyncTask<Context, Void, Void> {
+        @Override
+        protected Void doInBackground(Context... params) {
+            try {
+                Thread.sleep(1500);
+                ConnectivityManager conman = (ConnectivityManager) params[0].getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo networkInfo = conman.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+                if ((networkInfo == null) || !networkInfo.isConnected()) {
+                    setAirplaneMode(params[0], true);
+                    setAirplaneMode(params[1], false);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            return null;
+        }
+    }
+
+    ;
+
+    static void setAirplaneMode(Context context, boolean state) {
+        Settings.System.putInt(
+                context.getContentResolver(),
+                Settings.System.AIRPLANE_MODE_ON, state ? 0 : 1);
+        Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        intent.putExtra("state", !state);
+        context.sendBroadcast(intent);
+    }
+
     static boolean setState(Context context, State.OnBadGPS badGPS) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor ed = preferences.edit();
@@ -501,6 +569,8 @@ public class MainActivity
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
+            TestDataTask testDataTask = new TestDataTask();
+            testDataTask.execute(context);
 
         }
 
@@ -561,8 +631,7 @@ public class MainActivity
 
     void launch() {
         timer.cancel();
-        autostart.cancel();
-        launchTimer.cancel();
+        stopTimers();
         setState();
         if (!set_state) {
             do_launch = true;
@@ -583,9 +652,7 @@ public class MainActivity
 
     void setup() {
         timer.cancel();
-        autostart.cancel();
-        launchTimer.cancel();
-
+        stopTimers();
         int i;
         for (i = 0; i < 8; i++) {
             if (buttons[i] == activeButton)
@@ -601,9 +668,7 @@ public class MainActivity
 
     void setup_app() {
         timer.cancel();
-        autostart.cancel();
-        launchTimer.cancel();
-
+        stopTimers();
         Intent intent = new Intent(this, Setup.class);
         startActivity(intent);
     }

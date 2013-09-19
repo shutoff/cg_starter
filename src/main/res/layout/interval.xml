@@ -28,6 +28,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <RadioButton
+            android:id="@+id/interval2"
+            android:text="@string/interval2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
     </RadioGroup>
 
     <LinearLayout
@@ -35,19 +41,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-    <TimePicker
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="wrap_content"
-        android:id="@+id/start"
-        android:layout_gravity="center" />
+        <TimePicker
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/start"
+            android:layout_gravity="center" />
 
-    <TimePicker
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="wrap_content"
-        android:id="@+id/end"
-        android:layout_gravity="center" />
+        <TimePicker
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/end"
+            android:layout_gravity="center" />
 
     </LinearLayout>
 

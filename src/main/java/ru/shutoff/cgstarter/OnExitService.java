@@ -30,11 +30,15 @@ public class OnExitService extends Service {
 
     static final String START = "Start";
     static final String TIMER = "Timer";
+    static final String TIMER_AFTER_CALL = "TimerAfterCall";
     static final String ANSWER = "Answer";
+
+    static final int AFTER_CALL_PAUSE = 2000;
 
     AlarmManager alarmMgr;
     PendingIntent pi;
     PendingIntent piAnswer;
+    PendingIntent piAfterCall;
 
     PhoneStateListener phoneListener;
     TelephonyManager tm;
@@ -72,6 +76,19 @@ public class OnExitService extends Service {
         if (action.equals(START)) {
             alarmMgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + TIMEOUT, TIMEOUT, pi);
             setPhoneListener();
+            return START_STICKY;
+        }
+        if (action.equals(TIMER_AFTER_CALL)) {
+            stopAfterCall();
+            if (isRunCG(getApplicationContext()) && !isActiveCG(getApplicationContext())) {
+                try {
+                    Intent launch = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                    if (launch != null)
+                        startActivity(launch);
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
             return START_STICKY;
         }
         if (action.equals(TIMER)) {
@@ -141,6 +158,10 @@ public class OnExitService extends Service {
             return START_STICKY;
         }
         if (action.equals(ANSWER)) {
+            if (piAnswer != null) {
+                alarmMgr.cancel(piAnswer);
+                piAnswer = null;
+            }
             try {
                 TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
                 if (tm.getCallState() != TelephonyManager.CALL_STATE_RINGING)
@@ -194,10 +215,23 @@ public class OnExitService extends Service {
     static int prev_state;
     static boolean cg_run;
 
+    void stopAutoAnswer() {
+        if (piAnswer != null) {
+            alarmMgr.cancel(piAnswer);
+            piAnswer = null;
+        }
+    }
+
+    void stopAfterCall() {
+        if (piAfterCall != null) {
+            alarmMgr.cancel(piAfterCall);
+            piAfterCall = null;
+        }
+    }
+
     void setPhoneListener() {
         if (phoneListener != null)
             return;
-        State.appendLog("set phone listener");
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         phone = preferences.getBoolean(State.PHONE, false);
         speaker = preferences.getBoolean(State.SPEAKER, false);
@@ -213,14 +247,12 @@ public class OnExitService extends Service {
                     super.onCallStateChanged(state, incomingNumber);
                     switch (state) {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
-                            State.appendLog("Call state offhook " + prev_state);
-                            if (piAnswer != null)
-                                alarmMgr.cancel(piAnswer);
+                            stopAutoAnswer();
+                            stopAfterCall();
                             if (phone) {
                                 if (prev_state != TelephonyManager.CALL_STATE_RINGING)
                                     cg_run = isRunCG(getApplicationContext());
                                 if (cg_run && !isActiveCG(getApplicationContext())) {
-                                    State.appendLog("launch CG");
                                     try {
                                         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
                                         if (intent != null)
@@ -237,8 +269,8 @@ public class OnExitService extends Service {
                             }
                             break;
                         case TelephonyManager.CALL_STATE_RINGING:
+                            stopAfterCall();
                             cg_run = isRunCG(getApplicationContext());
-                            State.appendLog("call state rinigng " + cg_run);
                             if (autoanswer > 0) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 if (speaker || audio.isBluetoothScoOn()) {
@@ -250,18 +282,23 @@ public class OnExitService extends Service {
                             }
                             break;
                         case TelephonyManager.CALL_STATE_IDLE:
-                            State.appendLog("call state idle");
-                            if (piAnswer != null)
-                                alarmMgr.cancel(piAnswer);
+                            stopAfterCall();
+                            stopAutoAnswer();
                             if (phone) {
-                                if (isRunCG(getApplicationContext()) && !isActiveCG(getApplicationContext())) {
-                                    try {
-                                        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
-                                        if (intent != null)
-                                            startActivity(intent);
-                                    } catch (Exception ex) {
-                                        // ignore
+                                if (isRunCG(getApplicationContext())) {
+                                    if (!isActiveCG(getApplicationContext())) {
+                                        try {
+                                            Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                                            if (intent != null)
+                                                startActivity(intent);
+                                        } catch (Exception ex) {
+                                            // ignore
+                                        }
                                     }
+                                    if (piAfterCall == null)
+                                        piAfterCall = createPendingIntent(TIMER_AFTER_CALL);
+                                    alarmMgr.setRepeating(AlarmManager.RTC,
+                                            System.currentTimeMillis() + AFTER_CALL_PAUSE, AFTER_CALL_PAUSE, piAfterCall);
                                 }
                             }
                             break;

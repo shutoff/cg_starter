@@ -7,17 +7,9 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Environment;
 import android.provider.Settings;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Calendar;
-import java.util.Date;
 
 public class State {
 
@@ -51,6 +43,7 @@ public class State {
     static final String SAVE_WIFI = "save_wifi";
     static final String SAVE_DATA = "save_data";
     static final String CAR_START_CG = "car_start_cg";
+    static final String START = "start";
 
     static class Point {
         String name;
@@ -198,27 +191,34 @@ public class State {
         if (interval.equals(""))
             return false;
         Calendar calendar = Calendar.getInstance();
-        int now_h = calendar.get(Calendar.HOUR_OF_DAY);
-        int now_m = calendar.get(Calendar.MINUTE);
+        int now = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE);
+        String[] parts = interval.split(";");
+        for (String part : parts) {
+            if (inInterval(now, part))
+                return true;
+        }
+        return false;
+    }
+
+    static boolean inInterval(int now, String interval) {
         String[] times = interval.split("-");
         String[] time = times[0].split(":");
-        int start_h = Integer.parseInt(time[0]);
-        int start_m = Integer.parseInt(time[1]);
+        int start = Integer.parseInt(time[0]) * 60 + Integer.parseInt(time[1]);
         time = times[1].split(":");
-        int end_h = Integer.parseInt(time[0]);
-        int end_m = Integer.parseInt(time[1]);
-        if ((end_h > start_h) || ((end_h == start_h) && (end_m >= start_m))) {
-            if ((now_h < start_h) || ((now_h == start_h) && (now_m < start_m)))
+        int end = Integer.parseInt(time[0]) * 60 + Integer.parseInt(time[1]);
+        if (end > start) {
+            if (now < start)
                 return false;
-            return ((now_h < end_h) || ((now_h == end_h) && (now_m < end_m)));
+            return (now <= end);
         }
-        if ((now_h < end_h) || ((now_h == end_h) && (now_m <= end_m)))
+        if (now <= end)
             return true;
-        if ((now_h > start_h) || ((now_h == start_h) && (now_m >= start_m)))
+        if (now >= start)
             return true;
         return false;
     }
 
+/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -244,5 +244,5 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
-
+*/
 }
