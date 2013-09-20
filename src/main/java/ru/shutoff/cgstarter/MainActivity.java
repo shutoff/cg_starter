@@ -13,7 +13,6 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
@@ -456,35 +455,6 @@ public class MainActivity
         set_state = true;
     }
 
-    static class TestDataTask extends AsyncTask<Context, Void, Void> {
-        @Override
-        protected Void doInBackground(Context... params) {
-            try {
-                Thread.sleep(1500);
-                ConnectivityManager conman = (ConnectivityManager) params[0].getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo networkInfo = conman.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-                if ((networkInfo == null) || !networkInfo.isConnected()) {
-                    setAirplaneMode(params[0], true);
-                    setAirplaneMode(params[1], false);
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    ;
-
-    static void setAirplaneMode(Context context, boolean state) {
-        Settings.System.putInt(
-                context.getContentResolver(),
-                Settings.System.AIRPLANE_MODE_ON, state ? 0 : 1);
-        Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-        intent.putExtra("state", !state);
-        context.sendBroadcast(intent);
-    }
-
     static boolean setState(Context context, State.OnBadGPS badGPS) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor ed = preferences.edit();
@@ -569,9 +539,6 @@ public class MainActivity
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
-            TestDataTask testDataTask = new TestDataTask();
-            testDataTask.execute(context);
-
         }
 
         if (preferences.getBoolean(State.VOLUME, false)) {

@@ -113,7 +113,8 @@ public class OnExitService extends Service {
                     }
                     ed.remove(State.GPS_SAVE);
                 }
-                turnOffBT(this);
+                if (!preferences.getBoolean(State.CAR_BT, false))
+                    turnOffBT(this);
                 int channel = preferences.getInt(State.SAVE_CHANNEL, 0);
                 if (channel > 0) {
                     int level = preferences.getInt(State.SAVE_LEVEL, 0);

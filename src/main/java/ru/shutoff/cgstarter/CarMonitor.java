@@ -122,10 +122,16 @@ public class CarMonitor extends BroadcastReceiver {
                     run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(run);
                     ed.putBoolean(State.CAR_START_CG, true);
+                    ed.putBoolean(State.CAR_BT, true);
                     ed.commit();
                 }
             } else if (preferences.getBoolean(State.CAR_START_CG, false)) {
                 OnExitService.killCG(context);
+                if (preferences.getBoolean(State.CAR_BT, false)) {
+                    OnExitService.turnOffBT(context);
+                    ed.remove(State.CAR_BT);
+                    ed.commit();
+                }
             }
         }
     }
