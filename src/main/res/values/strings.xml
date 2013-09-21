@@ -13,7 +13,7 @@
     <string name="interval">Interval</string>
     <string name="interval2">Second interval</string>
     <string name="interval_sum">Select interval for autostart</string>
-    <string name="item_sum">Select point</string>
+    <string name="item_sum">Select point or saved route</string>
     <string name="name_sum">Input point name</string>
     <string name="clear">Clear</string>
     <string name="clear_sum">Clear button</string>

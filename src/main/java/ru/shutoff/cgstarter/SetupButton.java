@@ -15,6 +15,7 @@ public class SetupButton extends PreferenceActivity {
     EditTextPreference namePref;
     TimePreference intervalPref;
     DaysPreference daysPref;
+    Preference clearPref;
 
     int id;
     State.Point point;
@@ -59,6 +60,7 @@ public class SetupButton extends PreferenceActivity {
         namePref = (EditTextPreference) findPreference("name");
         intervalPref = (TimePreference) findPreference("period");
         daysPref = (DaysPreference) findPreference("days");
+        clearPref = findPreference("clear");
 
         setupInterval();
 
@@ -155,7 +157,7 @@ public class SetupButton extends PreferenceActivity {
             }
         });
 
-        findPreference("clear").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+        clearPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 point.name = "";
@@ -178,8 +180,10 @@ public class SetupButton extends PreferenceActivity {
             intervalPref.setEnabled(false);
             intervalPref.setSummary(getString(R.string.interval_sum));
             daysPref.setEnabled(false);
+            clearPref.setEnabled(false);
             return;
         }
+        clearPref.setEnabled(true);
         intervalPref.setEnabled(true);
         String v = point.interval;
         if (v.equals("") || v.equals("00:00-00:00")) {

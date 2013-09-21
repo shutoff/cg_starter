@@ -13,7 +13,7 @@
     <string name="interval">Интервал</string>
     <string name="interval2">Второй интервал</string>
     <string name="interval_sum">Укажите интервал для автоматического запуска</string>
-    <string name="item_sum">Выберите точку из избранного</string>
+    <string name="item_sum">Выберите точку из избранного или сохраненный маршрут</string>
     <string name="name_sum">Введите имя точки</string>
     <string name="clear">Очистить</string>
     <string name="clear_sum">Очистить кнопку</string>
