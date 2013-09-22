@@ -5,21 +5,44 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
+import android.os.CountDownTimer;
+import android.os.Environment;
+import android.os.FileObserver;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.provider.BaseColumns;
+import android.provider.ContactsContract;
 import android.provider.Settings;
+import android.telephony.PhoneNumberUtils;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -45,7 +68,20 @@ public class OnExitService extends Service {
 
     boolean phone;
     boolean speaker;
+    boolean offhook;
+    static String call_number;
+
     int autoanswer;
+
+    float button_x;
+    float button_y;
+
+    View hudView;
+    CountDownTimer setupTimer;
+    boolean setup_button;
+
+    FileObserver observer;
+    String screenshots_path;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -57,12 +93,32 @@ public class OnExitService extends Service {
         super.onCreate();
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
+        try {
+            File screenshots = Environment.getExternalStorageDirectory();
+            screenshots = new File(screenshots, "CityGuide/screenshots");
+            screenshots_path = screenshots.getAbsolutePath();
+            observer = new FileObserver(screenshots.getAbsolutePath(), FileObserver.CLOSE_WRITE) {
+                @Override
+                public void onEvent(int event, String path) {
+                    State.appendLog(path);
+                    if ((path.length() > 4) && path.substring(path.length() - 4).equals(".bmp")) {
+                        convertToPng(screenshots_path + "/" + path);
+                    }
+                }
+            };
+        } catch (Exception ex) {
+            State.print(ex);
+        }
+        observer.startWatching();
     }
 
     @Override
     public void onDestroy() {
         if (phoneListener != null)
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
+        if (observer != null)
+            observer.startWatching();
+        hideOverlay();
         super.onDestroy();
     }
 
@@ -101,7 +157,7 @@ public class OnExitService extends Service {
                     try {
                         Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, rotate);
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        // ignore
                     }
                     ed.remove(State.SAVE_ROTATE);
                 }
@@ -155,6 +211,13 @@ public class OnExitService extends Service {
                 stopSelf();
             } else {
                 setPhoneListener();
+                if (offhook) {
+                    if (isActiveCG(this)) {
+                        showOverlay();
+                    } else {
+                        hideOverlay();
+                    }
+                }
             }
             return START_STICKY;
         }
@@ -188,6 +251,166 @@ public class OnExitService extends Service {
 
         }
         return START_STICKY;
+    }
+
+    void showOverlay() {
+        if (hudView != null)
+            return;
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        params.x = preferences.getInt(State.PHONE_X, 50);
+        params.y = preferences.getInt(State.PHONE_Y, 50);
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        hudView = inflater.inflate(R.layout.call, null);
+        TextView number = (TextView) hudView.findViewById(R.id.number);
+        if ((call_number != null) && !call_number.equals("")) {
+            number.setText(PhoneNumberUtils.formatNumber(call_number));
+        } else {
+            number.setText(getString(R.string.unknown));
+        }
+
+        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(call_number));
+        ContentResolver contentResolver = getContentResolver();
+        Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
+                ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+
+        try {
+            if (contactLookup != null && contactLookup.getCount() > 0) {
+                contactLookup.moveToNext();
+                String name = contactLookup.getString(contactLookup.getColumnIndex(ContactsContract.Data.DISPLAY_NAME));
+                TextView tvName = (TextView) hudView.findViewById(R.id.name);
+                tvName.setText(name);
+            }
+        } finally {
+            if (contactLookup != null) {
+                contactLookup.close();
+            }
+        }
+
+        hudView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        setupTimer = new CountDownTimer(1000, 1000) {
+                            @Override
+                            public void onTick(long millisUntilFinished) {
+                            }
+
+                            @Override
+                            public void onFinish() {
+                                setupPhoneButton();
+                            }
+                        };
+                        setupTimer.start();
+                        button_x = event.getX();
+                        button_y = event.getY();
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        int dx = 0;
+                        int dy = 0;
+                        if (setup_button) {
+                            dx = (int) (event.getX() - button_x);
+                            dy = (int) (event.getY() - button_y);
+                            moveButton(dx, dy);
+                        }
+                        button_x = event.getX() - dx;
+                        button_y = event.getY() - dy;
+                        break;
+
+                    case MotionEvent.ACTION_UP:
+                        if (setup_button) {
+                            cancelSetup();
+                            break;
+                        }
+                        cancelSetup();
+                        try {
+                            TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+                            Class c = Class.forName(tm.getClass().getName());
+                            Method m = c.getDeclaredMethod("getITelephony");
+                            m.setAccessible(true);
+                            ITelephony telephonyService;
+                            telephonyService = (ITelephony) m.invoke(tm);
+                            telephonyService.showCallScreen();
+                        } catch (Exception ex) {
+                            // ignore
+                        }
+                        break;
+                    case MotionEvent.ACTION_CANCEL:
+                        cancelSetup();
+                        break;
+                }
+                return false;
+            }
+        });
+
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.addView(hudView, params);
+    }
+
+    void moveButton(int dx, int dy) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        int x = preferences.getInt(State.PHONE_X, 50) + dx;
+        int y = preferences.getInt(State.PHONE_Y, 50) + dy;
+        SharedPreferences.Editor ed = preferences.edit();
+        ed.putInt(State.PHONE_X, x);
+        ed.putInt(State.PHONE_Y, y);
+        ed.commit();
+        if (hudView == null)
+            return;
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+        params.x = x;
+        params.y = y;
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.updateViewLayout(hudView, params);
+    }
+
+    void setupPhoneButton() {
+        cancelSetup();
+        if (hudView == null)
+            return;
+        LinearLayout layout = (LinearLayout) hudView;
+        layout.setBackgroundResource(R.drawable.setup_call);
+        setup_button = true;
+    }
+
+    void cancelSetup() {
+        if (setup_button) {
+            LinearLayout layout = (LinearLayout) hudView;
+            layout.setBackgroundResource(R.drawable.call);
+            setup_button = false;
+        }
+        if (setupTimer == null)
+            return;
+        setupTimer.cancel();
+        setupTimer = null;
+    }
+
+    void hideOverlay() {
+        cancelSetup();
+        if (hudView == null)
+            return;
+        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudView);
+        hudView = null;
     }
 
     static void turnOffBT(Context context) {
@@ -245,12 +468,17 @@ public class OnExitService extends Service {
             phoneListener = new PhoneStateListener() {
                 @Override
                 public void onCallStateChanged(int state, String incomingNumber) {
+                    if ((incomingNumber != null) && (!incomingNumber.equals("")))
+                        call_number = incomingNumber;
                     super.onCallStateChanged(state, incomingNumber);
+                    State.appendLog("phone state " + state);
                     switch (state) {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
                             stopAutoAnswer();
                             stopAfterCall();
                             if (phone) {
+                                showOverlay();
+                                offhook = true;
                                 if (prev_state != TelephonyManager.CALL_STATE_RINGING)
                                     cg_run = isRunCG(getApplicationContext());
                                 if (cg_run && !isActiveCG(getApplicationContext())) {
@@ -271,6 +499,8 @@ public class OnExitService extends Service {
                             break;
                         case TelephonyManager.CALL_STATE_RINGING:
                             stopAfterCall();
+                            hideOverlay();
+                            offhook = false;
                             cg_run = isRunCG(getApplicationContext());
                             if (autoanswer > 0) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -285,6 +515,9 @@ public class OnExitService extends Service {
                         case TelephonyManager.CALL_STATE_IDLE:
                             stopAfterCall();
                             stopAutoAnswer();
+                            hideOverlay();
+                            call_number = null;
+                            offhook = false;
                             if (phone) {
                                 if (isRunCG(getApplicationContext())) {
                                     if (!isActiveCG(getApplicationContext())) {
@@ -368,7 +601,7 @@ public class OnExitService extends Service {
     }
 
     static boolean isRunningService(String processname) {
-        if (processname == null || processname.isEmpty())
+        if (processname == null || processname.equals(""))
             return false;
         try {
             for (ActivityManager.RunningServiceInfo service : mActivityManager.getRunningServices(9999)) {
@@ -379,5 +612,53 @@ public class OnExitService extends Service {
             // ignore
         }
         return false;
+    }
+
+    static void convertToPng(String path) {
+        AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
+            @Override
+            protected Void doInBackground(String... params) {
+                try {
+                    String bmp_name = params[0];
+                    Bitmap bmp = BitmapFactory.decodeFile(bmp_name);
+                    String png_name = bmp_name.substring(0, bmp_name.length() - 3) + "png";
+                    FileOutputStream out = new FileOutputStream(png_name);
+                    boolean res = bmp.compress(Bitmap.CompressFormat.PNG, 1, out);
+                    out.flush();
+                    out.close();
+                    File file = new File(res ? bmp_name : png_name);
+                    file.delete();
+                } catch (Exception ex) {
+                    State.print(ex);
+                }
+                return null;
+            }
+        };
+        task.execute(path);
+    }
+
+    static void convertFiles() {
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    File screenshots = Environment.getExternalStorageDirectory();
+                    screenshots = new File(screenshots, "CityGuide/screenshots");
+                    String[] bmp_files = screenshots.list(new FilenameFilter() {
+                        @Override
+                        public boolean accept(File dir, String filename) {
+                            return filename.substring(filename.length() - 4).equals(".bmp");
+                        }
+                    });
+                    for (String bmp_file : bmp_files) {
+                        convertToPng(screenshots.getAbsolutePath() + "/" + bmp_file);
+                    }
+                } catch (Exception ex) {
+                    State.print(ex);
+                }
+                return null;
+            }
+        };
+        task.execute();
     }
 }

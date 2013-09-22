@@ -36,6 +36,7 @@
     <string name="set_volume">Set level</string>
     <string name="carmode">Car mode</string>
     <string name="carmode_sum">Launch application on car mode</string>
+    <string name="power">Power</string>
     <string name="powermode">Launch on power</string>
     <string name="phone">Phone control</string>
     <string name="phone_sum">Show CityGuide while phone call</string>
@@ -91,4 +92,7 @@
     <string name="never">Never</string>
     <string name="always">Always</string>
     <string name="cont_route">Continue route</string>
+    <string name="unknown">Unknown</string>
+    <string name="show_oncall">Show call info</string>
+    <string name="show_oncall_sum">For move call info info hold it over 1 sec</string>
 </resources>

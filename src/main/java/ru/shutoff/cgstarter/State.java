@@ -7,9 +7,17 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.Settings;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Calendar;
+import java.util.Date;
 
 public class State {
 
@@ -45,6 +53,9 @@ public class State {
     static final String CAR_START_CG = "car_start_cg";
     static final String CAR_BT = "car_bt";
     static final String START = "start";
+    static final String PHONE_X = "phone_x";
+    static final String PHONE_Y = "phone_y";
+    static final String PHONE_SHOW = "phone_show";
 
     static class Point {
         String name;
@@ -219,7 +230,6 @@ public class State {
         return false;
     }
 
-/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -245,5 +255,5 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
-*/
+
 }

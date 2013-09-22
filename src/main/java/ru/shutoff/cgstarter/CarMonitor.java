@@ -20,6 +20,7 @@ public class CarMonitor extends BroadcastReceiver {
         String action = intent.getAction();
         if (action == null)
             return;
+        State.appendLog("> " + action);
         if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
             String state = intent.getStringExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE);
             if (state == null)
@@ -62,6 +63,9 @@ public class CarMonitor extends BroadcastReceiver {
                     context.startActivity(run);
                 }
             }
+        }
+        if (action.equals(Intent.ACTION_NEW_OUTGOING_CALL)) {
+            OnExitService.call_number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER);
         }
         if (action.equals(START)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);

@@ -19,6 +19,7 @@ public class Setup extends PreferenceActivity {
     SeekBarPreference launchPref;
     ListPreference answerPref;
     SharedPreferences prefs;
+    CheckBoxPreference phoneShowPrefs;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -115,6 +116,21 @@ public class Setup extends PreferenceActivity {
                 return false;
             }
         });
+
+        phoneShowPrefs = (CheckBoxPreference) findPreference(State.PHONE_SHOW);
+        CheckBoxPreference phonePrefs = (CheckBoxPreference) findPreference(State.PHONE);
+        phonePrefs.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    Boolean v = (Boolean) newValue;
+                    phoneShowPrefs.setEnabled(v);
+                    return true;
+                }
+                return false;
+            }
+        });
+        phoneShowPrefs.setEnabled(prefs.getBoolean(State.PHONE, false));
 
         setupAnswerPref();
     }

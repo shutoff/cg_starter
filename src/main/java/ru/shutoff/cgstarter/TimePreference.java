@@ -124,9 +124,9 @@ public class TimePreference extends DialogPreference {
 
         set_time = true;
 
-        start_picker.setCurrentHour(start1 / 60);
+        start_picker.setCurrentHour((start1 / 60) % 24);
         start_picker.setCurrentMinute(start1 % 60);
-        end_picker.setCurrentHour(end1 / 60);
+        end_picker.setCurrentHour((end1 / 60) % 24);
         end_picker.setCurrentMinute(end1 % 60);
 
         set_time = false;

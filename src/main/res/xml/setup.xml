@@ -74,6 +74,11 @@
             android:summary="@string/phone_sum" />
 
         <CheckBoxPreference
+            android:key="phone_show"
+            android:title="@string/show_oncall"
+            android:summary="@string/show_oncall_sum" />
+
+        <CheckBoxPreference
             android:key="speaker"
             android:title="@string/speaker"
             android:summary="@string/speaker_sum" />

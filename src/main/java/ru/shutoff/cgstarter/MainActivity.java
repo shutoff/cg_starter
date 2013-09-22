@@ -88,6 +88,13 @@ public class MainActivity
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                State.print(ex);
+            }
+        });
+
         double work_time = 0;
         if (savedInstanceState != null)
             work_time = savedInstanceState.getDouble(State.START, -1);
@@ -223,6 +230,9 @@ public class MainActivity
             Date now = new Date();
             start = now.getTime() - work_time;
         }
+
+        if (savedInstanceState == null)
+            OnExitService.convertFiles();
     }
 
     @Override

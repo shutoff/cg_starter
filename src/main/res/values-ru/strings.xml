@@ -86,4 +86,7 @@
     <string name="never">Никогда</string>
     <string name="always">Всегда</string>
     <string name="cont_route">Продолжить маршрут</string>
+    <string name="unknown">Неизвестный</string>
+    <string name="show_oncall">Показывать окно вызова</string>
+    <string name="show_oncall_sum">Для перемещения окна удерживайте его около секунды</string>
 </resources>
