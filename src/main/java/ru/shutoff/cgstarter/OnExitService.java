@@ -57,6 +57,7 @@ public class OnExitService extends Service {
     static final String ANSWER = "Answer";
 
     static final int AFTER_CALL_PAUSE = 2000;
+    static final int AFTER_OFFHOOK_PAUSE = 5000;
 
     AlarmManager alarmMgr;
     PendingIntent pi;
@@ -64,6 +65,7 @@ public class OnExitService extends Service {
     PendingIntent piAfterCall;
 
     PhoneStateListener phoneListener;
+
     TelephonyManager tm;
 
     boolean phone;
@@ -256,6 +258,11 @@ public class OnExitService extends Service {
     void showOverlay() {
         if (hudView != null)
             return;
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (!preferences.getBoolean(State.PHONE_SHOW, false))
+            return;
+
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -266,7 +273,6 @@ public class OnExitService extends Service {
                 PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.TOP | Gravity.LEFT;
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         params.x = preferences.getInt(State.PHONE_X, 50);
         params.y = preferences.getInt(State.PHONE_Y, 50);
 
@@ -465,6 +471,7 @@ public class OnExitService extends Service {
             // ignore
         }
         if (phone || speaker || (autoanswer > 0)) {
+            prev_state = TelephonyManager.CALL_STATE_IDLE;
             phoneListener = new PhoneStateListener() {
                 @Override
                 public void onCallStateChanged(int state, String incomingNumber) {
@@ -477,8 +484,14 @@ public class OnExitService extends Service {
                             stopAutoAnswer();
                             stopAfterCall();
                             if (phone) {
-                                showOverlay();
                                 offhook = true;
+                                if (prev_state == TelephonyManager.CALL_STATE_IDLE) {
+                                    if (piAfterCall == null)
+                                        piAfterCall = createPendingIntent(TIMER_AFTER_CALL);
+                                    alarmMgr.setRepeating(AlarmManager.RTC,
+                                            System.currentTimeMillis() + AFTER_OFFHOOK_PAUSE, AFTER_OFFHOOK_PAUSE, piAfterCall);
+                                    break;
+                                }
                                 if (prev_state != TelephonyManager.CALL_STATE_RINGING)
                                     cg_run = isRunCG(getApplicationContext());
                                 if (cg_run && !isActiveCG(getApplicationContext())) {
@@ -490,6 +503,7 @@ public class OnExitService extends Service {
                                         // ignore
                                     }
                                 }
+                                showOverlay();
                             }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -518,6 +532,8 @@ public class OnExitService extends Service {
                             hideOverlay();
                             call_number = null;
                             offhook = false;
+                            if (prev_state == TelephonyManager.CALL_STATE_IDLE)
+                                break;
                             if (phone) {
                                 if (isRunCG(getApplicationContext())) {
                                     if (!isActiveCG(getApplicationContext())) {
@@ -614,23 +630,33 @@ public class OnExitService extends Service {
         return false;
     }
 
+    static void convertFile(String bmp_name) {
+        try {
+            File bmp_file = new File(bmp_name);
+            long last_modified = bmp_file.lastModified();
+            Bitmap bmp = BitmapFactory.decodeFile(bmp_name);
+            String png_name = bmp_name.substring(0, bmp_name.length() - 3) + "png";
+            FileOutputStream out = new FileOutputStream(png_name);
+            boolean res = bmp.compress(Bitmap.CompressFormat.PNG, 1, out);
+            out.flush();
+            out.close();
+            File file = new File(res ? bmp_name : png_name);
+            file.delete();
+            if (res) {
+                File png_file = new File(png_name);
+                png_file.setLastModified(last_modified);
+            }
+        } catch (Exception ex) {
+            State.print(ex);
+        }
+
+    }
+
     static void convertToPng(String path) {
         AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
             @Override
             protected Void doInBackground(String... params) {
-                try {
-                    String bmp_name = params[0];
-                    Bitmap bmp = BitmapFactory.decodeFile(bmp_name);
-                    String png_name = bmp_name.substring(0, bmp_name.length() - 3) + "png";
-                    FileOutputStream out = new FileOutputStream(png_name);
-                    boolean res = bmp.compress(Bitmap.CompressFormat.PNG, 1, out);
-                    out.flush();
-                    out.close();
-                    File file = new File(res ? bmp_name : png_name);
-                    file.delete();
-                } catch (Exception ex) {
-                    State.print(ex);
-                }
+                convertFile(params[0]);
                 return null;
             }
         };
@@ -651,7 +677,7 @@ public class OnExitService extends Service {
                         }
                     });
                     for (String bmp_file : bmp_files) {
-                        convertToPng(screenshots.getAbsolutePath() + "/" + bmp_file);
+                        convertFile(screenshots.getAbsolutePath() + "/" + bmp_file);
                     }
                 } catch (Exception ex) {
                     State.print(ex);

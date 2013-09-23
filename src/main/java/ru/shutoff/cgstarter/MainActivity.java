@@ -144,6 +144,7 @@ public class MainActivity
             auto_pause -= work_time;
             launch_pause -= work_time;
 
+            State.appendLog("auto timer " + auto_pause);
             autostart_timer = new CountDownTimer(auto_pause, auto_pause) {
                 @Override
                 public void onTick(long millisUntilFinished) {
@@ -151,6 +152,7 @@ public class MainActivity
 
                 @Override
                 public void onFinish() {
+                    State.appendLog("finish auto timer");
                     action();
                     activeButton = null;
                 }
@@ -187,6 +189,7 @@ public class MainActivity
             if (State.inInterval(p.interval)) {
                 activeButton = buttons[i];
                 buttons[i].setBackgroundResource(R.drawable.auto);
+                State.appendLog("set active " + i);
                 autostart_timer.start();
             }
         }
@@ -304,6 +307,7 @@ public class MainActivity
                 }
                 break;
             case RUN_CG:
+                State.appendLog("result RUN_CG");
                 finish();
                 break;
         }
@@ -366,6 +370,7 @@ public class MainActivity
         if (i >= 8)
             return;
 
+        State.appendLog("launch " + i);
         State.Point p = points[i];
         if (p.name.equals(""))
             return;
@@ -624,6 +629,7 @@ public class MainActivity
             toast.show();
             return;
         }
+        State.appendLog("launch CG");
         startActivityForResult(intent, RUN_CG);
     }
 
