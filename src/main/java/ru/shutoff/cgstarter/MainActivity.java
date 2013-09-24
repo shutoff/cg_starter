@@ -414,6 +414,7 @@ public class MainActivity
 
     static void createRoute(Context context, String route, String points_str) {
         try {
+            OnExitService.killCG(context);
             String tail = routes();
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
@@ -444,6 +445,7 @@ public class MainActivity
 
     static void removeRoute(Context context) {
         try {
+            OnExitService.killCG(context);
             String tail = routes();
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
