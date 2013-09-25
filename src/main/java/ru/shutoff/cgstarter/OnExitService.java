@@ -102,14 +102,13 @@ public class OnExitService extends Service {
             observer = new FileObserver(screenshots.getAbsolutePath(), FileObserver.CLOSE_WRITE) {
                 @Override
                 public void onEvent(int event, String path) {
-                    State.appendLog(path);
                     if ((path.length() > 4) && path.substring(path.length() - 4).equals(".bmp")) {
                         convertToPng(screenshots_path + "/" + path);
                     }
                 }
             };
         } catch (Exception ex) {
-            State.print(ex);
+            // ignore
         }
         observer.startWatching();
     }
@@ -419,6 +418,25 @@ public class OnExitService extends Service {
         hudView = null;
     }
 
+    static void turnOnBT(Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (preferences.getBoolean(State.BT, false)) {
+            try {
+                BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
+                if ((bt != null) && !bt.isEnabled()) {
+                    bt.enable();
+                    SharedPreferences.Editor ed = preferences.edit();
+                    ed.putBoolean(State.SAVE_BT, true);
+                    ed.remove(State.BT_CONNECTED);
+                    ed.remove(State.CAR_BT);
+                    ed.commit();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
     static void turnOffBT(Context context) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         boolean bt = preferences.getBoolean(State.SAVE_BT, false);
@@ -478,7 +496,6 @@ public class OnExitService extends Service {
                     if ((incomingNumber != null) && (!incomingNumber.equals("")))
                         call_number = incomingNumber;
                     super.onCallStateChanged(state, incomingNumber);
-                    State.appendLog("phone state " + state);
                     switch (state) {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
                             stopAutoAnswer();
@@ -647,7 +664,7 @@ public class OnExitService extends Service {
                 png_file.setLastModified(last_modified);
             }
         } catch (Exception ex) {
-            State.print(ex);
+            // ignore
         }
 
     }
@@ -680,7 +697,7 @@ public class OnExitService extends Service {
                         convertFile(screenshots.getAbsolutePath() + "/" + bmp_file);
                     }
                 } catch (Exception ex) {
-                    State.print(ex);
+                    // ignore
                 }
                 return null;
             }

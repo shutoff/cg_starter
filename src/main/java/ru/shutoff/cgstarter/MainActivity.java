@@ -2,7 +2,6 @@ package ru.shutoff.cgstarter;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -62,7 +61,6 @@ public class MainActivity
 
     static final int SETUP_BUTTON = 3000;
     static final int RUN_CG = 3001;
-    static final int GPS_ON = 3002;
 
     static int[][] holidays = {
             {1, 1},
@@ -87,13 +85,6 @@ public class MainActivity
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
-
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable ex) {
-                State.print(ex);
-            }
-        });
 
         double work_time = 0;
         if (savedInstanceState != null)
@@ -144,7 +135,6 @@ public class MainActivity
             auto_pause -= work_time;
             launch_pause -= work_time;
 
-            State.appendLog("auto timer " + auto_pause);
             autostart_timer = new CountDownTimer(auto_pause, auto_pause) {
                 @Override
                 public void onTick(long millisUntilFinished) {
@@ -152,7 +142,6 @@ public class MainActivity
 
                 @Override
                 public void onFinish() {
-                    State.appendLog("finish auto timer");
                     action();
                     activeButton = null;
                 }
@@ -189,7 +178,6 @@ public class MainActivity
             if (State.inInterval(p.interval)) {
                 activeButton = buttons[i];
                 buttons[i].setBackgroundResource(R.drawable.auto);
-                State.appendLog("set active " + i);
                 autostart_timer.start();
             }
         }
@@ -307,7 +295,6 @@ public class MainActivity
                 }
                 break;
             case RUN_CG:
-                State.appendLog("result RUN_CG");
                 finish();
                 break;
         }
@@ -370,7 +357,6 @@ public class MainActivity
         if (i >= 8)
             return;
 
-        State.appendLog("launch " + i);
         State.Point p = points[i];
         if (p.name.equals(""))
             return;
@@ -507,18 +493,7 @@ public class MainActivity
                 ex.printStackTrace();
             }
         }
-        if (preferences.getBoolean(State.BT, false)) {
-            try {
-                BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
-                if ((bt != null) && !bt.isEnabled()) {
-                    bt.enable();
-                    ed.putBoolean(State.SAVE_BT, true);
-                    ed.remove(State.BT_CONNECTED);
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
+        OnExitService.turnOnBT(context);
         if (preferences.getBoolean(State.DATA, false)) {
             try {
                 WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
@@ -631,7 +606,6 @@ public class MainActivity
             toast.show();
             return;
         }
-        State.appendLog("launch CG");
         startActivityForResult(intent, RUN_CG);
     }
 
