@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -35,6 +36,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -43,6 +45,7 @@ import com.android.internal.telephony.ITelephony;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -149,8 +152,8 @@ public class OnExitService extends Service {
             return START_STICKY;
         }
         if (action.equals(TIMER)) {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
             if (!isRunCG(this)) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
                 alarmMgr.cancel(pi);
                 SharedPreferences.Editor ed = preferences.edit();
                 int rotate = preferences.getInt(State.SAVE_ROTATE, 0);
@@ -208,9 +211,19 @@ public class OnExitService extends Service {
                     ed.remove(State.SAVE_DATA);
                 }
                 ed.remove(State.CAR_START_CG);
+                ed.remove(State.KILL);
                 ed.commit();
                 stopSelf();
             } else {
+                if (preferences.getBoolean(State.KILL, false)) {
+                    if (isActiveCG(this))
+                        return START_STICKY;
+                    killBackgroundCG(this);
+                    SharedPreferences.Editor ed = preferences.edit();
+                    ed.remove(State.KILL);
+                    ed.commit();
+                    return START_STICKY;
+                }
                 setPhoneListener();
                 if (offhook) {
                     if (isActiveCG(this)) {
@@ -295,6 +308,18 @@ public class OnExitService extends Service {
                 String name = contactLookup.getString(contactLookup.getColumnIndex(ContactsContract.Data.DISPLAY_NAME));
                 TextView tvName = (TextView) hudView.findViewById(R.id.name);
                 tvName.setText(name);
+                long id = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
+                Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
+                InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, photo_uri);
+                ImageView ivPhoto = (ImageView) hudView.findViewById(R.id.photo);
+                Bitmap photo = null;
+                if (input != null)
+                    photo = BitmapFactory.decodeStream(input);
+                if (photo != null) {
+                    ivPhoto.setImageBitmap(photo);
+                } else {
+                    ivPhoto.setVisibility(View.GONE);
+                }
             }
         } finally {
             if (contactLookup != null) {
@@ -524,7 +549,8 @@ public class OnExitService extends Service {
                             }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                if (!audio.isBluetoothScoOn())
+                                State.appendLog("sco: " + audio.isBluetoothScoOn());
+                                if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn())
                                     audio.setSpeakerphoneOn(true);
                             }
                             break;
@@ -617,19 +643,50 @@ public class OnExitService extends Service {
     }
 
     static void killCG(Context context) {
+        if (!isRunCG(context))
+            return;
+        State.appendLog("killCG");
+        if (isActiveCG(context)) {
+
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.putBoolean(State.KILL, true);
+            ed.commit();
+
+            Intent startMain = new Intent(Intent.ACTION_MAIN);
+            startMain.addCategory(Intent.CATEGORY_HOME);
+            startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(startMain);
+
+            Intent intent = new Intent(context, OnExitService.class);
+            intent.setAction(START);
+            context.startService(intent);
+            return;
+        }
+        killBackgroundCG(context);
+    }
+
+    static void killBackgroundCG(Context context) {
+        State.appendLog("kill timer");
         if (mActivityManager == null)
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        Method method = null;
         try {
-            for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
-                if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-                        && !isRunningService(info.processName)
-                        && info.processName.equals(State.CG_PACKAGE)) {
-                    int pid = android.os.Process.getUidForName(State.CG_PACKAGE);
-                    android.os.Process.killProcess(pid);
-                }
+            method = mActivityManager.getClass().getDeclaredMethod("killBackgroundProcesses", String.class);
+        } catch (NoSuchMethodException ex) {
+            try {
+                method = mActivityManager.getClass().getDeclaredMethod("restartPackage", String.class);
+            } catch (NoSuchMethodException e) {
+                State.print(e);
+                return;
             }
+        }
+        try {
+            method.setAccessible(true);
+            method.invoke(mActivityManager, State.CG_PACKAGE);
+            State.appendLog("killed");
         } catch (Exception ex) {
-            // ignore
+            State.print(ex);
         }
     }
 
