@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -13,11 +14,14 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 
+import java.io.File;
+
 public class Setup extends PreferenceActivity {
 
     SeekBarPreference autoPref;
     SeekBarPreference launchPref;
     ListPreference answerPref;
+    ListPreference ringPref;
     SharedPreferences prefs;
     CheckBoxPreference phoneShowPrefs;
 
@@ -117,6 +121,21 @@ public class Setup extends PreferenceActivity {
             }
         });
 
+        ringPref = (ListPreference) findPreference(State.RINGING_TIME);
+        ringPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof String) {
+                    SharedPreferences.Editor ed = prefs.edit();
+                    ed.putString(State.RINGING_TIME, (String) newValue);
+                    ed.commit();
+                    setupRingPref();
+                    return true;
+                }
+                return false;
+            }
+        });
+
         phoneShowPrefs = (CheckBoxPreference) findPreference(State.PHONE_SHOW);
         CheckBoxPreference phonePrefs = (CheckBoxPreference) findPreference(State.PHONE);
         phonePrefs.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
@@ -132,7 +151,16 @@ public class Setup extends PreferenceActivity {
         });
         phoneShowPrefs.setEnabled(prefs.getBoolean(State.PHONE, false));
 
+        CheckBoxPreference rtaPref = (CheckBoxPreference) findPreference(State.RTA_LOGS);
+        File rta_ini = Environment.getExternalStorageDirectory();
+        rta_ini = new File(rta_ini, "CityGuide/rtlog.ini");
+        if (!rta_ini.exists()) {
+            PreferenceScreen pref_screen = getPreferenceScreen();
+            pref_screen.removePreference(rtaPref);
+        }
+
         setupAnswerPref();
+        setupRingPref();
     }
 
     void setupAnswerPref() {
@@ -143,6 +171,18 @@ public class Setup extends PreferenceActivity {
         for (int i = 0; i < entries.length; i++) {
             if (entries[i].equals(answer)) {
                 answerPref.setSummary(values[i]);
+                break;
+            }
+        }
+    }
+
+    void setupRingPref() {
+        String answer = prefs.getString(State.RINGING_TIME, "-1");
+        String[] entries = getResources().getStringArray(R.array.ring_times_value);
+        String[] values = getResources().getStringArray(R.array.ring_times);
+        for (int i = 0; i < entries.length; i++) {
+            if (entries[i].equals(answer)) {
+                ringPref.setSummary(values[i]);
                 break;
             }
         }

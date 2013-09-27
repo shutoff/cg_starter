@@ -90,6 +90,18 @@
             android:entries="@array/times"
             android:entryValues="@array/answer_times" />
 
+        <ListPreference
+            android:key="ringtime"
+            android:title="@string/ring_time"
+            android:defaultValue="-1"
+            android:entries="@array/ring_times"
+            android:entryValues="@array/ring_times_value" />
+
+        <EditTextPreference
+            android:key="sms"
+            android:title="@string/sms"
+            android:defaultValue="@string/def_sms" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/power">
@@ -102,6 +114,11 @@
         <ru.shutoff.cgstarter.TimePreference
             android:key="powertime"
             android:title="@string/powermode" />
+
+        <CheckBoxPreference
+            android:key="rta_logs"
+            android:title="@string/remove_rta"
+            android:summary="@string/remove_rta_sum" />
 
     </PreferenceCategory>
 

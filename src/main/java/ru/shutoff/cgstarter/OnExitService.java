@@ -10,6 +10,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -29,6 +30,7 @@ import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.PhoneStateListener;
+import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -48,6 +50,7 @@ import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Date;
 import java.util.List;
 
 public class OnExitService extends Service {
@@ -58,6 +61,7 @@ public class OnExitService extends Service {
     static final String TIMER = "Timer";
     static final String TIMER_AFTER_CALL = "TimerAfterCall";
     static final String ANSWER = "Answer";
+    static final String RINGING = "Ringing";
 
     static final int AFTER_CALL_PAUSE = 2000;
     static final int AFTER_OFFHOOK_PAUSE = 5000;
@@ -65,6 +69,7 @@ public class OnExitService extends Service {
     AlarmManager alarmMgr;
     PendingIntent pi;
     PendingIntent piAnswer;
+    PendingIntent piRinging;
     PendingIntent piAfterCall;
 
     PhoneStateListener phoneListener;
@@ -73,15 +78,19 @@ public class OnExitService extends Service {
 
     boolean phone;
     boolean speaker;
-    boolean offhook;
+    boolean show_overlay;
+    boolean ringing;
+
     static String call_number;
 
     int autoanswer;
+    int autoswitch;
 
     float button_x;
     float button_y;
 
-    View hudView;
+    View hudActive;
+    View hudInactive;
     CountDownTimer setupTimer;
     boolean setup_button;
 
@@ -114,6 +123,12 @@ public class OnExitService extends Service {
             // ignore
         }
         observer.startWatching();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                State.print(ex);
+            }
+        });
     }
 
     @Override
@@ -122,7 +137,7 @@ public class OnExitService extends Service {
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
         if (observer != null)
             observer.startWatching();
-        hideOverlay();
+        hideOverlays();
         super.onDestroy();
     }
 
@@ -140,6 +155,7 @@ public class OnExitService extends Service {
         }
         if (action.equals(TIMER_AFTER_CALL)) {
             stopAfterCall();
+            State.appendLog("timer after call");
             if (isRunCG(getApplicationContext()) && !isActiveCG(getApplicationContext())) {
                 try {
                     Intent launch = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
@@ -225,51 +241,147 @@ public class OnExitService extends Service {
                     return START_STICKY;
                 }
                 setPhoneListener();
-                if (offhook) {
+                if (show_overlay) {
                     if (isActiveCG(this)) {
-                        showOverlay();
+                        showActiveOverlay();
                     } else {
-                        hideOverlay();
+                        showInactiveOverlay();
                     }
                 }
             }
             return START_STICKY;
         }
         if (action.equals(ANSWER)) {
+            State.appendLog("answer");
             if (piAnswer != null) {
                 alarmMgr.cancel(piAnswer);
                 piAnswer = null;
             }
-            try {
-                TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-                if (tm.getCallState() != TelephonyManager.CALL_STATE_RINGING)
-                    return START_STICKY;
-
-                Class c = Class.forName(tm.getClass().getName());
-                Method m = c.getDeclaredMethod("getITelephony");
-                m.setAccessible(true);
-                ITelephony telephonyService;
-                telephonyService = (ITelephony) m.invoke(tm);
-
-                telephonyService.silenceRinger();
-                telephonyService.answerRingingCall();
-            } catch (Exception e) {
-                Intent buttonDown = new Intent(Intent.ACTION_MEDIA_BUTTON);
-                buttonDown.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK));
-                sendOrderedBroadcast(buttonDown, "android.permission.CALL_PRIVILEGED");
-
-                Intent buttonUp = new Intent(Intent.ACTION_MEDIA_BUTTON);
-                buttonUp.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK));
-                sendOrderedBroadcast(buttonUp, "android.permission.CALL_PRIVILEGED");
+            callAnswer();
+            return START_STICKY;
+        }
+        if (action.equals(RINGING)) {
+            State.appendLog("ringing");
+            if (piRinging != null) {
+                alarmMgr.cancel(piRinging);
+                piRinging = null;
             }
-
+            switchToCG();
+            return START_STICKY;
         }
         return START_STICKY;
     }
 
-    void showOverlay() {
-        if (hudView != null)
+    void callAnswer() {
+        TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+        if (tm.getCallState() != TelephonyManager.CALL_STATE_RINGING)
             return;
+
+        try {
+            Intent buttonDown = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            buttonDown.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK));
+            sendOrderedBroadcast(buttonDown, "android.permission.CALL_PRIVILEGED");
+
+            Intent buttonUp = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            buttonUp.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK));
+            sendOrderedBroadcast(buttonUp, "android.permission.CALL_PRIVILEGED");
+
+            Intent headSetUnPluggedintent = new Intent(Intent.ACTION_HEADSET_PLUG);
+            headSetUnPluggedintent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
+            headSetUnPluggedintent.putExtra("state", 0);
+            headSetUnPluggedintent.putExtra("name", "Headset");
+            sendOrderedBroadcast(headSetUnPluggedintent, null);
+
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    void callReject() {
+        ITelephony telephonyService;
+        TelephonyManager telephony = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        try {
+            Class c = Class.forName(telephony.getClass().getName());
+            Method m = c.getDeclaredMethod("getITelephony");
+            m.setAccessible(true);
+            telephonyService = (ITelephony) m.invoke(telephony);
+            telephonyService.endCall();
+        } catch (Exception ex) {
+            State.print(ex);
+        }
+    }
+
+    void switchToCG() {
+        if (!isActiveCG(getApplicationContext())) {
+            try {
+                Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                if (intent != null)
+                    startActivity(intent);
+            } catch (Exception ex) {
+                // ignore
+            }
+        }
+    }
+
+    abstract class OverlayTouchListener implements View.OnTouchListener {
+
+        abstract void click();
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    setupTimer = new CountDownTimer(1000, 1000) {
+                        @Override
+                        public void onTick(long millisUntilFinished) {
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            setupPhoneButton();
+                        }
+                    };
+                    setupTimer.start();
+                    button_x = event.getX();
+                    button_y = event.getY();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    int dx = 0;
+                    int dy = 0;
+                    if (setup_button) {
+                        dx = (int) (event.getX() - button_x);
+                        dy = (int) (event.getY() - button_y);
+                        moveButton(dx, dy);
+                    }
+                    button_x = event.getX() - dx;
+                    button_y = event.getY() - dy;
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    if (setup_button) {
+                        cancelSetup();
+                        break;
+                    }
+                    cancelSetup();
+                    click();
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    cancelSetup();
+                    break;
+            }
+            return false;
+        }
+
+    }
+
+    ;
+
+    void showActiveOverlay() {
+        if (hudActive != null)
+            return;
+
+        hideInactiveOverlay();
+        State.appendLog("show active");
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
@@ -289,8 +401,8 @@ public class OnExitService extends Service {
         params.y = preferences.getInt(State.PHONE_Y, 50);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        hudView = inflater.inflate(R.layout.call, null);
-        TextView number = (TextView) hudView.findViewById(R.id.number);
+        hudActive = inflater.inflate(R.layout.call, null);
+        TextView number = (TextView) hudActive.findViewById(R.id.number);
         if ((call_number != null) && !call_number.equals("")) {
             number.setText(PhoneNumberUtils.formatNumber(call_number));
         } else {
@@ -306,12 +418,12 @@ public class OnExitService extends Service {
             if (contactLookup != null && contactLookup.getCount() > 0) {
                 contactLookup.moveToNext();
                 String name = contactLookup.getString(contactLookup.getColumnIndex(ContactsContract.Data.DISPLAY_NAME));
-                TextView tvName = (TextView) hudView.findViewById(R.id.name);
+                TextView tvName = (TextView) hudActive.findViewById(R.id.name);
                 tvName.setText(name);
                 long id = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
                 Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
                 InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, photo_uri);
-                ImageView ivPhoto = (ImageView) hudView.findViewById(R.id.photo);
+                ImageView ivPhoto = (ImageView) hudActive.findViewById(R.id.photo);
                 Bitmap photo = null;
                 if (input != null)
                     photo = BitmapFactory.decodeStream(input);
@@ -327,65 +439,136 @@ public class OnExitService extends Service {
             }
         }
 
-        hudView.setOnTouchListener(new View.OnTouchListener() {
+        hudActive.setOnTouchListener(new OverlayTouchListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        setupTimer = new CountDownTimer(1000, 1000) {
-                            @Override
-                            public void onTick(long millisUntilFinished) {
-                            }
-
-                            @Override
-                            public void onFinish() {
-                                setupPhoneButton();
-                            }
-                        };
-                        setupTimer.start();
-                        button_x = event.getX();
-                        button_y = event.getY();
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        int dx = 0;
-                        int dy = 0;
-                        if (setup_button) {
-                            dx = (int) (event.getX() - button_x);
-                            dy = (int) (event.getY() - button_y);
-                            moveButton(dx, dy);
-                        }
-                        button_x = event.getX() - dx;
-                        button_y = event.getY() - dy;
-                        break;
-
-                    case MotionEvent.ACTION_UP:
-                        if (setup_button) {
-                            cancelSetup();
-                            break;
-                        }
-                        cancelSetup();
-                        try {
-                            TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-                            Class c = Class.forName(tm.getClass().getName());
-                            Method m = c.getDeclaredMethod("getITelephony");
-                            m.setAccessible(true);
-                            ITelephony telephonyService;
-                            telephonyService = (ITelephony) m.invoke(tm);
-                            telephonyService.showCallScreen();
-                        } catch (Exception ex) {
-                            // ignore
-                        }
-                        break;
-                    case MotionEvent.ACTION_CANCEL:
-                        cancelSetup();
-                        break;
+            void click() {
+                try {
+                    TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+                    Class c = Class.forName(tm.getClass().getName());
+                    Method m = c.getDeclaredMethod("getITelephony");
+                    m.setAccessible(true);
+                    ITelephony telephonyService;
+                    telephonyService = (ITelephony) m.invoke(tm);
+                    telephonyService.showCallScreen();
+                } catch (Exception ex) {
+                    // ignore
                 }
-                return false;
+                showInactiveOverlay();
             }
         });
 
+        View phone = hudActive.findViewById(R.id.phone);
+        if (ringing) {
+            ImageView ivAnswer = (ImageView) hudActive.findViewById(R.id.answer);
+            ivAnswer.setClickable(true);
+            ivAnswer.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    State.appendLog("answer");
+                    callAnswer();
+                    ringing = false;
+                    hideOverlays();
+                    switchToCG();
+                }
+            });
+
+            ImageView ivReject = (ImageView) hudActive.findViewById(R.id.reject);
+            ivReject.setClickable(true);
+            ivReject.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    State.appendLog("reject");
+                    callReject();
+                    ringing = false;
+                    hideOverlays();
+                    switchToCG();
+                }
+            });
+
+            ImageView ivSms = (ImageView) hudActive.findViewById(R.id.sms);
+            ivSms.setClickable(true);
+            ivSms.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    State.appendLog("sms");
+                    callReject();
+                    ringing = false;
+                    hideOverlays();
+                    switchToCG();
+                    String message = getRejectMessage();
+                    SmsManager smsManager = SmsManager.getDefault();
+                    smsManager.sendTextMessage(call_number, null, message, null, null);
+                }
+            });
+        } else {
+            phone.setVisibility(View.GONE);
+        }
+
+
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudView, params);
+        wm.addView(hudActive, params);
+    }
+
+    String getRejectMessage() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return preferences.getString(State.SMS, getString(R.string.def_sms));
+    }
+
+    void showInactiveOverlay() {
+        if (hudInactive != null)
+            return;
+
+        hideActiveOverlay();
+        State.appendLog("show inactive");
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (!preferences.getBoolean(State.PHONE_SHOW, false))
+            return;
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+
+        params.x = preferences.getInt(State.PHONE_X, 50);
+        params.y = preferences.getInt(State.PHONE_Y, 50);
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        hudInactive = inflater.inflate(R.layout.call, null);
+        hudInactive.findViewById(R.id.number).setVisibility(View.GONE);
+        hudInactive.findViewById(R.id.name).setVisibility(View.GONE);
+        try {
+            ImageView ivIcon = (ImageView) hudInactive.findViewById(R.id.photo);
+            PackageManager manager = getPackageManager();
+            ivIcon.setImageDrawable(manager.getApplicationIcon(State.CG_PACKAGE));
+        } catch (Exception ex) {
+            State.print(ex);
+            // ignore
+        }
+
+        hudInactive.setOnTouchListener(new OverlayTouchListener() {
+            @Override
+            void click() {
+                try {
+                    Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                    if (intent != null)
+                        startActivity(intent);
+                    showActiveOverlay();
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
+        });
+
+        hudInactive.findViewById(R.id.phone).setVisibility(View.GONE);
+
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.addView(hudInactive, params);
     }
 
     void moveButton(int dx, int dy) {
@@ -396,7 +579,7 @@ public class OnExitService extends Service {
         ed.putInt(State.PHONE_X, x);
         ed.putInt(State.PHONE_Y, y);
         ed.commit();
-        if (hudView == null)
+        if ((hudActive == null) && (hudInactive == null))
             return;
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -411,22 +594,34 @@ public class OnExitService extends Service {
         params.x = x;
         params.y = y;
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.updateViewLayout(hudView, params);
+        if (hudActive != null)
+            wm.updateViewLayout(hudActive, params);
+        if (hudInactive != null)
+            wm.updateViewLayout(hudInactive, params);
     }
 
     void setupPhoneButton() {
         cancelSetup();
-        if (hudView == null)
+        LinearLayout layout = null;
+        if (hudActive != null)
+            layout = (LinearLayout) hudActive;
+        if (hudInactive != null)
+            layout = (LinearLayout) hudInactive;
+        if (layout == null)
             return;
-        LinearLayout layout = (LinearLayout) hudView;
         layout.setBackgroundResource(R.drawable.setup_call);
         setup_button = true;
     }
 
     void cancelSetup() {
         if (setup_button) {
-            LinearLayout layout = (LinearLayout) hudView;
-            layout.setBackgroundResource(R.drawable.call);
+            LinearLayout layout = null;
+            if (hudActive != null)
+                layout = (LinearLayout) hudActive;
+            if (hudInactive != null)
+                layout = (LinearLayout) hudInactive;
+            if (layout != null)
+                layout.setBackgroundResource(R.drawable.call);
             setup_button = false;
         }
         if (setupTimer == null)
@@ -435,12 +630,27 @@ public class OnExitService extends Service {
         setupTimer = null;
     }
 
-    void hideOverlay() {
+    void hideActiveOverlay() {
         cancelSetup();
-        if (hudView == null)
+        if (hudActive == null)
             return;
-        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudView);
-        hudView = null;
+        State.appendLog("hide active");
+        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudActive);
+        hudActive = null;
+    }
+
+    void hideInactiveOverlay() {
+        cancelSetup();
+        if (hudInactive == null)
+            return;
+        State.appendLog("hide inactive");
+        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudInactive);
+        hudInactive = null;
+    }
+
+    void hideOverlays() {
+        hideActiveOverlay();
+        hideInactiveOverlay();
     }
 
     static void turnOnBT(Context context) {
@@ -489,13 +699,19 @@ public class OnExitService extends Service {
     static boolean cg_run;
 
     void stopAutoAnswer() {
+        State.appendLog("stop auto answer");
         if (piAnswer != null) {
             alarmMgr.cancel(piAnswer);
             piAnswer = null;
         }
+        if (piRinging != null) {
+            alarmMgr.cancel(piRinging);
+            piRinging = null;
+        }
     }
 
     void stopAfterCall() {
+        State.appendLog("stop after call");
         if (piAfterCall != null) {
             alarmMgr.cancel(piAfterCall);
             piAfterCall = null;
@@ -510,6 +726,7 @@ public class OnExitService extends Service {
         speaker = preferences.getBoolean(State.SPEAKER, false);
         try {
             autoanswer = Integer.parseInt(preferences.getString(State.ANSWER_TIME, "0")) * 1000;
+            autoswitch = Integer.parseInt(preferences.getString(State.RINGING_TIME, "-1")) * 1000 + 1;
         } catch (Exception ex) {
             // ignore
         }
@@ -521,12 +738,16 @@ public class OnExitService extends Service {
                     if ((incomingNumber != null) && (!incomingNumber.equals("")))
                         call_number = incomingNumber;
                     super.onCallStateChanged(state, incomingNumber);
+                    State.appendLog("state " + state);
                     switch (state) {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
                             stopAutoAnswer();
                             stopAfterCall();
                             if (phone) {
-                                offhook = true;
+                                show_overlay = true;
+                                ringing = false;
+                                hideOverlays();
+                                showActiveOverlay();
                                 if (prev_state == TelephonyManager.CALL_STATE_IDLE) {
                                     if (piAfterCall == null)
                                         piAfterCall = createPendingIntent(TIMER_AFTER_CALL);
@@ -545,7 +766,7 @@ public class OnExitService extends Service {
                                         // ignore
                                     }
                                 }
-                                showOverlay();
+                                showActiveOverlay();
                             }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -556,38 +777,43 @@ public class OnExitService extends Service {
                             break;
                         case TelephonyManager.CALL_STATE_RINGING:
                             stopAfterCall();
-                            hideOverlay();
-                            offhook = false;
+                            hideOverlays();
+                            show_overlay = true;
+                            ringing = true;
+                            showInactiveOverlay();
                             cg_run = isRunCG(getApplicationContext());
+                            State.appendLog("autoanswer " + autoanswer);
                             if (autoanswer > 0) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                State.appendLog("state " + speaker + ", " + audio.isBluetoothScoOn());
                                 if (speaker || audio.isBluetoothScoOn()) {
                                     if (piAnswer == null)
                                         piAnswer = createPendingIntent(ANSWER);
+                                    State.appendLog("start piAnswer");
                                     alarmMgr.setRepeating(AlarmManager.RTC,
                                             System.currentTimeMillis() + autoanswer, autoanswer, piAnswer);
                                 }
+                            }
+                            if (autoswitch > 0) {
+                                if (piRinging == null)
+                                    piRinging = createPendingIntent(RINGING);
+                                State.appendLog("start piRinging " + autoswitch);
+                                alarmMgr.setRepeating(AlarmManager.RTC,
+                                        System.currentTimeMillis() + autoswitch, autoswitch, piRinging);
                             }
                             break;
                         case TelephonyManager.CALL_STATE_IDLE:
                             stopAfterCall();
                             stopAutoAnswer();
-                            hideOverlay();
+                            hideOverlays();
                             call_number = null;
-                            offhook = false;
+                            show_overlay = false;
+                            ringing = false;
                             if (prev_state == TelephonyManager.CALL_STATE_IDLE)
                                 break;
                             if (phone) {
                                 if (isRunCG(getApplicationContext())) {
-                                    if (!isActiveCG(getApplicationContext())) {
-                                        try {
-                                            Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
-                                            if (intent != null)
-                                                startActivity(intent);
-                                        } catch (Exception ex) {
-                                            // ignore
-                                        }
-                                    }
+                                    switchToCG();
                                     if (piAfterCall == null)
                                         piAfterCall = createPendingIntent(TIMER_AFTER_CALL);
                                     alarmMgr.setRepeating(AlarmManager.RTC,
@@ -754,6 +980,48 @@ public class OnExitService extends Service {
                         convertFile(screenshots.getAbsolutePath() + "/" + bmp_file);
                     }
                 } catch (Exception ex) {
+                    // ignore
+                }
+                return null;
+            }
+        };
+        task.execute();
+    }
+
+    static boolean removeOldFile(File f) {
+        if (f.isDirectory()) {
+            boolean no_remove = false;
+            String[] files = f.list();
+            for (String file : files) {
+                no_remove |= removeOldFile(new File(f, file));
+            }
+            if (no_remove)
+                return true;
+            f.delete();
+            return false;
+        }
+        Date now = new Date();
+        if (f.lastModified() < now.getTime() - 7 * 24 * 60 * 60 * 1000) {
+            State.appendLog("delete");
+            f.delete();
+            return false;
+        }
+        return true;
+    }
+
+    static void removeRTA() {
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    File rta = Environment.getExternalStorageDirectory();
+                    rta = new File(rta, "CityGuide/RtaLog");
+                    String[] files = rta.list();
+                    for (String file : files) {
+                        removeOldFile(new File(rta, file));
+                    }
+                } catch (Exception ex) {
+                    State.print(ex);
                     // ignore
                 }
                 return null;

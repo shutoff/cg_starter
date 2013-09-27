@@ -59,6 +59,21 @@
         <item>after 10 sec</item>
         <item>after 15 sec</item>
     </string-array>
+    <string name="ring_time">Switch to CG on incoming call</string>
+    <string-array name="ring_times_value">
+        <item>-1</item>
+        <item>0</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+    <string-array name="ring_times">
+        <item>never</item>
+        <item>at once</item>
+        <item>after 2 sec</item>
+        <item>after 5 sec</item>
+        <item>after 10 sec</item>
+    </string-array>
     <string name="cg_start">Start with previous route</string>
     <string name="cg_start_sum">For launch CG with previous route press button Continue route</string>
     <string name="no_route">Start without route</string>
@@ -95,4 +110,8 @@
     <string name="unknown">Unknown</string>
     <string name="show_oncall">Show call info</string>
     <string name="show_oncall_sum">For move call info info hold it over 1 sec</string>
+    <string name="remove_rta">Clear RtaLog</string>
+    <string name="remove_rta_sum">Remove old files from RtaLogs</string>
+    <string name="sms">SMS reject message</string>
+    <string name="def_sms">I in a way, will call back later</string>
 </resources>

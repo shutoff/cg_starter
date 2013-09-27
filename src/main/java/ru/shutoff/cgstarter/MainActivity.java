@@ -222,8 +222,11 @@ public class MainActivity
             start = now.getTime() - work_time;
         }
 
-        if (savedInstanceState == null)
+        if (savedInstanceState == null) {
             OnExitService.convertFiles();
+            if (preferences.getBoolean(State.RTA_LOGS, false))
+                OnExitService.removeRTA();
+        }
     }
 
     @Override
@@ -410,7 +413,7 @@ public class MainActivity
             writer.append("1|router|65001\n");
             writer.append("#[CURRENT]|1|1\n");
             writer.append("Start|0|0\n");
-            if (!points_str.equals("")) {
+            if ((points_str != null) && !points_str.equals("")) {
                 String[] points = points_str.split(";");
                 for (String point : points) {
                     writer.append("Point|");
@@ -425,7 +428,6 @@ public class MainActivity
         } catch (IOException e) {
             Toast toast = Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG);
             toast.show();
-            return;
         }
     }
 

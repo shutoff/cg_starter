@@ -89,4 +89,16 @@
     <string name="unknown">Неизвестный</string>
     <string name="show_oncall">Показывать окно вызова</string>
     <string name="show_oncall_sum">Для перемещения окна удерживайте его около секунды</string>
+    <string name="remove_rta">Очищать RtaLog</string>
+    <string name="remove_rta_sum">Удалять файлы из RtaLog старше недели</string>
+    <string name="ring_time">Переключаться на СГ при входящем звонке</string>
+    <string name="sms">Текст SMS</string>
+    <string name="def_sms">Я еду, перезвоню позже</string>
+    <string-array name="ring_times">
+        <item>не переключаться</item>
+        <item>сразу</item>
+        <item>через 2 сек</item>
+        <item>через 5 сек</item>
+        <item>через 10 сек</item>
+    </string-array>
 </resources>

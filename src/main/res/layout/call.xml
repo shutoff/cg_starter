@@ -44,4 +44,37 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/phone"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center">
+
+        <ImageView
+            android:id="@+id/reject"
+            android:src="@drawable/reject"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp" />
+
+        <ImageView
+            android:id="@+id/sms"
+            android:src="@drawable/sms"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp" />
+
+        <ImageView
+            android:id="@+id/answer"
+            android:src="@drawable/answer"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp" />
+
+    </LinearLayout>
+
 </LinearLayout>

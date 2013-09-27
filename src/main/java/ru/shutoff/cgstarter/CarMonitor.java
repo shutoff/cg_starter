@@ -20,6 +20,7 @@ public class CarMonitor extends BroadcastReceiver {
         String action = intent.getAction();
         if (action == null)
             return;
+        State.appendLog(action);
         if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
             String state = intent.getStringExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE);
             if (state == null)
