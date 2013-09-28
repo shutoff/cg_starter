@@ -31,8 +31,7 @@ public class State {
     static final String POWER_TIME = "powertime";
     static final String ABOUT = "about";
     static final String BT = "bt";
-    static final String BT_CONNECTED = "bt_connected";
-    static final String SAVE_BT = "save_bt";
+    static final String BT_DEVICES = "bt_devices";
     static final String VOLUME = "volume";
     static final String LEVEL = "level";
     static final String PHONE = "phone";
@@ -54,7 +53,6 @@ public class State {
     static final String SAVE_WIFI = "save_wifi";
     static final String SAVE_DATA = "save_data";
     static final String CAR_START_CG = "car_start_cg";
-    static final String CAR_BT = "car_bt";
     static final String START = "start";
     static final String PHONE_X = "phone_x";
     static final String PHONE_Y = "phone_y";

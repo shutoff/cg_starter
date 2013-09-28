@@ -207,8 +207,7 @@ public class OnExitService extends Service {
                     }
                     ed.remove(State.GPS_SAVE);
                 }
-                if (!preferences.getBoolean(State.CAR_BT, false))
-                    turnOffBT(this);
+                turnOffBT(this, "-");
                 int channel = preferences.getInt(State.SAVE_CHANNEL, 0);
                 if (channel > 0) {
                     int level = preferences.getInt(State.SAVE_LEVEL, 0);
@@ -708,9 +707,7 @@ public class OnExitService extends Service {
                 if ((bt != null) && !bt.isEnabled()) {
                     bt.enable();
                     SharedPreferences.Editor ed = preferences.edit();
-                    ed.putBoolean(State.SAVE_BT, true);
-                    ed.remove(State.BT_CONNECTED);
-                    ed.remove(State.CAR_BT);
+                    ed.putString(State.BT_DEVICES, "-");
                     ed.commit();
                 }
             } catch (Exception ex) {
@@ -719,14 +716,30 @@ public class OnExitService extends Service {
         }
     }
 
-    static void turnOffBT(Context context) {
+    static void turnOffBT(Context context, String device) {
+        State.appendLog("remove BT " + device);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        boolean bt = preferences.getBoolean(State.SAVE_BT, false);
-        if (!bt)
+        String devices_str = preferences.getString(State.BT_DEVICES, "");
+        if (devices_str.equals(""))
             return;
-        boolean bt_connected = preferences.getBoolean(State.BT_CONNECTED, false);
-        if (bt_connected)
+        String[] devices = devices_str.split(";");
+        String d = null;
+        for (String dev : devices) {
+            if (dev.equals(device))
+                continue;
+            if (d == null) {
+                d = dev;
+            } else {
+                d += ";" + dev;
+            }
+        }
+        if (d != null) {
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.putString(State.BT_DEVICES, d);
+            ed.commit();
             return;
+        }
+        State.appendLog("BT_OFF");
         BluetoothAdapter btAdapter;
         try {
             btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -738,7 +751,7 @@ public class OnExitService extends Service {
             return;
         btAdapter.disable();
         SharedPreferences.Editor ed = preferences.edit();
-        ed.remove(State.SAVE_BT);
+        ed.remove(State.BT_DEVICES);
         ed.commit();
     }
 
