@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.media.AudioManager;
@@ -19,6 +20,7 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -82,6 +84,25 @@ public class MainActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                State.print(ex);
+            }
+        });
+
+        preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String orientation = preferences.getString(State.ORIENTATION, "");
+        State.appendLog("orient=" + orientation);
+        if (orientation.equals("2")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            State.appendLog("set portrait");
+        }
+        if (orientation.equals("3")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            State.appendLog("set landscape");
+        }
+
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
@@ -99,8 +120,6 @@ public class MainActivity
         buttons[5] = (Button) findViewById(R.id.btn6);
         buttons[6] = (Button) findViewById(R.id.btn7);
         buttons[7] = (Button) findViewById(R.id.btn8);
-
-        preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         int auto_pause = preferences.getInt(State.AUTO_PAUSE, 5);
         if (auto_pause < 3)
@@ -485,12 +504,23 @@ public class MainActivity
                 }
             }
         }
-        if (preferences.getBoolean(State.ROTATE, false)) {
+        String orientation = preferences.getString(State.ORIENTATION, "0");
+        if (!orientation.equals("0")) {
             try {
                 int save_rotation = Settings.System.getInt(context.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
                 Settings.System.putInt(context.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
                 if (!preferences.contains(State.SAVE_ROTATE))
                     ed.putInt(State.SAVE_ROTATE, save_rotation);
+                if (orientation.equals("2")) {
+                    int rotate = context.getResources().getConfiguration().orientation;
+                    if ((rotate != Surface.ROTATION_0) && (rotate != Surface.ROTATION_180))
+                        setOrientation(context, Surface.ROTATION_0);
+                }
+                if (orientation.equals("3")) {
+                    int rotate = context.getResources().getConfiguration().orientation;
+                    if ((rotate != Surface.ROTATION_90) && (rotate != Surface.ROTATION_270))
+                        setOrientation(context, Surface.ROTATION_90);
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -588,6 +618,18 @@ public class MainActivity
         }
         ed.commit();
         return true;
+    }
+
+    static void setOrientation(Context context, int rotate) {
+        try {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.putInt(State.SAVE_ORIENTATION, Settings.System.getInt(context.getContentResolver(), Settings.System.USER_ROTATION));
+            ed.commit();
+            Settings.System.putInt(context.getContentResolver(), Settings.System.USER_ROTATION, rotate);
+        } catch (Exception ex) {
+            // ignore
+        }
     }
 
     void launch() {

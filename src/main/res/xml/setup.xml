@@ -37,10 +37,11 @@
 
     <PreferenceCategory android:title="@string/control">
 
-        <CheckBoxPreference
-            android:key="rotate"
+        <ListPreference
+            android:key="orientation"
             android:title="@string/rotate"
-            android:summary="@string/rotate_sum" />
+            android:entries="@array/rotate_entries"
+            android:entryValues="@array/rotate_value" />
 
         <CheckBoxPreference
             android:key="gps"

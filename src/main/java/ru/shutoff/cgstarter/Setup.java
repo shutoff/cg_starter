@@ -5,9 +5,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.CheckBoxPreference;
+import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
@@ -22,8 +24,10 @@ public class Setup extends PreferenceActivity {
     SeekBarPreference launchPref;
     ListPreference answerPref;
     ListPreference ringPref;
+    ListPreference rotatePref;
     SharedPreferences prefs;
     CheckBoxPreference phoneShowPrefs;
+    EditTextPreference smsPref;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -159,6 +163,37 @@ public class Setup extends PreferenceActivity {
             pref_screen.removePreference(rtaPref);
         }
 
+        rotatePref = (ListPreference) findPreference(State.ORIENTATION);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
+            rotatePref.setEntries(R.array.rotate_entries2);
+        rotatePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof String) {
+                    SharedPreferences.Editor ed = prefs.edit();
+                    ed.putString(State.ORIENTATION, (String) newValue);
+                    ed.commit();
+                    setupRotatePref();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        smsPref = (EditTextPreference) findPreference(State.SMS);
+        smsPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof String) {
+                    smsPref.setSummary((String) newValue);
+                    return true;
+                }
+                return false;
+            }
+        });
+        smsPref.setSummary(prefs.getString(State.SMS, getString(R.string.def_sms)));
+
+        setupRotatePref();
         setupAnswerPref();
         setupRingPref();
     }
@@ -183,6 +218,18 @@ public class Setup extends PreferenceActivity {
         for (int i = 0; i < entries.length; i++) {
             if (entries[i].equals(answer)) {
                 ringPref.setSummary(values[i]);
+                break;
+            }
+        }
+    }
+
+    void setupRotatePref() {
+        String rotate = prefs.getString(State.ORIENTATION, "0");
+        String[] entries = getResources().getStringArray(R.array.rotate_entries);
+        String[] values = getResources().getStringArray(R.array.rotate_value);
+        for (int i = 0; i < entries.length; i++) {
+            if (values[i].equals(rotate)) {
+                rotatePref.setSummary(entries[i]);
                 break;
             }
         }

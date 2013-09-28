@@ -101,4 +101,14 @@
         <item>через 5 сек</item>
         <item>через 10 сек</item>
     </string-array>
+    <string-array name="rotate_entries">
+        <item>Не управлять</item>
+        <item>Запретить</item>
+        <item>Установить портрет</item>
+        <item>Установить ландшафт</item>
+    </string-array>
+    <string-array name="rotate_entries2">
+        <item>Не управлять</item>
+        <item>Запретить</item>
+    </string-array>
 </resources>

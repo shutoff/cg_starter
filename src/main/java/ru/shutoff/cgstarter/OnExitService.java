@@ -28,6 +28,7 @@ import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
 import android.provider.Settings;
+import android.support.v4.app.NotificationCompat;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.PhoneStateListener;
 import android.telephony.SmsManager;
@@ -62,9 +63,12 @@ public class OnExitService extends Service {
     static final String TIMER_AFTER_CALL = "TimerAfterCall";
     static final String ANSWER = "Answer";
     static final String RINGING = "Ringing";
+    static final String PHONE = "Phone";
 
     static final int AFTER_CALL_PAUSE = 2000;
     static final int AFTER_OFFHOOK_PAUSE = 5000;
+
+    static final int NOTIFICATION_ID = 1234;
 
     AlarmManager alarmMgr;
     PendingIntent pi;
@@ -78,7 +82,6 @@ public class OnExitService extends Service {
 
     boolean phone;
     boolean speaker;
-    boolean show_overlay;
     boolean ringing;
 
     static String call_number;
@@ -88,6 +91,9 @@ public class OnExitService extends Service {
 
     float button_x;
     float button_y;
+
+    boolean show_overlay;
+    boolean foreground;
 
     View hudActive;
     View hudInactive;
@@ -133,10 +139,13 @@ public class OnExitService extends Service {
 
     @Override
     public void onDestroy() {
+        State.appendLog("service onDestroy");
         if (phoneListener != null)
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
         if (observer != null)
             observer.startWatching();
+        if (foreground)
+            stopForeground(true);
         hideOverlays();
         super.onDestroy();
     }
@@ -180,6 +189,15 @@ public class OnExitService extends Service {
                         // ignore
                     }
                     ed.remove(State.SAVE_ROTATE);
+                }
+                rotate = preferences.getInt(State.SAVE_ORIENTATION, -1);
+                if (rotate >= 0) {
+                    try {
+                        Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, rotate);
+                    } catch (Exception ex) {
+                        // ignore
+                    }
+                    ed.remove(State.SAVE_ORIENTATION);
                 }
                 if (preferences.getBoolean(State.GPS_SAVE, false)) {
                     try {
@@ -232,8 +250,12 @@ public class OnExitService extends Service {
                 stopSelf();
             } else {
                 if (preferences.getBoolean(State.KILL, false)) {
-                    if (isActiveCG(this))
+                    State.appendLog("need kill");
+                    if (isActiveCG(this)) {
+                        State.appendLog("CG active - wait");
                         return START_STICKY;
+                    }
+                    State.appendLog("kill background");
                     killBackgroundCG(this);
                     SharedPreferences.Editor ed = preferences.edit();
                     ed.remove(State.KILL);
@@ -267,6 +289,11 @@ public class OnExitService extends Service {
                 piRinging = null;
             }
             switchToCG();
+            return START_STICKY;
+        }
+        if (action.equals(PHONE)) {
+            State.appendLog("phone");
+            switchToPhone();
             return START_STICKY;
         }
         return START_STICKY;
@@ -321,6 +348,21 @@ public class OnExitService extends Service {
                 // ignore
             }
         }
+    }
+
+    void switchToPhone() {
+        try {
+            TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+            Class c = Class.forName(tm.getClass().getName());
+            Method m = c.getDeclaredMethod("getITelephony");
+            m.setAccessible(true);
+            ITelephony telephonyService;
+            telephonyService = (ITelephony) m.invoke(tm);
+            telephonyService.showCallScreen();
+        } catch (Exception ex) {
+            // ignore
+        }
+        showInactiveOverlay();
     }
 
     abstract class OverlayTouchListener implements View.OnTouchListener {
@@ -403,11 +445,7 @@ public class OnExitService extends Service {
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudActive = inflater.inflate(R.layout.call, null);
         TextView number = (TextView) hudActive.findViewById(R.id.number);
-        if ((call_number != null) && !call_number.equals("")) {
-            number.setText(PhoneNumberUtils.formatNumber(call_number));
-        } else {
-            number.setText(getString(R.string.unknown));
-        }
+        number.setText(getNumber());
 
         Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(call_number));
         ContentResolver contentResolver = getContentResolver();
@@ -442,18 +480,7 @@ public class OnExitService extends Service {
         hudActive.setOnTouchListener(new OverlayTouchListener() {
             @Override
             void click() {
-                try {
-                    TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-                    Class c = Class.forName(tm.getClass().getName());
-                    Method m = c.getDeclaredMethod("getITelephony");
-                    m.setAccessible(true);
-                    ITelephony telephonyService;
-                    telephonyService = (ITelephony) m.invoke(tm);
-                    telephonyService.showCallScreen();
-                } catch (Exception ex) {
-                    // ignore
-                }
-                showInactiveOverlay();
+                switchToPhone();
             }
         });
 
@@ -507,11 +534,19 @@ public class OnExitService extends Service {
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         wm.addView(hudActive, params);
+
+        setForeground();
     }
 
     String getRejectMessage() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         return preferences.getString(State.SMS, getString(R.string.def_sms));
+    }
+
+    String getNumber() {
+        if ((call_number != null) && !call_number.equals(""))
+            return PhoneNumberUtils.formatNumber(call_number);
+        return getString(R.string.unknown);
     }
 
     void showInactiveOverlay() {
@@ -569,6 +604,18 @@ public class OnExitService extends Service {
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         wm.addView(hudInactive, params);
+
+        setForeground();
+    }
+
+    void setForeground() {
+        if (foreground)
+            return;
+        foreground = true;
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        builder.addAction(R.drawable.ic_launcher, getNumber(), createPendingIntent(PHONE));
+        startForeground(NOTIFICATION_ID, builder.build());
+        State.appendLog("start foreground");
     }
 
     void moveButton(int dx, int dy) {
@@ -808,6 +855,10 @@ public class OnExitService extends Service {
                             hideOverlays();
                             call_number = null;
                             show_overlay = false;
+                            if (foreground) {
+                                stopForeground(true);
+                                State.appendLog("stop foreground");
+                            }
                             ringing = false;
                             if (prev_state == TelephonyManager.CALL_STATE_IDLE)
                                 break;

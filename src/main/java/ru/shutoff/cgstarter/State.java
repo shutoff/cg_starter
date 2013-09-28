@@ -42,8 +42,9 @@ public class State {
     static final String RINGING_TIME = "ringtime";
     static final String SMS = "sms";
     static final String ID = "ID";
-    static final String ROTATE = "rotate";
+    static final String ORIENTATION = "orientation";
     static final String SAVE_ROTATE = "save_rotate";
+    static final String SAVE_ORIENTATION = "save_orientation";
     static final String SAVE_CHANNEL = "channel";
     static final String SAVE_LEVEL = "save_level";
     static final String GPS = "gps";

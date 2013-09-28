@@ -26,7 +26,6 @@
     <string name="inactive_pause">If not any buttons pressed</string>
     <string name="sec">sec</string>
     <string name="rotate">Screen rotate</string>
-    <string name="rotate_sum">Disable screen rotate on run CityGuide</string>
     <string name="bt">Bluetooth control</string>
     <string name="bt_sum">Turn ON bluetooth</string>
     <string name="data">Mobile data control</string>
@@ -114,4 +113,21 @@
     <string name="remove_rta_sum">Remove old files from RtaLogs</string>
     <string name="sms">SMS reject message</string>
     <string name="def_sms">I in a way, will call back later</string>
+    <string-array name="rotate_value">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+    <string-array name="rotate_entries">
+        <item>Don\'t change</item>
+        <item>Disable rotation</item>
+        <item>Set portrait</item>
+        <item>Set landscape</item>
+    </string-array>
+    <string-array name="rotate_entries2">
+        <item>Don\'t change</item>
+        <item>Disable rotation</item>
+    </string-array>
+
 </resources>
