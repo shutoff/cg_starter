@@ -55,6 +55,11 @@
             android:max="100"
             android:text="%" />
 
+        <ru.shutoff.cgstarter.ApplicationPreference
+            android:key="launch"
+            android:title="@string/launch_app"
+            android:summary="@string/launch_app_sum" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/phone">

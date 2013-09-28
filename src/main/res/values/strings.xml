@@ -129,5 +129,7 @@
         <item>Don\'t change</item>
         <item>Disable rotation</item>
     </string-array>
+    <string name="launch_app">Launch application</string>
+    <string name="launch_app_sum">Select application for launch with CG</string>
 
 </resources>
