@@ -609,6 +609,21 @@ public class MainActivity
                 ex.printStackTrace();
             }
         }
+
+        String apps = preferences.getString(State.LAUNCH_APP, "");
+        State.appendLog("lauch " + apps);
+        if (!apps.equals("")) {
+            String[] launch = apps.split("\\|");
+            for (String app : launch) {
+                try {
+                    Intent intent = context.getPackageManager().getLaunchIntentForPackage(app);
+                    context.startActivity(intent);
+                } catch (Exception ex) {
+                    State.print(ex);
+                }
+            }
+        }
+
         ed.commit();
         return true;
     }

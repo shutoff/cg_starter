@@ -91,6 +91,7 @@ public class OnExitService extends Service {
 
     float button_x;
     float button_y;
+    Bitmap contactPhoto;
 
     boolean show_overlay;
     boolean foreground;
@@ -242,6 +243,13 @@ public class OnExitService extends Service {
                         ex.printStackTrace();
                     }
                     ed.remove(State.SAVE_DATA);
+                }
+                String apps = preferences.getString(State.LAUNCH_APP, "");
+                if (!apps.equals("")) {
+                    String[] launch = apps.split("\\|");
+                    for (String app : launch) {
+                        killBackground(this, app);
+                    }
                 }
                 ed.remove(State.CAR_START_CG);
                 ed.remove(State.KILL);
@@ -451,6 +459,7 @@ public class OnExitService extends Service {
         Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
                 ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
 
+        contactPhoto = null;
         try {
             if (contactLookup != null && contactLookup.getCount() > 0) {
                 contactLookup.moveToNext();
@@ -460,20 +469,45 @@ public class OnExitService extends Service {
                 long id = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
                 Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
                 InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, photo_uri);
-                ImageView ivPhoto = (ImageView) hudActive.findViewById(R.id.photo);
-                Bitmap photo = null;
                 if (input != null)
-                    photo = BitmapFactory.decodeStream(input);
-                if (photo != null) {
-                    ivPhoto.setImageBitmap(photo);
-                } else {
-                    ivPhoto.setVisibility(View.GONE);
-                }
+                    contactPhoto = BitmapFactory.decodeStream(input);
             }
         } finally {
             if (contactLookup != null) {
                 contactLookup.close();
             }
+        }
+
+        ImageView ivPhoto = (ImageView) hudActive.findViewById(R.id.photo);
+        if (contactPhoto != null) {
+            ivPhoto.setImageBitmap(contactPhoto);
+        } else if (ringing) {
+            ivPhoto.setVisibility(View.GONE);
+        }
+
+        if (!ringing) {
+            ivPhoto.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            if (contactPhoto != null) {
+                                ImageView ivPhoto = (ImageView) hudActive.findViewById(R.id.photo);
+                                ivPhoto.setImageResource(R.drawable.reject);
+                            }
+                            break;
+                        case MotionEvent.ACTION_UP:
+                            callReject();
+                            break;
+                        case MotionEvent.ACTION_CANCEL:
+                            if (contactPhoto != null) {
+                                ImageView ivPhoto = (ImageView) hudActive.findViewById(R.id.photo);
+                                ivPhoto.setImageBitmap(contactPhoto);
+                            }
+                    }
+                    return true;
+                }
+            });
         }
 
         hudActive.setOnTouchListener(new OverlayTouchListener() {
@@ -957,7 +991,11 @@ public class OnExitService extends Service {
     }
 
     static void killBackgroundCG(Context context) {
-        State.appendLog("kill timer");
+        killBackground(context, State.CG_PACKAGE);
+    }
+
+    static void killBackground(Context context, String package_name) {
+        State.appendLog("kill " + package_name);
         if (mActivityManager == null)
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         Method method = null;
@@ -973,8 +1011,8 @@ public class OnExitService extends Service {
         }
         try {
             method.setAccessible(true);
-            method.invoke(mActivityManager, State.CG_PACKAGE);
-            State.appendLog("killed");
+            method.invoke(mActivityManager, package_name);
+            State.appendLog("killed " + package_name);
         } catch (Exception ex) {
             State.print(ex);
         }

@@ -59,6 +59,7 @@ public class State {
     static final String PHONE_SHOW = "phone_show";
     static final String KILL = "kill";
     static final String RTA_LOGS = "rta_logs";
+    static final String LAUNCH_APP = "launch";
 
     static class Point {
         String name;
