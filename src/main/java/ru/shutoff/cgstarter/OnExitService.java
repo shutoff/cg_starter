@@ -244,14 +244,21 @@ public class OnExitService extends Service {
                     }
                     ed.remove(State.SAVE_DATA);
                 }
+                try {
+                    sendBroadcast(new Intent("com.latedroid.juicedefender.action.ALLOW_APN")
+                            .putExtra("tag", "cg_starter")
+                            .putExtra("reply", true));
+                } catch (Exception ex) {
+                    // ignore
+                }
                 String apps = preferences.getString(State.LAUNCH_APP, "");
                 if (!apps.equals("")) {
                     String[] launch = apps.split("\\|");
                     for (String app : launch) {
+                        State.appendLog("kill " + app);
                         killBackground(this, app);
                     }
                 }
-                ed.remove(State.CAR_START_CG);
                 ed.remove(State.KILL);
                 ed.commit();
                 stopSelf();

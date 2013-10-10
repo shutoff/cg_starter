@@ -52,7 +52,6 @@ public class State {
     static final String INTENTS = "intents";
     static final String SAVE_WIFI = "save_wifi";
     static final String SAVE_DATA = "save_data";
-    static final String CAR_START_CG = "car_start_cg";
     static final String START = "start";
     static final String PHONE_X = "phone_x";
     static final String PHONE_Y = "phone_y";
@@ -60,6 +59,8 @@ public class State {
     static final String KILL = "kill";
     static final String RTA_LOGS = "rta_logs";
     static final String LAUNCH_APP = "launch";
+    static final String LAUNCH_APPS = "launch_apps";
+    static final String ROUTE = "route";
 
     static class Point {
         String name;

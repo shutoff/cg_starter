@@ -113,4 +113,6 @@
     </string-array>
     <string name="launch_app">Запускать приложения</string>
     <string name="launch_app_sum">Выберите приложения для запуска вместе с СГ</string>
+    <string name="ok">Установить</string>
+    <string name="plugin">CityGuide</string>
 </resources>

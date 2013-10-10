@@ -63,6 +63,7 @@ public class MainActivity
 
     static final int SETUP_BUTTON = 3000;
     static final int RUN_CG = 3001;
+    static final int RUN_APP = 3002;
 
     static int[][] holidays = {
             {1, 1},
@@ -309,6 +310,9 @@ public class MainActivity
                     }
                 }
                 break;
+            case RUN_APP:
+                launch_apps(preferences.getString(State.LAUNCH_APPS, ""));
+                break;
             case RUN_CG:
                 finish();
                 break;
@@ -521,6 +525,14 @@ public class MainActivity
         OnExitService.turnOnBT(context);
         if (preferences.getBoolean(State.DATA, false)) {
             try {
+                context.sendBroadcast(new Intent("com.latedroid.juicedefender.action.ENABLE_APN")
+                        .putExtra("tag", "cg_starter")
+                        .putExtra("reply", true));
+            } catch (Exception ex) {
+                // ignore
+            }
+
+            try {
                 WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
                 if (wifiManager != null) {
                     if (wifiManager.isWifiEnabled()) {
@@ -610,20 +622,6 @@ public class MainActivity
             }
         }
 
-        String apps = preferences.getString(State.LAUNCH_APP, "");
-        State.appendLog("lauch " + apps);
-        if (!apps.equals("")) {
-            String[] launch = apps.split("\\|");
-            for (String app : launch) {
-                try {
-                    Intent intent = context.getPackageManager().getLaunchIntentForPackage(app);
-                    context.startActivity(intent);
-                } catch (Exception ex) {
-                    State.print(ex);
-                }
-            }
-        }
-
         ed.commit();
         return true;
     }
@@ -648,10 +646,41 @@ public class MainActivity
             do_launch = true;
             return;
         }
-        launch_cg();
+        launch_apps(preferences.getString(State.LAUNCH_APP, ""));
     }
 
-    void launch_cg() {
+    void launch_apps(String apps) {
+        State.appendLog("launch apps " + apps);
+        if (!apps.equals("")) {
+            String[] launch = apps.split("\\|");
+            for (int i = 0; i < launch.length; i++) {
+                try {
+                    State.appendLog("launch " + launch[i]);
+                    Intent intent = getPackageManager().getLaunchIntentForPackage(launch[i]);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION + Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.addCategory("android.intent.category.LAUNCHER");
+                    startActivityForResult(intent, RUN_APP);
+                    SharedPreferences.Editor ed = preferences.edit();
+                    String res = null;
+                    for (i++; i < launch.length; i++) {
+                        if (res == null) {
+                            res = launch[i];
+                        } else {
+                            res += "|" + launch[i];
+                        }
+                    }
+                    if (res != null) {
+                        ed.putString(State.LAUNCH_APPS, res);
+                    } else {
+                        ed.remove(State.LAUNCH_APPS);
+                    }
+                    return;
+                } catch (Exception ex) {
+                    State.print(ex);
+                }
+            }
+        }
+
         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
         if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
@@ -701,7 +730,7 @@ public class MainActivity
             public void onClick(DialogInterface dialog, int which) {
                 setStateForce();
                 if (do_launch)
-                    launch_cg();
+                    launch_apps(preferences.getString(State.LAUNCH_APP, ""));
                 dialog.cancel();
             }
         });

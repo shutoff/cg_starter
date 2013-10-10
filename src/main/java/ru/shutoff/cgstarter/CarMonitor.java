@@ -6,12 +6,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 public class CarMonitor extends BroadcastReceiver {
 
     static final String START = "ru.shutoff.cgstarter.START";
+    static final String FIRE = "com.twofortyfouram.locale.intent.action.FIRE_SETTING";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -63,6 +65,16 @@ public class CarMonitor extends BroadcastReceiver {
         if (action.equals(Intent.ACTION_NEW_OUTGOING_CALL)) {
             OnExitService.call_number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER);
         }
+        if (action.equals(FIRE)) {
+            Bundle data = intent.getBundleExtra(EditActivity.EXTRA_BUNDLE);
+            try {
+                String route = data.get(State.ROUTE).toString();
+                String points = data.get(State.POINTS).toString();
+                startCG(context, route, points);
+            } catch (Exception ex) {
+                // ignore
+            }
+        }
         if (action.equals(START)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String route = intent.getStringExtra("ROUTE");
@@ -85,32 +97,37 @@ public class CarMonitor extends BroadcastReceiver {
                 MainActivity.removeRoute(context);
                 route = "";
             }
-            if (!route.equals(""))
-                MainActivity.createRoute(context, route, route_points);
-            if (!MainActivity.setState(context, new State.OnBadGPS() {
-                @Override
-                public void gps_message(Context context) {
-                    Toast toast = Toast.makeText(context, context.getString(R.string.no_gps_title), Toast.LENGTH_SHORT);
-                    toast.show();
-                }
-            })) {
-                MainActivity.setState(context, null);
-            }
-            Intent run = context.getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
-            if (run == null) {
-                Toast toast = Toast.makeText(context, context.getString(R.string.no_cg), Toast.LENGTH_SHORT);
-                toast.show();
-                return;
-            }
-            context.startActivity(run);
-            Intent service = new Intent(context, OnExitService.class);
-            service.setAction(OnExitService.START);
-            context.startService(service);
+            startCG(context, route, route_points);
         }
+    }
+
+    void startCG(Context context, String route, String route_points) {
+        if (!route.equals(""))
+            MainActivity.createRoute(context, route, route_points);
+        if (!MainActivity.setState(context, new State.OnBadGPS() {
+            @Override
+            public void gps_message(Context context) {
+                Toast toast = Toast.makeText(context, context.getString(R.string.no_gps_title), Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        })) {
+            MainActivity.setState(context, null);
+        }
+        Intent run = context.getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+        if (run == null) {
+            Toast toast = Toast.makeText(context, context.getString(R.string.no_cg), Toast.LENGTH_SHORT);
+            toast.show();
+            return;
+        }
+        context.startActivity(run);
+        Intent service = new Intent(context, OnExitService.class);
+        service.setAction(OnExitService.START);
+        context.startService(service);
     }
 
     void setCarMode(Context context, boolean newMode) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        State.appendLog("set carmode " + newMode);
         boolean curMode = preferences.getBoolean(State.CAR_STATE, false);
         if (curMode != newMode) {
             SharedPreferences.Editor ed = preferences.edit();
@@ -121,12 +138,10 @@ public class CarMonitor extends BroadcastReceiver {
                     Intent run = new Intent(context, MainActivity.class);
                     run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(run);
-                    ed.putBoolean(State.CAR_START_CG, true);
                     ed.commit();
                 }
             } else {
-                if (preferences.getBoolean(State.CAR_START_CG, false))
-                    OnExitService.killCG(context);
+                OnExitService.killCG(context);
             }
         }
     }
