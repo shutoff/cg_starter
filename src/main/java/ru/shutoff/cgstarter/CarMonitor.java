@@ -1,5 +1,6 @@
 package ru.shutoff.cgstarter;
 
+import android.app.ActivityManager;
 import android.app.UiModeManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -9,6 +10,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
+
+import java.util.List;
 
 public class CarMonitor extends BroadcastReceiver {
 
@@ -47,6 +50,11 @@ public class CarMonitor extends BroadcastReceiver {
                     context.startActivity(run);
                 }
             }
+        }
+        if (action.equals(Intent.ACTION_POWER_DISCONNECTED)) {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            if (preferences.getBoolean(State.KILL_POWER, false))
+                killCG(context);
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -141,7 +149,22 @@ public class CarMonitor extends BroadcastReceiver {
                     ed.commit();
                 }
             } else {
-                OnExitService.killCG(context);
+                if (preferences.getBoolean(State.KILL_CAR, false))
+                    killCG(context);
+            }
+        }
+    }
+
+    void killCG(Context context) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
+        if (procInfos == null)
+            return;
+        int i;
+        for (i = 0; i < procInfos.size(); i++) {
+            ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
+            if (proc.processName.equals(State.CG_PACKAGE)) {
+                SuperUserPreference.doRoot("kill " + proc.pid);
             }
         }
     }

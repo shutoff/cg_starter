@@ -53,17 +53,6 @@ public class Setup extends PreferenceActivity {
             }
         });
 
-        Preference intentsPref = (Preference) findPreference(State.INTENTS);
-        intentsPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            public boolean onPreferenceClick(Preference preference) {
-                Intent intent = new Intent(getBaseContext(), WebViewActivity.class);
-                intent.putExtra(State.URL, "file:///android_asset/html/intents.html");
-                startActivity(intent);
-                return true;
-            }
-        });
-
-
         Preference aboutPref = (Preference) findPreference(State.ABOUT);
         try {
             PackageManager pkgManager = getPackageManager();

@@ -55,11 +55,6 @@
             android:max="100"
             android:text="%" />
 
-        <ru.shutoff.cgstarter.ApplicationPreference
-            android:key="launch"
-            android:title="@string/launch_app"
-            android:summary="@string/launch_app_sum" />
-
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/phone">
@@ -117,9 +112,19 @@
             android:title="@string/carmode"
             android:summary="@string/carmode_sum" />
 
+        <ru.shutoff.cgstarter.SuperUserPreference
+            android:key="kill_power"
+            android:title="@string/kill_cg"
+            android:summary="@string/kill_car" />
+
         <ru.shutoff.cgstarter.TimePreference
             android:key="powertime"
             android:title="@string/powermode" />
+
+        <ru.shutoff.cgstarter.SuperUserPreference
+            android:key="kill_power"
+            android:title="@string/kill_cg"
+            android:summary="@string/kill_power" />
 
         <CheckBoxPreference
             android:key="rta_logs"
@@ -127,11 +132,6 @@
             android:summary="@string/remove_rta_sum" />
 
     </PreferenceCategory>
-
-    <Preference
-        android:key="intents"
-        android:title="@string/intents"
-        android:summary="@string/intents_sum" />
 
     <Preference
         android:key="about"

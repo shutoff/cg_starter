@@ -111,8 +111,11 @@
         <item>Не управлять</item>
         <item>Запретить</item>
     </string-array>
-    <string name="launch_app">Запускать приложения</string>
-    <string name="launch_app_sum">Выберите приложения для запуска вместе с СГ</string>
-    <string name="ok">Установить</string>
     <string name="plugin">CityGuide</string>
+    <string name="kill_cg">Завершать СГ</string>
+    <string name="kill_car">Завершать при вынимании из дока</string>
+    <string name="kill_power">Завершать при отключении питания</string>
+    <string name="ok">Продолжить</string>
+    <string name="require_su">Требуется рут</string>
+    <string name="require_su_msg">Для завершения СГ приложению требуются рутовые права</string>
 </resources>

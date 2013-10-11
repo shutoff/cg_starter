@@ -129,8 +129,11 @@
         <item>Don\'t change</item>
         <item>Disable rotation</item>
     </string-array>
-    <string name="launch_app">Launch application</string>
-    <string name="launch_app_sum">Select application for launch with CG</string>
     <string name="ok">OK</string>
     <string name="plugin">CityGuide</string>
+    <string name="kill_cg">Kill CG</string>
+    <string name="kill_car">Kill CG on inject from car dock</string>
+    <string name="kill_power">Kill CG on disconnect from power</string>
+    <string name="require_su">Require root</string>
+    <string name="require_su_msg">For terminate CG application require root privilegies</string>
 </resources>

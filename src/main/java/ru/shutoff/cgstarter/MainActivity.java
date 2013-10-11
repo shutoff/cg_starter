@@ -56,7 +56,6 @@ public class MainActivity
 
     View activeButton;
     boolean set_state;
-    boolean do_launch;
     double start;
 
     SharedPreferences preferences;
@@ -310,9 +309,6 @@ public class MainActivity
                     }
                 }
                 break;
-            case RUN_APP:
-                launch_apps(preferences.getString(State.LAUNCH_APPS, ""));
-                break;
             case RUN_CG:
                 finish();
                 break;
@@ -419,7 +415,6 @@ public class MainActivity
 
     static void createRoute(Context context, String route, String points_str) {
         try {
-            OnExitService.killCG(context);
             String tail = routes();
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
@@ -449,7 +444,6 @@ public class MainActivity
 
     static void removeRoute(Context context) {
         try {
-            OnExitService.killCG(context);
             String tail = routes();
             File routes_dat = Environment.getExternalStorageDirectory();
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
@@ -642,45 +636,6 @@ public class MainActivity
         timer.cancel();
         stopTimers();
         setState();
-        if (!set_state) {
-            do_launch = true;
-            return;
-        }
-        launch_apps(preferences.getString(State.LAUNCH_APP, ""));
-    }
-
-    void launch_apps(String apps) {
-        State.appendLog("launch apps " + apps);
-        if (!apps.equals("")) {
-            String[] launch = apps.split("\\|");
-            for (int i = 0; i < launch.length; i++) {
-                try {
-                    State.appendLog("launch " + launch[i]);
-                    Intent intent = getPackageManager().getLaunchIntentForPackage(launch[i]);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION + Intent.FLAG_ACTIVITY_NEW_TASK);
-                    intent.addCategory("android.intent.category.LAUNCHER");
-                    startActivityForResult(intent, RUN_APP);
-                    SharedPreferences.Editor ed = preferences.edit();
-                    String res = null;
-                    for (i++; i < launch.length; i++) {
-                        if (res == null) {
-                            res = launch[i];
-                        } else {
-                            res += "|" + launch[i];
-                        }
-                    }
-                    if (res != null) {
-                        ed.putString(State.LAUNCH_APPS, res);
-                    } else {
-                        ed.remove(State.LAUNCH_APPS);
-                    }
-                    return;
-                } catch (Exception ex) {
-                    State.print(ex);
-                }
-            }
-        }
-
         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
         if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
@@ -729,8 +684,6 @@ public class MainActivity
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 setStateForce();
-                if (do_launch)
-                    launch_apps(preferences.getString(State.LAUNCH_APP, ""));
                 dialog.cancel();
             }
         });

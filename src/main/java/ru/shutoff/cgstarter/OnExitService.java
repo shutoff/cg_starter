@@ -251,31 +251,9 @@ public class OnExitService extends Service {
                 } catch (Exception ex) {
                     // ignore
                 }
-                String apps = preferences.getString(State.LAUNCH_APP, "");
-                if (!apps.equals("")) {
-                    String[] launch = apps.split("\\|");
-                    for (String app : launch) {
-                        State.appendLog("kill " + app);
-                        killBackground(this, app);
-                    }
-                }
-                ed.remove(State.KILL);
                 ed.commit();
                 stopSelf();
             } else {
-                if (preferences.getBoolean(State.KILL, false)) {
-                    State.appendLog("need kill");
-                    if (isActiveCG(this)) {
-                        State.appendLog("CG active - wait");
-                        return START_STICKY;
-                    }
-                    State.appendLog("kill background");
-                    killBackgroundCG(this);
-                    SharedPreferences.Editor ed = preferences.edit();
-                    ed.remove(State.KILL);
-                    ed.commit();
-                    return START_STICKY;
-                }
                 setPhoneListener();
                 if (show_overlay) {
                     if (isActiveCG(this)) {
@@ -971,58 +949,6 @@ public class OnExitService extends Service {
             // ignore
         }
         return false;
-    }
-
-    static void killCG(Context context) {
-        if (!isRunCG(context))
-            return;
-        State.appendLog("killCG");
-        if (isActiveCG(context)) {
-
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-            SharedPreferences.Editor ed = preferences.edit();
-            ed.putBoolean(State.KILL, true);
-            ed.commit();
-
-            Intent startMain = new Intent(Intent.ACTION_MAIN);
-            startMain.addCategory(Intent.CATEGORY_HOME);
-            startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(startMain);
-
-            Intent intent = new Intent(context, OnExitService.class);
-            intent.setAction(START);
-            context.startService(intent);
-            return;
-        }
-        killBackgroundCG(context);
-    }
-
-    static void killBackgroundCG(Context context) {
-        killBackground(context, State.CG_PACKAGE);
-    }
-
-    static void killBackground(Context context, String package_name) {
-        State.appendLog("kill " + package_name);
-        if (mActivityManager == null)
-            mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        Method method = null;
-        try {
-            method = mActivityManager.getClass().getDeclaredMethod("killBackgroundProcesses", String.class);
-        } catch (NoSuchMethodException ex) {
-            try {
-                method = mActivityManager.getClass().getDeclaredMethod("restartPackage", String.class);
-            } catch (NoSuchMethodException e) {
-                State.print(e);
-                return;
-            }
-        }
-        try {
-            method.setAccessible(true);
-            method.invoke(mActivityManager, package_name);
-            State.appendLog("killed " + package_name);
-        } catch (Exception ex) {
-            State.print(ex);
-        }
     }
 
     static boolean isRunningService(String processname) {
