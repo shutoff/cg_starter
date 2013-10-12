@@ -86,15 +86,10 @@ public class MainActivity
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String orientation = preferences.getString(State.ORIENTATION, "");
-        State.appendLog("orient=" + orientation);
-        if (orientation.equals("2")) {
+        if (orientation.equals("2"))
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            State.appendLog("set portrait");
-        }
-        if (orientation.equals("3")) {
+        if (orientation.equals("3"))
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            State.appendLog("set landscape");
-        }
 
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);

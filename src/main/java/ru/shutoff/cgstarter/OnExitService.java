@@ -130,17 +130,10 @@ public class OnExitService extends Service {
             // ignore
         }
         observer.startWatching();
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable ex) {
-                State.print(ex);
-            }
-        });
     }
 
     @Override
     public void onDestroy() {
-        State.appendLog("service onDestroy");
         if (phoneListener != null)
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
         if (observer != null)
@@ -165,7 +158,6 @@ public class OnExitService extends Service {
         }
         if (action.equals(TIMER_AFTER_CALL)) {
             stopAfterCall();
-            State.appendLog("timer after call");
             if (isRunCG(getApplicationContext()) && !isActiveCG(getApplicationContext())) {
                 try {
                     Intent launch = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
@@ -266,7 +258,6 @@ public class OnExitService extends Service {
             return START_STICKY;
         }
         if (action.equals(ANSWER)) {
-            State.appendLog("answer");
             if (piAnswer != null) {
                 alarmMgr.cancel(piAnswer);
                 piAnswer = null;
@@ -275,7 +266,6 @@ public class OnExitService extends Service {
             return START_STICKY;
         }
         if (action.equals(RINGING)) {
-            State.appendLog("ringing");
             if (piRinging != null) {
                 alarmMgr.cancel(piRinging);
                 piRinging = null;
@@ -284,7 +274,6 @@ public class OnExitService extends Service {
             return START_STICKY;
         }
         if (action.equals(PHONE)) {
-            State.appendLog("phone");
             switchToPhone();
             return START_STICKY;
         }
@@ -326,7 +315,7 @@ public class OnExitService extends Service {
             telephonyService = (ITelephony) m.invoke(telephony);
             telephonyService.endCall();
         } catch (Exception ex) {
-            State.print(ex);
+            // ignore
         }
     }
 
@@ -413,10 +402,7 @@ public class OnExitService extends Service {
     void showActiveOverlay() {
         if (hudActive != null)
             return;
-
         hideInactiveOverlay();
-        State.appendLog("show active");
-
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
             return;
@@ -509,7 +495,6 @@ public class OnExitService extends Service {
             ivAnswer.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    State.appendLog("answer");
                     callAnswer();
                     ringing = false;
                     hideOverlays();
@@ -522,7 +507,6 @@ public class OnExitService extends Service {
             ivReject.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    State.appendLog("reject");
                     callReject();
                     ringing = false;
                     hideOverlays();
@@ -535,7 +519,6 @@ public class OnExitService extends Service {
             ivSms.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    State.appendLog("sms");
                     callReject();
                     ringing = false;
                     hideOverlays();
@@ -570,10 +553,7 @@ public class OnExitService extends Service {
     void showInactiveOverlay() {
         if (hudInactive != null)
             return;
-
         hideActiveOverlay();
-        State.appendLog("show inactive");
-
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
             return;
@@ -600,7 +580,6 @@ public class OnExitService extends Service {
             PackageManager manager = getPackageManager();
             ivIcon.setImageDrawable(manager.getApplicationIcon(State.CG_PACKAGE));
         } catch (Exception ex) {
-            State.print(ex);
             // ignore
         }
 
@@ -633,7 +612,6 @@ public class OnExitService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
         builder.addAction(R.drawable.ic_launcher, getNumber(), createPendingIntent(PHONE));
         startForeground(NOTIFICATION_ID, builder.build());
-        State.appendLog("start foreground");
     }
 
     void moveButton(int dx, int dy) {
@@ -699,7 +677,6 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudActive == null)
             return;
-        State.appendLog("hide active");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudActive);
         hudActive = null;
     }
@@ -708,7 +685,6 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudInactive == null)
             return;
-        State.appendLog("hide inactive");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudInactive);
         hudInactive = null;
     }
@@ -736,7 +712,6 @@ public class OnExitService extends Service {
     }
 
     static void turnOffBT(Context context, String device) {
-        State.appendLog("remove BT " + device);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         String devices_str = preferences.getString(State.BT_DEVICES, "");
         if (devices_str.equals(""))
@@ -758,7 +733,6 @@ public class OnExitService extends Service {
             ed.commit();
             return;
         }
-        State.appendLog("BT_OFF");
         BluetoothAdapter btAdapter;
         try {
             btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -778,7 +752,6 @@ public class OnExitService extends Service {
     static boolean cg_run;
 
     void stopAutoAnswer() {
-        State.appendLog("stop auto answer");
         if (piAnswer != null) {
             alarmMgr.cancel(piAnswer);
             piAnswer = null;
@@ -790,7 +763,6 @@ public class OnExitService extends Service {
     }
 
     void stopAfterCall() {
-        State.appendLog("stop after call");
         if (piAfterCall != null) {
             alarmMgr.cancel(piAfterCall);
             piAfterCall = null;
@@ -817,7 +789,6 @@ public class OnExitService extends Service {
                     if ((incomingNumber != null) && (!incomingNumber.equals("")))
                         call_number = incomingNumber;
                     super.onCallStateChanged(state, incomingNumber);
-                    State.appendLog("state " + state);
                     switch (state) {
                         case TelephonyManager.CALL_STATE_OFFHOOK:
                             stopAutoAnswer();
@@ -849,7 +820,6 @@ public class OnExitService extends Service {
                             }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                State.appendLog("sco: " + audio.isBluetoothScoOn());
                                 if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn())
                                     audio.setSpeakerphoneOn(true);
                             }
@@ -861,14 +831,11 @@ public class OnExitService extends Service {
                             ringing = true;
                             showInactiveOverlay();
                             cg_run = isRunCG(getApplicationContext());
-                            State.appendLog("autoanswer " + autoanswer);
                             if (autoanswer > 0) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                State.appendLog("state " + speaker + ", " + audio.isBluetoothScoOn());
                                 if (speaker || audio.isBluetoothScoOn()) {
                                     if (piAnswer == null)
                                         piAnswer = createPendingIntent(ANSWER);
-                                    State.appendLog("start piAnswer");
                                     alarmMgr.setRepeating(AlarmManager.RTC,
                                             System.currentTimeMillis() + autoanswer, autoanswer, piAnswer);
                                 }
@@ -876,7 +843,6 @@ public class OnExitService extends Service {
                             if (autoswitch > 0) {
                                 if (piRinging == null)
                                     piRinging = createPendingIntent(RINGING);
-                                State.appendLog("start piRinging " + autoswitch);
                                 alarmMgr.setRepeating(AlarmManager.RTC,
                                         System.currentTimeMillis() + autoswitch, autoswitch, piRinging);
                             }
@@ -887,10 +853,8 @@ public class OnExitService extends Service {
                             hideOverlays();
                             call_number = null;
                             show_overlay = false;
-                            if (foreground) {
+                            if (foreground)
                                 stopForeground(true);
-                                State.appendLog("stop foreground");
-                            }
                             ringing = false;
                             if (prev_state == TelephonyManager.CALL_STATE_IDLE)
                                 break;
@@ -1037,7 +1001,6 @@ public class OnExitService extends Service {
         }
         Date now = new Date();
         if (f.lastModified() < now.getTime() - 7 * 24 * 60 * 60 * 1000) {
-            State.appendLog("delete");
             f.delete();
             return false;
         }
@@ -1056,7 +1019,6 @@ public class OnExitService extends Service {
                         removeOldFile(new File(rta, file));
                     }
                 } catch (Exception ex) {
-                    State.print(ex);
                     // ignore
                 }
                 return null;

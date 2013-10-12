@@ -25,7 +25,6 @@ public class CarMonitor extends BroadcastReceiver {
         String action = intent.getAction();
         if (action == null)
             return;
-        State.appendLog(action);
         if (action.equals(UiModeManager.ACTION_ENTER_CAR_MODE)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             if (preferences.getBoolean(State.CAR_MODE, false)) {
@@ -135,7 +134,6 @@ public class CarMonitor extends BroadcastReceiver {
 
     void setCarMode(Context context, boolean newMode) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        State.appendLog("set carmode " + newMode);
         boolean curMode = preferences.getBoolean(State.CAR_STATE, false);
         if (curMode != newMode) {
             SharedPreferences.Editor ed = preferences.edit();

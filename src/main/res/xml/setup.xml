@@ -113,7 +113,7 @@
             android:summary="@string/carmode_sum" />
 
         <ru.shutoff.cgstarter.SuperUserPreference
-            android:key="kill_power"
+            android:key="kill_car"
             android:title="@string/kill_cg"
             android:summary="@string/kill_car" />
 

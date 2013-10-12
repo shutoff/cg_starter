@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
-    android:versionCode="12"
-    android:versionName="1.1.3 test3">
+    android:versionCode="13"
+    android:versionName="1.2">
 
-<uses-sdk
+    <uses-sdk
         android:minSdkVersion="7"
         android:targetSdkVersion="16" />
 
@@ -55,7 +55,7 @@
         <activity
             android:name=".EditActivity"
             android:label="@string/plugin"
-            android:icon="@drawable/ic_launcher"
+            android:icon="@drawable/plugin"
             android:theme="@style/Theme.Transparent">
             <intent-filter>
                 <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />
