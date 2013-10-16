@@ -70,6 +70,11 @@
             android:summary="@string/data_sum" />
 
         <CheckBoxPreference
+            android:key="ping"
+            android:title="@string/ping"
+            android:summary="@string/ping_sum" />
+
+        <CheckBoxPreference
             android:key="phone"
             android:title="@string/oncall"
             android:summary="@string/phone_sum" />

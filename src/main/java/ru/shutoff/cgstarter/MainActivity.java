@@ -631,6 +631,12 @@ public class MainActivity
         timer.cancel();
         stopTimers();
         setState();
+        if (!set_state)
+            return;
+        launch_cg();
+    }
+
+    void launch_cg() {
         Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
         if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
@@ -680,6 +686,7 @@ public class MainActivity
             public void onClick(DialogInterface dialog, int which) {
                 setStateForce();
                 dialog.cancel();
+                launch_cg();
             }
         });
         ad.show();

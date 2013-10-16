@@ -17,9 +17,11 @@ import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.FileObserver;
@@ -37,6 +39,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -103,6 +106,8 @@ public class OnExitService extends Service {
 
     FileObserver observer;
     String screenshots_path;
+
+    PingTask pingTask;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -186,7 +191,7 @@ public class OnExitService extends Service {
                 rotate = preferences.getInt(State.SAVE_ORIENTATION, -1);
                 if (rotate >= 0) {
                     try {
-                        Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, rotate);
+                        Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, Surface.ROTATION_0);
                     } catch (Exception ex) {
                         // ignore
                     }
@@ -254,6 +259,8 @@ public class OnExitService extends Service {
                         showInactiveOverlay();
                     }
                 }
+                if (preferences.getBoolean(State.PING, false))
+                    ping();
             }
             return START_STICKY;
         }
@@ -279,6 +286,27 @@ public class OnExitService extends Service {
         }
         return START_STICKY;
     }
+
+    void ping() {
+        if (pingTask != null)
+            return;
+        pingTask = new PingTask();
+        pingTask.execute();
+    }
+
+    void setAirplaneMode(boolean mode) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            Settings.System.putInt(getContentResolver(),
+                    Settings.System.AIRPLANE_MODE_ON, mode ? 1 : 0);
+        } else {
+            Settings.Global.putInt(getContentResolver(),
+                    Settings.Global.AIRPLANE_MODE_ON, mode ? 1 : 0);
+        }
+        Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        intent.putExtra("state", mode);
+        sendBroadcast(intent);
+    }
+
 
     void callAnswer() {
         TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
@@ -1025,5 +1053,70 @@ public class OnExitService extends Service {
             }
         };
         task.execute();
+    }
+
+    class PingTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
+                if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting()) {
+                    State.appendLog("is not connected");
+
+                    if (activeNetwork == null)
+                        State.appendLog("no active network");
+                    if ((activeNetwork != null) && !activeNetwork.isConnectedOrConnecting())
+                        State.appendLog("active network is not connected");
+
+                    Class conmanClass = Class.forName(conman.getClass().getName());
+                    Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
+                    iConnectivityManagerField.setAccessible(true);
+                    Object iConnectivityManager = iConnectivityManagerField.get(conman);
+                    Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
+
+                    Method getMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("getMobileDataEnabled");
+                    getMobileDataEnabledMethod.setAccessible(true); // Make the method callable
+
+                    if (!(Boolean) getMobileDataEnabledMethod.invoke(iConnectivityManager)) {
+                        Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
+                        setMobileDataEnabledMethod.setAccessible(true);
+                        setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+                        State.appendLog("enable data");
+                        Thread.sleep(5000);
+
+                        activeNetwork = conman.getActiveNetworkInfo();
+                        if (activeNetwork == null)
+                            State.appendLog("no active network after enabled");
+                        if ((activeNetwork != null) && !activeNetwork.isConnected())
+                            State.appendLog("active network is not connected after enabled");
+                    }
+                }
+                if (!show_overlay && ((activeNetwork == null) || !activeNetwork.isConnected())) {
+                    Runtime runtime = Runtime.getRuntime();
+                    Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+                    int exitValue = mIpAddrProcess.waitFor();
+                    if (exitValue != 0) {
+                        State.appendLog("8.8.8.8 is unreachable");
+                        TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                        if ((tel.getNetworkOperator() != null) && !tel.getNetworkOperator().equals("")) {
+                            State.appendLog("GSM available - need reset");
+                            setAirplaneMode(true);
+                            setAirplaneMode(false);
+                            Thread.sleep(10000);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                State.print(ex);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            pingTask = null;
+        }
     }
 }

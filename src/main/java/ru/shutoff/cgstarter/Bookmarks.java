@@ -35,6 +35,8 @@ public class Bookmarks {
                     String[] parts = line.split("\\|");
                     if (parts.length < 4)
                         continue;
+                    if (parts[1].length() == 0)
+                        continue;
                     Point p = new Point();
                     p.name = parts[1];
                     try {

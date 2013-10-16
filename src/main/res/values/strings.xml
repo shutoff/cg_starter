@@ -136,4 +136,6 @@
     <string name="kill_power">Kill CG on disconnect from power</string>
     <string name="require_su">Require root</string>
     <string name="require_su_msg">For terminate CG application require root privilegies</string>
+    <string name="ping">Test data connectivity</string>
+    <string name="ping_sum">Restart connection if data is not available</string>
 </resources>

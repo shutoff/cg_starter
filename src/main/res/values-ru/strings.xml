@@ -118,4 +118,6 @@
     <string name="ok">Продолжить</string>
     <string name="require_su">Требуется рут</string>
     <string name="require_su_msg">Для завершения СГ приложению требуются рутовые права</string>
+    <string name="ping">Проверка соединения</string>
+    <string name="ping_sum">Периодическая проверка и соединения и сброс его при недоступности</string>
 </resources>
