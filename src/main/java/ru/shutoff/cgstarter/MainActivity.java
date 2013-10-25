@@ -23,6 +23,7 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -62,7 +63,7 @@ public class MainActivity
 
     static final int SETUP_BUTTON = 3000;
     static final int RUN_CG = 3001;
-    static final int RUN_APP = 3002;
+    ;
 
     static int[][] holidays = {
             {1, 1},
@@ -234,6 +235,17 @@ public class MainActivity
             if (preferences.getBoolean(State.RTA_LOGS, false))
                 OnExitService.removeRTA();
         }
+    }
+
+    @Override
+    public void onAttachedToWindow() {
+        //make the activity show even the screen is locked.
+        Window window = getWindow();
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                + WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                + WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                + WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
     }
 
     @Override

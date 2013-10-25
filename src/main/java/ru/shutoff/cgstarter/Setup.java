@@ -70,6 +70,16 @@ public class Setup extends PreferenceActivity {
             }
         });
 
+        Preference donatePref = (Preference) findPreference(State.DONATE);
+        donatePref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                Intent intent = new Intent(getBaseContext(), WebViewActivity.class);
+                intent.putExtra(State.URL, "file:///android_asset/html/donate.html");
+                startActivity(intent);
+                return true;
+            }
+        });
+
         PreferenceScreen screen = getPreferenceScreen();
         BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
         if (bt == null) {

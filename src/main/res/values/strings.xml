@@ -138,4 +138,5 @@
     <string name="require_su_msg">For terminate CG application require root privilegies</string>
     <string name="ping">Test data connectivity</string>
     <string name="ping_sum">Restart connection if data is not available</string>
+    <string name="beer">Beer for developer</string>
 </resources>

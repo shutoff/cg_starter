@@ -109,8 +109,11 @@ public class CarMonitor extends BroadcastReceiver {
     }
 
     void startCG(Context context, String route, String route_points) {
-        if (!route.equals(""))
+        if (route.equals("-")) {
+            MainActivity.removeRoute(context);
+        } else if (!route.equals("")) {
             MainActivity.createRoute(context, route, route_points);
+        }
         if (!MainActivity.setState(context, new State.OnBadGPS() {
             @Override
             public void gps_message(Context context) {

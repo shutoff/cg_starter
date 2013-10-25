@@ -139,6 +139,10 @@
     </PreferenceCategory>
 
     <Preference
+        android:key="donate"
+        android:title="@string/beer" />
+
+    <Preference
         android:key="about"
         android:title="@string/about"
         android:summary="@string/version" />

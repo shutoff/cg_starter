@@ -21,13 +21,26 @@ public class EditActivity extends Activity {
     static final String EXTRA_BUNDLE = "com.twofortyfouram.locale.intent.extra.BUNDLE";
     static final String EXTRA_STRING_BLURB = "com.twofortyfouram.locale.intent.extra.BLURB";
 
+    static final double RUN_CG = -300.;
+    static final double CLEAR_CG = -301;
+
     Bookmarks.Point[] poi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        poi = Bookmarks.get();
+        Bookmarks.Point[] p = Bookmarks.get();
+        poi = new Bookmarks.Point[p.length + 2];
+        poi[0] = new Bookmarks.Point();
+        poi[0].name = getString(R.string.cg_start);
+        poi[0].lat = RUN_CG;
+        poi[0].lng = RUN_CG;
+        poi[1] = new Bookmarks.Point();
+        poi[1].name = getString(R.string.no_route);
+        poi[1].lat = CLEAR_CG;
+        poi[1].lng = CLEAR_CG;
+        System.arraycopy(p, 0, poi, 2, p.length);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         final AlertDialog dialog = new AlertDialog.Builder(this)
@@ -54,7 +67,13 @@ public class EditActivity extends Activity {
                 Bookmarks.Point p = poi[spPoints.getSelectedItemPosition()];
                 Bundle bundle = new Bundle();
                 intent.putExtra(EXTRA_STRING_BLURB, p.name);
-                bundle.putString(State.ROUTE, p.lat + "|" + p.lng);
+                if ((p.lat == RUN_CG) && (p.lng == RUN_CG)) {
+                    bundle.putString(State.ROUTE, "");
+                } else if ((p.lat == CLEAR_CG) && (p.lng == CLEAR_CG)) {
+                    bundle.putString(State.ROUTE, "-");
+                } else {
+                    bundle.putString(State.ROUTE, p.lat + "|" + p.lng);
+                }
                 bundle.putString(State.POINTS, (p.points == null) ? "" : p.points);
                 intent.putExtra(EXTRA_BUNDLE, bundle);
                 setResult(RESULT_OK, intent);

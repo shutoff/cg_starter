@@ -314,6 +314,20 @@ public class OnExitService extends Service {
             return;
 
         try {
+            Class c = Class.forName(tm.getClass().getName());
+            Method m = c.getDeclaredMethod("getITelephony");
+            m.setAccessible(true);
+            ITelephony telephonyService;
+            telephonyService = (ITelephony) m.invoke(tm);
+
+            telephonyService.silenceRinger();
+            telephonyService.answerRingingCall();
+            return;
+        } catch (Exception e) {
+            // ignore
+        }
+
+        try {
             Intent buttonDown = new Intent(Intent.ACTION_MEDIA_BUTTON);
             buttonDown.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK));
             sendOrderedBroadcast(buttonDown, "android.permission.CALL_PRIVILEGED");
@@ -321,13 +335,16 @@ public class OnExitService extends Service {
             Intent buttonUp = new Intent(Intent.ACTION_MEDIA_BUTTON);
             buttonUp.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK));
             sendOrderedBroadcast(buttonUp, "android.permission.CALL_PRIVILEGED");
+        } catch (Exception e) {
+            // ignore
+        }
 
+        try {
             Intent headSetUnPluggedintent = new Intent(Intent.ACTION_HEADSET_PLUG);
             headSetUnPluggedintent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
             headSetUnPluggedintent.putExtra("state", 0);
             headSetUnPluggedintent.putExtra("name", "Headset");
             sendOrderedBroadcast(headSetUnPluggedintent, null);
-
         } catch (Exception e) {
             // ignore
         }
@@ -1060,16 +1077,11 @@ public class OnExitService extends Service {
         @Override
         protected Void doInBackground(Void... params) {
             try {
+                if (show_overlay)
+                    return null;
                 ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
                 if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting()) {
-                    State.appendLog("is not connected");
-
-                    if (activeNetwork == null)
-                        State.appendLog("no active network");
-                    if ((activeNetwork != null) && !activeNetwork.isConnectedOrConnecting())
-                        State.appendLog("active network is not connected");
-
                     Class conmanClass = Class.forName(conman.getClass().getName());
                     Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
                     iConnectivityManagerField.setAccessible(true);
@@ -1083,34 +1095,35 @@ public class OnExitService extends Service {
                         Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
                         setMobileDataEnabledMethod.setAccessible(true);
                         setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
-                        State.appendLog("enable data");
                         Thread.sleep(5000);
-
-                        activeNetwork = conman.getActiveNetworkInfo();
-                        if (activeNetwork == null)
-                            State.appendLog("no active network after enabled");
-                        if ((activeNetwork != null) && !activeNetwork.isConnected())
-                            State.appendLog("active network is not connected after enabled");
                     }
+                    return null;
                 }
-                if (!show_overlay && ((activeNetwork == null) || !activeNetwork.isConnected())) {
-                    Runtime runtime = Runtime.getRuntime();
+                Runtime runtime = Runtime.getRuntime();
+                for (int i = 0; i < 6; i++) {
                     Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
                     int exitValue = mIpAddrProcess.waitFor();
-                    if (exitValue != 0) {
-                        State.appendLog("8.8.8.8 is unreachable");
-                        TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-                        if ((tel.getNetworkOperator() != null) && !tel.getNetworkOperator().equals("")) {
-                            State.appendLog("GSM available - need reset");
-                            setAirplaneMode(true);
-                            setAirplaneMode(false);
-                            Thread.sleep(10000);
-                        }
-                    }
+                    if (exitValue == 0)
+                        return null;
+                    Thread.sleep(2000);
+                }
+                Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+                int exitValue = mIpAddrProcess.waitFor();
+                if (exitValue == 0)
+                    return null;
+                activeNetwork = conman.getActiveNetworkInfo();
+                if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting())
+                    return null;
+                TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                if ((tel.getNetworkOperator() != null) && !tel.getNetworkOperator().equals("")) {
+                    setAirplaneMode(true);
+                    setAirplaneMode(false);
+                    Thread.sleep(20000);
                 }
             } catch (Exception ex) {
-                State.print(ex);
+                // ignore
             }
+
             return null;
         }
 
