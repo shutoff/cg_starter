@@ -5,10 +5,12 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -73,6 +75,8 @@ public class OnExitService extends Service {
 
     static final int NOTIFICATION_ID = 1234;
 
+    static final String NOTIFICATION = "ru.shutoff.cg_starter.NOTIFICATION";
+
     AlarmManager alarmMgr;
     PendingIntent pi;
     PendingIntent piAnswer;
@@ -101,13 +105,18 @@ public class OnExitService extends Service {
 
     View hudActive;
     View hudInactive;
+    View hudNotification;
+
     CountDownTimer setupTimer;
+    CountDownTimer notificationTimer;
+
     boolean setup_button;
 
     FileObserver observer;
     String screenshots_path;
 
     PingTask pingTask;
+    BroadcastReceiver br;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -116,6 +125,13 @@ public class OnExitService extends Service {
 
     @Override
     public void onCreate() {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                State.print(ex);
+            }
+        });
+
         super.onCreate();
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
@@ -143,6 +159,8 @@ public class OnExitService extends Service {
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
         if (observer != null)
             observer.startWatching();
+        if (br != null)
+            unregisterReceiver(br);
         if (foreground)
             stopForeground(true);
         hideOverlays();
@@ -156,6 +174,15 @@ public class OnExitService extends Service {
         String action = intent.getAction();
         if (action == null)
             return START_STICKY;
+        if (br == null) {
+            br = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    showNotification(intent);
+                }
+            };
+            registerReceiver(br, new IntentFilter(NOTIFICATION));
+        }
         if (action.equals(START)) {
             alarmMgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + TIMEOUT, TIMEOUT, pi);
             setPhoneListener();
@@ -439,10 +466,89 @@ public class OnExitService extends Service {
             }
             return false;
         }
-
     }
 
-    ;
+    void showNotification(Intent intent) {
+        if ((hudActive != null) || (hudInactive != null))
+            return;
+
+        hideNotification();
+
+        String title = intent.getStringExtra(State.TITLE);
+        String info = intent.getStringExtra(State.INFO);
+        String text = intent.getStringExtra(State.TEXT);
+        String app = intent.getStringExtra(State.APP);
+        int icon = intent.getIntExtra(State.ICON, 0);
+
+        if (text == null)
+            return;
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        int timeout = preferences.getInt(State.NOTIFICATION, 10);
+        if (timeout <= 0)
+            return;
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+
+        params.x = preferences.getInt(State.PHONE_X, 50);
+        params.y = preferences.getInt(State.PHONE_Y, 50);
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        hudNotification = inflater.inflate(R.layout.notification, null);
+
+        hudNotification.setOnTouchListener(new OverlayTouchListener() {
+            @Override
+            void click() {
+                hideNotification();
+            }
+        });
+
+        TextView tvTitle = (TextView) hudNotification.findViewById(R.id.title);
+        if (title != null)
+            tvTitle.setText(title);
+        TextView tvInfo = (TextView) hudNotification.findViewById(R.id.info);
+        if (info != null)
+            tvInfo.setText(info);
+        TextView tvText = (TextView) hudNotification.findViewById(R.id.text);
+        if (text != null)
+            tvText.setText(text);
+        ImageView ivIcon = (ImageView) hudNotification.findViewById(R.id.icon);
+        if (app != null) {
+            try {
+                Context remotePackageContext = createPackageContext(app, 0);
+                ivIcon.setImageDrawable(remotePackageContext.getResources().getDrawable(icon));
+            } catch (Exception ex) {
+                // ignore
+            }
+        }
+
+
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.addView(hudNotification, params);
+
+        setForeground();
+
+        notificationTimer = new CountDownTimer(timeout * 1000, timeout * 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                hideNotification();
+            }
+
+            @Override
+            public void onFinish() {
+                hideNotification();
+            }
+        };
+        notificationTimer.start();
+    }
 
     void showActiveOverlay() {
         if (hudActive != null)
@@ -712,13 +818,18 @@ public class OnExitService extends Service {
                 layout.setBackgroundResource(R.drawable.call);
             setup_button = false;
         }
-        if (setupTimer == null)
-            return;
-        setupTimer.cancel();
-        setupTimer = null;
+        if (setupTimer != null) {
+            setupTimer.cancel();
+            setupTimer = null;
+        }
+        if (notificationTimer != null) {
+            notificationTimer.cancel();
+            notificationTimer = null;
+        }
     }
 
     void hideActiveOverlay() {
+        hideNotification();
         cancelSetup();
         if (hudActive == null)
             return;
@@ -727,6 +838,7 @@ public class OnExitService extends Service {
     }
 
     void hideInactiveOverlay() {
+        hideNotification();
         cancelSetup();
         if (hudInactive == null)
             return;
@@ -734,9 +846,18 @@ public class OnExitService extends Service {
         hudInactive = null;
     }
 
+    void hideNotification() {
+        cancelSetup();
+        if (hudNotification == null)
+            return;
+        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudNotification);
+        hudNotification = null;
+    }
+
     void hideOverlays() {
         hideActiveOverlay();
         hideInactiveOverlay();
+        hideNotification();
     }
 
     static void turnOnBT(Context context) {
@@ -993,7 +1114,6 @@ public class OnExitService extends Service {
         } catch (Exception ex) {
             // ignore
         }
-
     }
 
     static void convertToPng(String path) {

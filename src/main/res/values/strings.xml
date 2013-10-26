@@ -139,4 +139,8 @@
     <string name="ping">Test data connectivity</string>
     <string name="ping_sum">Restart connection if data is not available</string>
     <string name="beer">Beer for developer</string>
+    <string name="notification">Show notification</string>
+    <string name="notification_sum">Show system notification disabled</string>
+    <string name="notification_title">Notification enable</string>
+    <string name="notification_message">For enable notification open Settings and select Accessibility\nGrant CG_starter rights for access to notifications</string>
 </resources>

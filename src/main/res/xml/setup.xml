@@ -103,6 +103,13 @@
             android:entries="@array/ring_times"
             android:entryValues="@array/ring_times_value" />
 
+        <ru.shutoff.cgstarter.NotificationPreference
+            android:key="notification"
+            android:title="@string/notification"
+            android:defaultValue="10"
+            android:max="60"
+            android:text="@string/sec" />
+
         <EditTextPreference
             android:key="sms"
             android:title="@string/sms"

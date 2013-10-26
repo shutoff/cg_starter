@@ -121,4 +121,8 @@
     <string name="ping">Проверка соединения</string>
     <string name="ping_sum">Периодическая проверка и соединения и сброс его при недоступности</string>
     <string name="beer">Разработчику на пиво</string>
+    <string name="notification">Показывать уведомления</string>
+    <string name="notification_sum">Показ системных уведомлений отключен</string>
+    <string name="notification_title">Включить уведомления</string>
+    <string name="notification_message">Для того, чтобы включить отображение уведомлений откройте системные настройки. выберите там Специальные возможности и предоставьте доступ к уведомлениям</string>
 </resources>
