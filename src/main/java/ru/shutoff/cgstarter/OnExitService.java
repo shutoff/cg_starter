@@ -422,6 +422,10 @@ public class OnExitService extends Service {
 
         abstract void click();
 
+        void setup() {
+            setupPhoneButton();
+        }
+
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             switch (event.getAction()) {
@@ -433,7 +437,7 @@ public class OnExitService extends Service {
 
                         @Override
                         public void onFinish() {
-                            setupPhoneButton();
+                            setup();
                         }
                     };
                     setupTimer.start();
@@ -477,13 +481,13 @@ public class OnExitService extends Service {
         String title = intent.getStringExtra(State.TITLE);
         String info = intent.getStringExtra(State.INFO);
         String text = intent.getStringExtra(State.TEXT);
-        String app = intent.getStringExtra(State.APP);
+        final String app = intent.getStringExtra(State.APP);
         int icon = intent.getIntExtra(State.ICON, 0);
 
         if (text == null)
             return;
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         int timeout = preferences.getInt(State.NOTIFICATION, 10);
         if (timeout <= 0)
             return;
@@ -508,6 +512,15 @@ public class OnExitService extends Service {
             @Override
             void click() {
                 hideNotification();
+            }
+
+            @Override
+            void setup() {
+                hideNotification();
+                Intent intent = new Intent(OnExitService.this, NotificationIgnore.class);
+                intent.putExtra(State.APP, app);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
             }
         });
 

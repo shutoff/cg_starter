@@ -16,7 +16,7 @@ public class NotificationPreference extends SeekBarPreference {
     @Override
     public void showDialog(Bundle state) {
         if (!isNotificationEnabled()) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
             builder.setTitle(R.string.notification_title);
             builder.setMessage(R.string.notification_message);
             builder.setPositiveButton(R.string.cont, null);
@@ -28,8 +28,8 @@ public class NotificationPreference extends SeekBarPreference {
 
     String summary() {
         if (isNotificationEnabled())
-            return mContext.getString(R.string.notification) + " " + mValue + " " + mSuffix;
-        return mContext.getString(R.string.notification_sum);
+            return getContext().getString(R.string.notification) + " " + mValue + " " + mSuffix;
+        return getContext().getString(R.string.notification_sum);
     }
 
     boolean isNotificationEnabled() {
@@ -37,12 +37,12 @@ public class NotificationPreference extends SeekBarPreference {
         final String NOTIFICATION_SERVICE = "ru.shutoff.cgstarter/ru.shutoff.cgstarter.NotificationService";
         boolean accessibilityFound = false;
         try {
-            accessibilityEnabled = Settings.Secure.getInt(mContext.getContentResolver(), android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+            accessibilityEnabled = Settings.Secure.getInt(getContext().getContentResolver(), android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
         } catch (Settings.SettingNotFoundException e) {
             // ignore
         }
         if (accessibilityEnabled == 1) {
-            String settingValue = Settings.Secure.getString(mContext.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            String settingValue = Settings.Secure.getString(getContext().getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
             if (settingValue != null) {
                 TextUtils.SimpleStringSplitter splitter = new TextUtils.SimpleStringSplitter(':');
                 splitter.setString(settingValue);

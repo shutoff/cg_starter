@@ -40,7 +40,7 @@ public class InactivePreference extends SeekBarPreference {
 
     String summary() {
         boolean launch = getSharedPreferences().getBoolean(State.INACTIVE_LAUNCH, false);
-        String summary = mContext.getString(launch ? R.string.launch : R.string.exit);
+        String summary = getContext().getString(launch ? R.string.launch : R.string.exit);
         return summary + " " + super.summary();
     }
 }

@@ -20,7 +20,6 @@ public class SeekBarPreference
 
     public SeekBar mSeekBar;
     public TextView mSplashText, mValueText;
-    public Context mContext;
 
     public String mDialogMessage, mSuffix;
     public int mMin, mMax, mValue, mDefault = 0;
@@ -28,17 +27,16 @@ public class SeekBarPreference
     public SeekBarPreference(Context context, AttributeSet attrs) {
 
         super(context,attrs);
-        mContext = context;
 
         // Get string value for dialogMessage :
         int mDialogMessageId = attrs.getAttributeResourceValue(androidns, "dialogMessage", 0);
         if(mDialogMessageId == 0) mDialogMessage = attrs.getAttributeValue(androidns, "dialogMessage");
-        else mDialogMessage = mContext.getString(mDialogMessageId);
+        else mDialogMessage = context.getString(mDialogMessageId);
 
         // Get string value for suffix (text attribute in xml file) :
         int mSuffixId = attrs.getAttributeResourceValue(androidns, "text", 0);
         if(mSuffixId == 0) mSuffix = attrs.getAttributeValue(androidns, "text");
-        else mSuffix = mContext.getString(mSuffixId);
+        else mSuffix = context.getString(mSuffixId);
 
         // Get default and max seekbar values :
         mDefault = attrs.getAttributeIntValue(androidns, "defaultValue", 0);
@@ -50,18 +48,18 @@ public class SeekBarPreference
     protected View onCreateDialogView() {
 
         LinearLayout.LayoutParams params;
-        LinearLayout layout = new LinearLayout(mContext);
+        LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(6,6,6,6);
 
-        mSplashText = new TextView(mContext);
+        mSplashText = new TextView(getContext());
         if (mDialogMessage != null)
             mSplashText.setText(mDialogMessage);
         layout.addView(mSplashText);
 
         createExtraControls(layout);
 
-        mValueText = new TextView(mContext);
+        mValueText = new TextView(getContext());
         mValueText.setGravity(Gravity.CENTER_HORIZONTAL);
         mValueText.setTextSize(32);
         params = new LinearLayout.LayoutParams(
@@ -69,7 +67,7 @@ public class SeekBarPreference
                 LinearLayout.LayoutParams.WRAP_CONTENT);
         layout.addView(mValueText, params);
 
-        mSeekBar = new SeekBar(mContext);
+        mSeekBar = new SeekBar(getContext());
         mSeekBar.setOnSeekBarChangeListener(this);
         layout.addView(mSeekBar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
@@ -140,7 +138,7 @@ public class SeekBarPreference
     }
 
     String summary() {
-        return mContext.getString(R.string.after) + " " + mValue + " " + mSuffix;
+        return getContext().getString(R.string.after) + " " + mValue + " " + mSuffix;
     }
 
 }

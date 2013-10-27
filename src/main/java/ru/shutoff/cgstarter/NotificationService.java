@@ -4,7 +4,9 @@ import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Notification;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.RemoteViews;
 
@@ -23,7 +25,6 @@ public class NotificationService extends AccessibilityService {
 
         final int eventType = event.getEventType();
         if (eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
-            final String sourcePackageName = (String) event.getPackageName();
             Parcelable parcelable = event.getParcelableData();
 
             if (parcelable instanceof Notification) {
@@ -83,6 +84,12 @@ public class NotificationService extends AccessibilityService {
                         msg_text = (String) messages.get(0);
                 }
                 if (msg_text != null) {
+                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                    String[] ignored = preferences.getString(State.NOTIFICATION_IGNORE, "").split(":");
+                    for (String app : ignored) {
+                        if (app.equals(msg_app))
+                            return;
+                    }
                     Intent intent = new Intent(OnExitService.NOTIFICATION);
                     intent.putExtra(State.TITLE, msg_title);
                     intent.putExtra(State.INFO, msg_info);

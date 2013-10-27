@@ -18,8 +18,8 @@ public class VolumePreference extends SeekBarPreference {
 
     @Override
     void createExtraControls(LinearLayout layout) {
-        mVolume = new CheckBox(mContext);
-        mVolume.setText(mContext.getString(R.string.set_volume));
+        mVolume = new CheckBox(getContext());
+        mVolume.setText(getContext().getString(R.string.set_volume));
         mVolume.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -48,7 +48,7 @@ public class VolumePreference extends SeekBarPreference {
     @Override
     String summary() {
         if (!getSharedPreferences().getBoolean(State.VOLUME, false))
-            return mContext.getString(R.string.no_volume);
-        return mContext.getString(R.string.set_volume) + " " + mValue + " " + mSuffix;
+            return getContext().getString(R.string.no_volume);
+        return getContext().getString(R.string.set_volume) + " " + mValue + " " + mSuffix;
     }
 }

@@ -64,6 +64,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".NotificationIgnore"
+            android:theme="@style/Theme.Transparent"></activity>
+
         <activity android:name=".SetupButton" />
 
         <activity android:name=".Setup" />

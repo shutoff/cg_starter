@@ -125,4 +125,6 @@
     <string name="notification_sum">Показ системных уведомлений отключен</string>
     <string name="notification_title">Включить уведомления</string>
     <string name="notification_message">Для того, чтобы включить отображение уведомлений откройте системные настройки. выберите там Специальные возможности и предоставьте доступ к уведомлениям</string>
+    <string name="notification_ignore">Игнорировать уведомления</string>
+    <string name="notification_ignore_msg">Запретить показывать уведомления от %s?</string>
 </resources>

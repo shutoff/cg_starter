@@ -62,6 +62,7 @@ public class State {
     static final String KILL_POWER = "kill_power";
     static final String PING = "ping";
     static final String NOTIFICATION = "notification";
+    static final String NOTIFICATION_IGNORE = "notification_ignore";
 
     static class Point {
         String name;

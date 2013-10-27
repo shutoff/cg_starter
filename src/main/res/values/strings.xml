@@ -143,4 +143,6 @@
     <string name="notification_sum">Show system notification disabled</string>
     <string name="notification_title">Notification enable</string>
     <string name="notification_message">For enable notification open Settings and select Accessibility\nGrant CG_starter rights for access to notifications</string>
+    <string name="notification_ignore">Disable notification</string>
+    <string name="notification_ignore_msg">Disable all notification from %s?</string>
 </resources>

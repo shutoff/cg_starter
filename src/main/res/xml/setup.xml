@@ -110,6 +110,10 @@
             android:max="60"
             android:text="@string/sec" />
 
+        <ru.shutoff.cgstarter.PackagePreference
+            android:key="notification_ignore"
+            android:title="@string/notification_ignore" />
+
         <EditTextPreference
             android:key="sms"
             android:title="@string/sms"
