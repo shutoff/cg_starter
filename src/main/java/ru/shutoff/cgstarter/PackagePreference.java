@@ -116,7 +116,7 @@ public class PackagePreference
                             ivIcon.setVisibility(View.GONE);
                         }
                         CheckBox check = (CheckBox) v.findViewById(R.id.checked);
-                        v.setTag(p.name);
+                        check.setTag(p.name);
                         check.setChecked(selected_packages.contains(p.name));
                         check.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                             @Override

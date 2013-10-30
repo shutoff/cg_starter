@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
@@ -18,8 +19,10 @@ public class CarMonitor extends BroadcastReceiver {
     static final String START = "ru.shutoff.cgstarter.START";
     static final String FIRE = "com.twofortyfouram.locale.intent.action.FIRE_SETTING";
 
+    CountDownTimer power_timer;
+
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, Intent intent) {
         if (intent == null)
             return;
         String action = intent.getAction();
@@ -43,14 +46,39 @@ public class CarMonitor extends BroadcastReceiver {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String interval = preferences.getString(State.POWER_TIME, "");
             if (State.inInterval(interval)) {
-                if (!OnExitService.isRunCG(context)) {
-                    Intent run = new Intent(context, MainActivity.class);
-                    run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(run);
+                int power_delay = preferences.getInt(State.POWER_DELAY, 0);
+                if (power_delay == 0) {
+                    if (!OnExitService.isRunCG(context)) {
+                        Intent run = new Intent(context, MainActivity.class);
+                        run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(run);
+                    }
+                    return;
                 }
+                power_timer = new CountDownTimer(power_delay * 1000, power_delay * 1000) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        if (!OnExitService.isRunCG(context)) {
+                            Intent run = new Intent(context, MainActivity.class);
+                            run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(run);
+                        }
+                        power_timer = null;
+                    }
+                };
+                power_timer.start();
             }
         }
         if (action.equals(Intent.ACTION_POWER_DISCONNECTED)) {
+            if (power_timer != null) {
+                power_timer.cancel();
+                power_timer = null;
+            }
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             if (preferences.getBoolean(State.KILL_POWER, false))
                 killCG(context);

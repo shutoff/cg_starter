@@ -63,6 +63,7 @@ public class State {
     static final String PING = "ping";
     static final String NOTIFICATION = "notification";
     static final String NOTIFICATION_IGNORE = "notification_ignore";
+    static final String POWER_DELAY = "power_delay";
 
     static class Point {
         String name;

@@ -127,4 +127,6 @@
     <string name="notification_message">Для того, чтобы включить отображение уведомлений откройте системные настройки. выберите там Специальные возможности и предоставьте доступ к уведомлениям</string>
     <string name="notification_ignore">Игнорировать уведомления</string>
     <string name="notification_ignore_msg">Запретить показывать уведомления от %s?</string>
+    <string name="notification_ignore_sum">Для запрета показа уведомлений удерживайте окно уведомления около 1 секунды</string>
+    <string name="power_delay">Задержка при запуске от зарядки</string>
 </resources>

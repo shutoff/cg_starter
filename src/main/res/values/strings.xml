@@ -145,4 +145,6 @@
     <string name="notification_message">For enable notification open Settings and select Accessibility\nGrant CG_starter rights for access to notifications</string>
     <string name="notification_ignore">Disable notification</string>
     <string name="notification_ignore_msg">Disable all notification from %s?</string>
+    <string name="notification_ignore_sum">For ignore notification tap and hold message window over 1sec</string>
+    <string name="power_delay">Delay for start on power</string>
 </resources>

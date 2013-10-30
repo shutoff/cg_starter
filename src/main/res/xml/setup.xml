@@ -112,7 +112,9 @@
 
         <ru.shutoff.cgstarter.PackagePreference
             android:key="notification_ignore"
-            android:title="@string/notification_ignore" />
+            android:title="@string/notification_ignore"
+            android:summary="@string/notification_ignore_sum"
+            android:defaultValue="android:com.android.systemui" />
 
         <EditTextPreference
             android:key="sms"
@@ -136,6 +138,13 @@
         <ru.shutoff.cgstarter.TimePreference
             android:key="powertime"
             android:title="@string/powermode" />
+
+        <ru.shutoff.cgstarter.SeekBarPreference
+            android:key="power_delay"
+            android:title="@string/power_delay"
+            android:defaultValue="0"
+            android:max="30"
+            android:text="@string/sec" />
 
         <ru.shutoff.cgstarter.SuperUserPreference
             android:key="kill_power"
