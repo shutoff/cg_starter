@@ -7,17 +7,9 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Environment;
 import android.provider.Settings;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Calendar;
-import java.util.Date;
 
 public class State {
 
@@ -64,6 +56,9 @@ public class State {
     static final String NOTIFICATION = "notification";
     static final String NOTIFICATION_IGNORE = "notification_ignore";
     static final String POWER_DELAY = "power_delay";
+    static final String SHOW_SMS = "show_sms";
+    static final String MAPCAM = "mapcam";
+    static final String STRELKA = "strelka";
 
     static class Point {
         String name;
@@ -244,6 +239,7 @@ public class State {
         return false;
     }
 
+/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -269,5 +265,6 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
+*/
 
 }

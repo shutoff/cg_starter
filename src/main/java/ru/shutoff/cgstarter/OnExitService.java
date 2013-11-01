@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -36,6 +37,7 @@ import android.support.v4.app.NotificationCompat;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.PhoneStateListener;
 import android.telephony.SmsManager;
+import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -76,6 +78,7 @@ public class OnExitService extends Service {
     static final int NOTIFICATION_ID = 1234;
 
     static final String NOTIFICATION = "ru.shutoff.cg_starter.NOTIFICATION";
+    static final String SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
 
     AlarmManager alarmMgr;
     PendingIntent pi;
@@ -125,13 +128,6 @@ public class OnExitService extends Service {
 
     @Override
     public void onCreate() {
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable ex) {
-                State.print(ex);
-            }
-        });
-
         super.onCreate();
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
@@ -178,10 +174,20 @@ public class OnExitService extends Service {
             br = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    showNotification(intent);
+                    if (intent.getAction().equals(SMS_RECEIVED)) {
+                        showSMS(intent);
+                    } else {
+                        showNotification(intent);
+                    }
                 }
             };
-            registerReceiver(br, new IntentFilter(NOTIFICATION));
+            IntentFilter filter = new IntentFilter(NOTIFICATION);
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+            if (preferences.getBoolean(State.SHOW_SMS, false)) {
+                filter.addAction(SMS_RECEIVED);
+                filter.setPriority(10);
+            }
+            registerReceiver(br, filter);
         }
         if (action.equals(START)) {
             alarmMgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + TIMEOUT, TIMEOUT, pi);
@@ -274,6 +280,14 @@ public class OnExitService extends Service {
                             .putExtra("reply", true));
                 } catch (Exception ex) {
                     // ignore
+                }
+                if (preferences.getBoolean(State.MAPCAM, false)) {
+                    Intent i = new Intent("info.mapcam.droid.SERVICE_STOP");
+                    sendBroadcast(i);
+                }
+                if (preferences.getBoolean(State.STRELKA, false)) {
+                    Intent i = new Intent("com.ivolk.StrelkaGPS.action.STOP_SERVICE");
+                    sendBroadcast(i);
                 }
                 ed.commit();
                 stopSelf();
@@ -473,10 +487,6 @@ public class OnExitService extends Service {
     }
 
     void showNotification(Intent intent) {
-        if ((hudActive != null) || (hudInactive != null))
-            return;
-
-        hideNotification();
 
         String title = intent.getStringExtra(State.TITLE);
         String info = intent.getStringExtra(State.INFO);
@@ -484,10 +494,18 @@ public class OnExitService extends Service {
         final String app = intent.getStringExtra(State.APP);
         int icon = intent.getIntExtra(State.ICON, 0);
 
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (preferences.getBoolean(State.SHOW_SMS, false) && app.equals("com.android.mms"))
+            return;
+
+        if ((hudActive != null) || (hudInactive != null))
+            return;
+
+        hideNotification();
+
         if (text == null)
             return;
 
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         int timeout = preferences.getInt(State.NOTIFICATION, 10);
         if (timeout <= 0)
             return;
@@ -531,8 +549,7 @@ public class OnExitService extends Service {
         if (info != null)
             tvInfo.setText(info);
         TextView tvText = (TextView) hudNotification.findViewById(R.id.text);
-        if (text != null)
-            tvText.setText(text);
+        tvText.setText(text);
         ImageView ivIcon = (ImageView) hudNotification.findViewById(R.id.icon);
         if (app != null) {
             try {
@@ -543,6 +560,115 @@ public class OnExitService extends Service {
             }
         }
 
+
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.addView(hudNotification, params);
+
+        setForeground();
+
+        notificationTimer = new CountDownTimer(timeout * 1000, timeout * 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                hideNotification();
+            }
+
+            @Override
+            public void onFinish() {
+                hideNotification();
+            }
+        };
+        notificationTimer.start();
+    }
+
+    void showSMS(Intent intent) {
+        if ((hudActive != null) || (hudInactive != null))
+            return;
+
+        hideNotification();
+
+        Object[] pduArray = (Object[]) intent.getExtras().get("pdus");
+        SmsMessage[] messages = new SmsMessage[pduArray.length];
+        for (int i = 0; i < pduArray.length; i++) {
+            messages[i] = SmsMessage.createFromPdu((byte[]) pduArray[i]);
+        }
+        final String sms_from = messages[0].getOriginatingAddress();
+        String title = sms_from;
+        StringBuilder bodyText = new StringBuilder();
+        for (SmsMessage m : messages) {
+            bodyText.append(m.getMessageBody());
+        }
+        final String body = bodyText.toString();
+        if (body.equals(""))
+            return;
+
+        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(sms_from));
+        ContentResolver contentResolver = getContentResolver();
+        Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
+                ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+
+        Bitmap photo = null;
+        try {
+            if (contactLookup != null && contactLookup.getCount() > 0) {
+                contactLookup.moveToNext();
+                title = contactLookup.getString(contactLookup.getColumnIndex(ContactsContract.Data.DISPLAY_NAME));
+                long id = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
+                Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
+                InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, photo_uri);
+                if (input != null)
+                    photo = BitmapFactory.decodeStream(input);
+            }
+        } finally {
+            if (contactLookup != null) {
+                contactLookup.close();
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        int timeout = preferences.getInt(State.NOTIFICATION, 10);
+        if (timeout <= 0)
+            return;
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+
+        params.x = preferences.getInt(State.PHONE_X, 50);
+        params.y = preferences.getInt(State.PHONE_Y, 50);
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        hudNotification = inflater.inflate(R.layout.notification, null);
+
+        hudNotification.setOnTouchListener(new OverlayTouchListener() {
+            @Override
+            void click() {
+                hideNotification();
+                try {
+                    Uri uri = Uri.parse("content://sms/inbox");
+                    String selection = "address = ? AND body = ? AND read = ?";
+                    String[] selectionArgs = {sms_from, body, "0"};
+                    ContentValues values = new ContentValues();
+                    values.put("read", true);
+                    getContentResolver().update(uri, values, selection, selectionArgs);
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
+
+        });
+
+        TextView tvTitle = (TextView) hudNotification.findViewById(R.id.title);
+        tvTitle.setText(title);
+        TextView tvText = (TextView) hudNotification.findViewById(R.id.text);
+        tvText.setText(body);
+        ImageView ivIcon = (ImageView) hudNotification.findViewById(R.id.icon);
+        if (photo != null)
+            ivIcon.setImageBitmap(photo);
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         wm.addView(hudNotification, params);

@@ -32,14 +32,11 @@ import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -234,6 +231,21 @@ public class MainActivity
             OnExitService.convertFiles();
             if (preferences.getBoolean(State.RTA_LOGS, false))
                 OnExitService.removeRTA();
+            int route_type = SettingsIni.getParam("route_type");
+            if ((route_type > 0) && (route_type <= 2)) {
+                stopTimers();
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(R.string.route_type);
+                builder.setMessage((route_type == 1) ? R.string.route_type_short : R.string.route_type_foot);
+                builder.setPositiveButton(R.string.cont, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        SettingsIni.setParam("route_type", "0");
+                    }
+                });
+                builder.setNegativeButton(R.string.cancel, null);
+                builder.create().show();
+            }
         }
     }
 
@@ -573,40 +585,25 @@ public class MainActivity
 
         if (preferences.getBoolean(State.VOLUME, false)) {
             try {
-                int channel = 0;
                 int level = preferences.getInt(State.LEVEL, 100);
-                File settings = Environment.getExternalStorageDirectory();
-                settings = new File(settings, "CityGuide/settings.ini");
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(new FileInputStream(settings), Charset.forName("UTF-16LE")));
-                while (true) {
-                    String line = reader.readLine();
-                    if (line == null)
+                int channel = SettingsIni.getParam("audiostream");
+                switch (channel) {
+                    case 0:
+                        channel = AudioManager.STREAM_SYSTEM;
                         break;
-                    String[] parts = line.split("=");
-                    if (parts[0].equals("audiostream")) {
-                        channel = Integer.parseInt(parts[1]);
-                        switch (channel) {
-                            case 0:
-                                channel = AudioManager.STREAM_SYSTEM;
-                                break;
-                            case 1:
-                                channel = AudioManager.STREAM_RING;
-                                break;
-                            case 2:
-                                channel = AudioManager.STREAM_MUSIC;
-                                break;
-                            case 3:
-                                channel = AudioManager.STREAM_ALARM;
-                                break;
-                            case 4:
-                                channel = AudioManager.STREAM_NOTIFICATION;
-                                break;
-                        }
+                    case 1:
+                        channel = AudioManager.STREAM_RING;
                         break;
-                    }
+                    case 2:
+                        channel = AudioManager.STREAM_MUSIC;
+                        break;
+                    case 3:
+                        channel = AudioManager.STREAM_ALARM;
+                        break;
+                    case 4:
+                        channel = AudioManager.STREAM_NOTIFICATION;
+                        break;
                 }
-                reader.close();
                 if (channel > 0) {
                     ed.putInt(State.SAVE_CHANNEL, channel);
                     AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -621,6 +618,15 @@ public class MainActivity
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
+        }
+
+        if (preferences.getBoolean(State.MAPCAM, false)) {
+            Intent intent = new Intent("info.mapcam.droid.SERVICE_START");
+            context.sendBroadcast(intent);
+        }
+        if (preferences.getBoolean(State.STRELKA, false)) {
+            Intent intent = new Intent("com.ivolk.StrelkaGPS.action.START_SERVICE");
+            context.sendBroadcast(intent);
         }
 
         ed.commit();

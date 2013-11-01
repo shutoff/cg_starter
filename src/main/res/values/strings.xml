@@ -147,4 +147,11 @@
     <string name="notification_ignore_msg">Disable all notification from %s?</string>
     <string name="notification_ignore_sum">For ignore notification tap and hold message window over 1sec</string>
     <string name="power_delay">Delay for start on power</string>
+    <string name="route_type">Route type</string>
+    <string name="route_type_short">Select type or route: Short\nSet optimal route type?</string>
+    <string name="route_type_foot">Select type or route: Foot\nSet optimal route type?</string>
+    <string name="show_sms">Show SMS</string>
+    <string name="show_sms_sum">For mark SMS as read tap on message window</string>
+    <string name="mapcam">Launch MapCamDroid</string>
+    <string name="strelka">Launch StrelkaGPS</string>
 </resources>

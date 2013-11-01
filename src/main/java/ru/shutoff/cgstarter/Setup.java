@@ -13,6 +13,7 @@ import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 
@@ -158,8 +159,8 @@ public class Setup extends PreferenceActivity {
         File rta_ini = Environment.getExternalStorageDirectory();
         rta_ini = new File(rta_ini, "CityGuide/rtlog.ini");
         if (!rta_ini.exists()) {
-            PreferenceScreen pref_screen = getPreferenceScreen();
-            pref_screen.removePreference(rtaPref);
+            PreferenceGroup phoneGorup = (PreferenceGroup) findPreference("power_group");
+            phoneGorup.removePreference(rtaPref);
         }
 
         rotatePref = (ListPreference) findPreference(State.ORIENTATION);
@@ -191,6 +192,30 @@ public class Setup extends PreferenceActivity {
             }
         });
         smsPref.setSummary(prefs.getString(State.SMS, getString(R.string.def_sms)));
+
+        PackageManager pm = getPackageManager();
+        PackageInfo info = null;
+
+        try {
+            info = pm.getPackageInfo("info.mapcam.droid", 0);
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (info == null) {
+            PreferenceGroup phoneGorup = (PreferenceGroup) findPreference("phone_group");
+            phoneGorup.removePreference(findPreference(State.MAPCAM));
+        }
+
+        info = null;
+        try {
+            info = pm.getPackageInfo("com.ivolk.StrelkaGPS", 0);
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (info == null) {
+            PreferenceGroup phoneGorup = (PreferenceGroup) findPreference("phone_group");
+            phoneGorup.removePreference(findPreference(State.STRELKA));
+        }
 
         setupRotatePref();
         setupAnswerPref();

@@ -129,4 +129,11 @@
     <string name="notification_ignore_msg">Запретить показывать уведомления от %s?</string>
     <string name="notification_ignore_sum">Для запрета показа уведомлений удерживайте окно уведомления около 1 секунды</string>
     <string name="power_delay">Задержка при запуске от зарядки</string>
+    <string name="route_type">Тип маршрута</string>
+    <string name="route_type_short">Выбран тип маршрута: Кратчайший\nУстановить тип маршрута Оптимальный?</string>
+    <string name="route_type_foot">Выбран тип маршрута: Пешеходный\nУстановить тип маршрута Оптимальный?</string>
+    <string name="show_sms">Показывать SMS</string>
+    <string name="show_sms_sum">При тапе на окно SMS оно будет помечено как прочитанное</string>
+    <string name="mapcam">Запускать MapCamDroid</string>
+    <string name="strelka">Запускать StrelkaGPS</string>
 </resources>

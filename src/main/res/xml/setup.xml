@@ -57,7 +57,9 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/phone">
+    <PreferenceCategory
+        android:key="phone_group"
+        android:title="@string/phone">
 
         <CheckBoxPreference
             android:key="bt"
@@ -83,6 +85,11 @@
             android:key="phone_show"
             android:title="@string/show_oncall"
             android:summary="@string/show_oncall_sum" />
+
+        <CheckBoxPreference
+            android:key="show_sms"
+            android:title="@string/show_sms"
+            android:summary="@string/show_sms_sum" />
 
         <CheckBoxPreference
             android:key="speaker"
@@ -121,11 +128,21 @@
             android:title="@string/sms"
             android:defaultValue="@string/def_sms" />
 
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="@string/power">
+        <CheckBoxPreference
+            android:key="mapcam"
+            android:title="@string/mapcam" />
 
         <CheckBoxPreference
+            android:key="strelka"
+            android:title="@string/strelka" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="power_group"
+        android:title="@string/power">
+
+    <CheckBoxPreference
             android:key="carmode"
             android:title="@string/carmode"
             android:summary="@string/carmode_sum" />

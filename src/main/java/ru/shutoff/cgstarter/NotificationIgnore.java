@@ -45,7 +45,6 @@ public class NotificationIgnore extends Activity {
                 }
             });
         } catch (Exception ex) {
-            State.print(ex);
             // ignore
         }
 
