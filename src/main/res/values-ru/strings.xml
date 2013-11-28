@@ -136,4 +136,6 @@
     <string name="show_sms_sum">При тапе на окно SMS оно будет помечено как прочитанное</string>
     <string name="mapcam">Запускать MapCamDroid</string>
     <string name="strelka">Запускать StrelkaGPS</string>
+    <string name="start_point">Точка старта</string>
+    <string name="start_point_sum">Старт маршрута по умолчанию</string>
 </resources>

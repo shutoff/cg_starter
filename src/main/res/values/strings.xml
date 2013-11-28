@@ -154,4 +154,6 @@
     <string name="show_sms_sum">For mark SMS as read tap on message window</string>
     <string name="mapcam">Launch MapCamDroid</string>
     <string name="strelka">Launch StrelkaGPS</string>
+    <string name="start_point">Start point</string>
+    <string name="start_point_sum">Default start point of route</string>
 </resources>

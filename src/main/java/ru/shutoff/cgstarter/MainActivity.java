@@ -439,10 +439,14 @@ public class MainActivity
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
             if (!routes_dat.exists())
                 routes_dat.createNewFile();
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            String start = preferences.getString(State.START_POINT, "0|0");
             BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
             writer.append("1|router|65001\n");
             writer.append("#[CURRENT]|1|1\n");
-            writer.append("Start|0|0\n");
+            writer.append("Start|");
+            writer.append(start);
+            writer.append("\n");
             if ((points_str != null) && !points_str.equals("")) {
                 String[] points = points_str.split(";");
                 for (String point : points) {
@@ -468,9 +472,14 @@ public class MainActivity
             routes_dat = new File(routes_dat, "CityGuide/routes.dat");
             if (!routes_dat.exists())
                 routes_dat.createNewFile();
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            String start = preferences.getString(State.START_POINT, "0|0");
             BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
             writer.append("1|router|65001\n");
-            writer.append("#[CURRENT]|0|0\n");
+            writer.append("#[CURRENT]|1|1\n");
+            writer.append("Start|");
+            writer.append(start);
+            writer.append("\n");
             writer.append(tail);
             writer.close();
         } catch (IOException e) {

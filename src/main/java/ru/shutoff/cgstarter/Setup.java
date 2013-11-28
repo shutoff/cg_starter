@@ -29,6 +29,7 @@ public class Setup extends PreferenceActivity {
     SharedPreferences prefs;
     CheckBoxPreference phoneShowPrefs;
     EditTextPreference smsPref;
+    ListPreference startPref;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -216,6 +217,20 @@ public class Setup extends PreferenceActivity {
             PreferenceGroup phoneGorup = (PreferenceGroup) findPreference("phone_group");
             phoneGorup.removePreference(findPreference(State.STRELKA));
         }
+
+        startPref = (ListPreference) findPreference("start_point");
+        Bookmarks.Point[] poi = Bookmarks.get();
+
+        String[] values = new String[poi.length];
+        String[] entries = new String[poi.length];
+        String start_point = prefs.getString(State.START_POINT, "");
+        for (int i = 0; i < values.length; i++) {
+            entries[i] = poi[i].name;
+            values[i] = poi[i].lat + "|" + poi[i].lng;
+        }
+        startPref.setEntries(entries);
+        startPref.setEntryValues(values);
+        startPref.setDefaultValue(start_point);
 
         setupRotatePref();
         setupAnswerPref();
