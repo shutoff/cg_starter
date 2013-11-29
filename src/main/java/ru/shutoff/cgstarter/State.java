@@ -87,6 +87,7 @@ public class State {
     static final String TEXT = "text";
     static final String APP = "app";
     static final String ICON = "icon";
+    static final String START_POINT = "start";
 
     static Point[] points;
 

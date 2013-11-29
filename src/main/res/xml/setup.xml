@@ -17,6 +17,11 @@
         android:title="@string/no_route"
         android:summary="@string/no_route_sum" />
 
+    <ListPreference
+        android:key="start_point"
+        android:title="@string/start_point"
+        android:summary="@string/start_point_sum" />
+
     <PreferenceCategory android:title="@string/auto">
 
         <ru.shutoff.cgstarter.SeekBarPreference
