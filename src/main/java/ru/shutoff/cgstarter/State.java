@@ -243,6 +243,8 @@ public class State {
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
+        if (text == null)
+            text = " (null)";
         try {
             if (!logFile.exists())
                 logFile.createNewFile();

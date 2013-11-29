@@ -12,13 +12,11 @@ import android.widget.RemoteViews;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class NotificationService extends AccessibilityService {
 
-    boolean init;
+    private boolean init;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -39,16 +37,13 @@ public class NotificationService extends AccessibilityService {
                 String msg_app = event.getPackageName().toString();
 
                 try {
-                    Map<Integer, String> text = new HashMap<Integer, String>();
-
                     Field outerFields[] = secretClass.getDeclaredFields();
-                    for (int i = 0; i < outerFields.length; i++) {
-                        if (!outerFields[i].getName().equals("mActions")) continue;
+                    for (Field outerField : outerFields) {
+                        if (!outerField.getName().equals("mActions")) continue;
 
-                        outerFields[i].setAccessible(true);
+                        outerField.setAccessible(true);
 
-                        ArrayList<Object> actions = (ArrayList<Object>) outerFields[i]
-                                .get(views);
+                        ArrayList<Object> actions = (ArrayList<Object>) outerField.get(views);
                         for (Object action : actions) {
                             Field innerFields[] = action.getClass().getDeclaredFields();
 
@@ -66,22 +61,25 @@ public class NotificationService extends AccessibilityService {
                                 }
                             }
 
-                            if (type == 9 || type == 10) {
-                                text.put(viewId, value.toString());
+                            if ((value != null) && ((type == 9) || (type == 10))){
+                                if ((msg_title == null) && (viewId == 16908310))
+                                    msg_title = value.toString();
+                                if ((msg_info == null) && (viewId == 16909082))
+                                    msg_info = value.toString();
+                                if ((msg_text == null) && (viewId == 16908358))
+                                    msg_text = value.toString();
+
                             }
                         }
-
-                        msg_title = text.get(16908310);
-                        msg_info = text.get(16909082);
-                        msg_text = text.get(16908358);
                     }
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 if (msg_text == null) {
                     List<CharSequence> messages = event.getText();
                     if (messages.size() > 0)
-                        msg_text = (String) messages.get(0);
+                        msg_text = messages.get(0).toString();
                 }
                 if (msg_text != null) {
                     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);

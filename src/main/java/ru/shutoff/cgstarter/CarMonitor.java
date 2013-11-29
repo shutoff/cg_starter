@@ -16,10 +16,10 @@ import java.util.List;
 
 public class CarMonitor extends BroadcastReceiver {
 
-    static final String START = "ru.shutoff.cgstarter.START";
-    static final String FIRE = "com.twofortyfouram.locale.intent.action.FIRE_SETTING";
+    static private final String START = "ru.shutoff.cgstarter.START";
+    static private final String FIRE = "com.twofortyfouram.locale.intent.action.FIRE_SETTING";
 
-    CountDownTimer power_timer;
+    private CountDownTimer power_timer;
 
     @Override
     public void onReceive(final Context context, Intent intent) {
