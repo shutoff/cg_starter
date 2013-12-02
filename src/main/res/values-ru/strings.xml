@@ -138,4 +138,6 @@
     <string name="strelka">Запускать StrelkaGPS</string>
     <string name="start_point">Точка старта</string>
     <string name="start_point_sum">Старт маршрута по умолчанию</string>
+    <string name="yandex">Индикатор пробок</string>
+    <string name="yandex_sum">Показывать индикатор Яндекс-пробок</string>
 </resources>

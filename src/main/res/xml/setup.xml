@@ -134,6 +134,11 @@
             android:defaultValue="@string/def_sms" />
 
         <CheckBoxPreference
+            android:key="yandex"
+            android:title="@string/yandex"
+            android:summary="@string/yandex_sum" />
+
+        <CheckBoxPreference
             android:key="mapcam"
             android:title="@string/mapcam" />
 
@@ -147,7 +152,7 @@
         android:key="power_group"
         android:title="@string/power">
 
-    <CheckBoxPreference
+        <CheckBoxPreference
             android:key="carmode"
             android:title="@string/carmode"
             android:summary="@string/carmode_sum" />

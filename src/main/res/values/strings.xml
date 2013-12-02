@@ -156,4 +156,6 @@
     <string name="strelka">Launch StrelkaGPS</string>
     <string name="start_point">Start point</string>
     <string name="start_point_sum">Default start point of route</string>
+    <string name="yandex">Traffic indicator</string>
+    <string name="yandex_sum">Show Yandex traffic indicator</string>
 </resources>

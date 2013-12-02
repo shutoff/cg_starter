@@ -14,10 +14,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.AnimationDrawable;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -25,10 +30,12 @@ import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.FileObserver;
 import android.os.IBinder;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
@@ -52,8 +59,20 @@ import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -109,6 +128,7 @@ public class OnExitService extends Service {
     View hudActive;
     View hudInactive;
     View hudNotification;
+    View hudYandex;
 
     CountDownTimer setupTimer;
     CountDownTimer notificationTimer;
@@ -121,6 +141,32 @@ public class OnExitService extends Service {
     PingTask pingTask;
     BroadcastReceiver br;
 
+    HttpTask fetcher;
+    LocationManager locationManager;
+    LocationListener netListener;
+    LocationListener gpsListener;
+
+    Location currentBestLocation;
+
+    final static long UPD_INTERVAL = 3 * 60 * 1000;
+    final static long VALID_INTEVAL = 15 * 60 * 1000;
+    final static String TRAFFIC_URL = "http://api-maps.yandex.ru/services/traffic-info/1.0/?format=json&lang=ru-RU'";
+
+    final static int res[] = {
+            R.drawable.gray,
+            R.drawable.p0,
+            R.drawable.p1,
+            R.drawable.p2,
+            R.drawable.p3,
+            R.drawable.p4,
+            R.drawable.p5,
+            R.drawable.p6,
+            R.drawable.p7,
+            R.drawable.p8,
+            R.drawable.p9,
+            R.drawable.p10,
+    };
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -129,6 +175,15 @@ public class OnExitService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                State.print(ex);
+                ex.printStackTrace();
+            }
+        });
+
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
         try {
@@ -147,6 +202,7 @@ public class OnExitService extends Service {
             // ignore
         }
         observer.startWatching();
+        initLocation();
     }
 
     @Override
@@ -159,7 +215,13 @@ public class OnExitService extends Service {
             unregisterReceiver(br);
         if (foreground)
             stopForeground(true);
-        hideOverlays();
+        hideOverlays(null);
+        if (netListener != null)
+            locationManager.removeUpdates(netListener);
+        if (gpsListener != null)
+            locationManager.removeUpdates(gpsListener);
+        if ((fetcher != null) && (fetcher.br != null))
+            unregisterReceiver(fetcher.br);
         super.onDestroy();
     }
 
@@ -290,12 +352,23 @@ public class OnExitService extends Service {
                     sendBroadcast(i);
                 }
                 ed.commit();
+                if ((fetcher != null) && (fetcher.br != null)) {
+                    unregisterReceiver(fetcher.br);
+                    fetcher.br = null;
+                }
                 stopSelf();
             } else {
                 setPhoneListener();
                 if (show_overlay) {
                     if (isActiveCG(this)) {
                         showActiveOverlay();
+                    } else {
+                        showInactiveOverlay();
+                    }
+                }
+                if (preferences.getBoolean(State.YANDEX, false)) {
+                    if (isActiveCG(this)) {
+                        showYandex();
                     } else {
                         showInactiveOverlay();
                     }
@@ -570,11 +643,13 @@ public class OnExitService extends Service {
             @Override
             public void onTick(long millisUntilFinished) {
                 hideNotification();
+                showYandex();
             }
 
             @Override
             public void onFinish() {
                 hideNotification();
+                showYandex();
             }
         };
         notificationTimer.start();
@@ -689,6 +764,93 @@ public class OnExitService extends Service {
         notificationTimer.start();
     }
 
+    void showYandex() {
+        if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudYandex != null))
+            return;
+        if (!isActiveCG(this))
+            return;
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (!preferences.getBoolean(State.YANDEX, false))
+            return;
+        int level = getYandexData();
+
+        State.appendLog("showYandex " + level);
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+
+        params.x = preferences.getInt(State.PHONE_X, 50);
+        params.y = preferences.getInt(State.PHONE_Y, 50);
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        hudYandex = inflater.inflate(R.layout.yandex, null);
+
+        hudYandex.setOnTouchListener(new OverlayTouchListener() {
+            @Override
+            void click() {
+                Intent intent = new Intent("ru.yandex.yandexnavi.action.BUILD_ROUTE_ON_MAP");
+                intent.setPackage("ru.yandex.yandexnavi");
+                PackageManager pm = getPackageManager();
+                List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
+                if ((infos != null) && (infos.size() > 0)) {
+                    if (currentBestLocation != null) {
+                        intent.putExtra("lat_from", currentBestLocation.getLatitude());
+                        intent.putExtra("lon_from", currentBestLocation.getLongitude());
+                    }
+                    try {
+                        File poi = Environment.getExternalStorageDirectory();
+                        poi = new File(poi, "CityGuide/routes.dat");
+                        BufferedReader reader = new BufferedReader(new FileReader(poi));
+                        reader.readLine();
+                        boolean current = false;
+                        while (true) {
+                            String line = reader.readLine();
+                            if (line == null)
+                                break;
+                            String[] parts = line.split("\\|");
+                            if (parts.length == 0)
+                                continue;
+                            String name = parts[0];
+                            if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
+                                current = name.equals("#[CURRENT]");
+                                continue;
+                            }
+                            if (current && name.equals("Finish")) {
+                                intent.putExtra("lat_to", Double.parseDouble(parts[1]));
+                                intent.putExtra("lon_to", Double.parseDouble(parts[2]));
+                            }
+                        }
+                        reader.close();
+                    } catch (Exception ex) {
+                        // ignore
+                    }
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                }
+            }
+        });
+
+        ImageView iv = (ImageView) hudYandex.findViewById(R.id.img);
+        if (level < 0) {
+            iv.setImageResource(R.drawable.loading);
+            AnimationDrawable animation = (AnimationDrawable) iv.getDrawable();
+            animation.start();
+        } else {
+            iv.setImageResource(res[level]);
+        }
+
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.addView(hudYandex, params);
+
+        setForeground();
+    }
+
     void showActiveOverlay() {
         if (hudActive != null)
             return;
@@ -787,7 +949,7 @@ public class OnExitService extends Service {
                 public void onClick(View v) {
                     callAnswer();
                     ringing = false;
-                    hideOverlays();
+                    hideOverlays(OnExitService.this);
                     switchToCG();
                 }
             });
@@ -799,7 +961,7 @@ public class OnExitService extends Service {
                 public void onClick(View v) {
                     callReject();
                     ringing = false;
-                    hideOverlays();
+                    hideOverlays(OnExitService.this);
                     switchToCG();
                 }
             });
@@ -811,7 +973,7 @@ public class OnExitService extends Service {
                 public void onClick(View v) {
                     callReject();
                     ringing = false;
-                    hideOverlays();
+                    hideOverlays(OnExitService.this);
                     switchToCG();
                     String message = getRejectMessage();
                     SmsManager smsManager = SmsManager.getDefault();
@@ -845,7 +1007,8 @@ public class OnExitService extends Service {
             return;
         hideActiveOverlay();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (!preferences.getBoolean(State.PHONE_SHOW, false))
+        if (!(preferences.getBoolean(State.PHONE_SHOW, false) && show_overlay) &&
+                !preferences.getBoolean(State.YANDEX, false))
             return;
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -862,9 +1025,7 @@ public class OnExitService extends Service {
         params.y = preferences.getInt(State.PHONE_Y, 50);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        hudInactive = inflater.inflate(R.layout.call, null);
-        hudInactive.findViewById(R.id.number).setVisibility(View.GONE);
-        hudInactive.findViewById(R.id.name).setVisibility(View.GONE);
+        hudInactive = inflater.inflate(R.layout.icon, null);
         try {
             ImageView ivIcon = (ImageView) hudInactive.findViewById(R.id.photo);
             PackageManager manager = getPackageManager();
@@ -880,14 +1041,17 @@ public class OnExitService extends Service {
                     Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
                     if (intent != null)
                         startActivity(intent);
-                    showActiveOverlay();
+                    if (show_overlay) {
+                        showActiveOverlay();
+                    } else {
+                        hideInactiveOverlay();
+                        showYandex();
+                    }
                 } catch (Exception ex) {
                     // ignore
                 }
             }
         });
-
-        hudInactive.findViewById(R.id.phone).setVisibility(View.GONE);
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         wm.addView(hudInactive, params);
@@ -912,7 +1076,7 @@ public class OnExitService extends Service {
         ed.putInt(State.PHONE_X, x);
         ed.putInt(State.PHONE_Y, y);
         ed.commit();
-        if ((hudActive == null) && (hudInactive == null))
+        if ((hudActive == null) && (hudInactive == null) && (hudYandex == null))
             return;
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -931,6 +1095,8 @@ public class OnExitService extends Service {
             wm.updateViewLayout(hudActive, params);
         if (hudInactive != null)
             wm.updateViewLayout(hudInactive, params);
+        if (hudYandex != null)
+            wm.updateViewLayout(hudYandex, params);
     }
 
     void setupPhoneButton() {
@@ -940,8 +1106,16 @@ public class OnExitService extends Service {
             layout = (LinearLayout) hudActive;
         if (hudInactive != null)
             layout = (LinearLayout) hudInactive;
+        if (hudYandex != null)
+            layout = (LinearLayout) hudYandex;
         if (layout == null)
             return;
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            vibrator.vibrate(800);
+        } catch (Exception ex) {
+            // ignore
+        }
         layout.setBackgroundResource(R.drawable.setup_call);
         setup_button = true;
     }
@@ -956,6 +1130,10 @@ public class OnExitService extends Service {
             if (layout != null)
                 layout.setBackgroundResource(R.drawable.call);
             setup_button = false;
+            if (hudYandex != null) {
+                hideYandex();
+                showYandex();
+            }
         }
         if (setupTimer != null) {
             setupTimer.cancel();
@@ -993,10 +1171,23 @@ public class OnExitService extends Service {
         hudNotification = null;
     }
 
-    void hideOverlays() {
+    void hideYandex() {
+        cancelSetup();
+        if (hudYandex == null)
+            return;
+        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudYandex);
+        hudYandex = null;
+    }
+
+    void hideOverlays(Context context) {
         hideActiveOverlay();
         hideInactiveOverlay();
         hideNotification();
+        if ((context != null) && isActiveCG(context)) {
+            showYandex();
+        } else {
+            hideYandex();
+        }
     }
 
     static void turnOnBT(Context context) {
@@ -1101,7 +1292,7 @@ public class OnExitService extends Service {
                             if (phone) {
                                 show_overlay = true;
                                 ringing = false;
-                                hideOverlays();
+                                hideOverlays(null);
                                 showActiveOverlay();
                                 if (prev_state == TelephonyManager.CALL_STATE_IDLE) {
                                     if (piAfterCall == null)
@@ -1131,7 +1322,7 @@ public class OnExitService extends Service {
                             break;
                         case TelephonyManager.CALL_STATE_RINGING:
                             stopAfterCall();
-                            hideOverlays();
+                            hideOverlays(null);
                             show_overlay = true;
                             ringing = true;
                             showInactiveOverlay();
@@ -1155,7 +1346,7 @@ public class OnExitService extends Service {
                         case TelephonyManager.CALL_STATE_IDLE:
                             stopAfterCall();
                             stopAutoAnswer();
-                            hideOverlays();
+                            hideOverlays(OnExitService.this);
                             call_number = null;
                             show_overlay = false;
                             if (foreground)
@@ -1391,4 +1582,307 @@ public class OnExitService extends Service {
             pingTask = null;
         }
     }
+
+    public void initLocation() {
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (!preferences.getBoolean(State.YANDEX, false))
+            return;
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        netListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                locationChanged(location);
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+
+            }
+        };
+
+        gpsListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                locationChanged(location);
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+
+            }
+        };
+
+        currentBestLocation = getLastBestLocation();
+
+        try {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
+        } catch (Exception ex) {
+            gpsListener = null;
+        }
+
+        try {
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, netListener);
+        } catch (Exception ex) {
+            netListener = null;
+        }
+
+        showYandex();
+    }
+
+    class HttpTask extends AsyncTask<Void, Void, Integer> {
+
+        BroadcastReceiver br;
+
+        @Override
+        protected Integer doInBackground(Void... params) {
+            if (currentBestLocation == null)
+                return null;
+            try {
+                State.appendLog("Start fetch data");
+                HttpClient httpclient = new DefaultHttpClient();
+                HttpResponse response = httpclient.execute(new HttpGet(TRAFFIC_URL));
+                StatusLine statusLine = response.getStatusLine();
+                int status = statusLine.getStatusCode();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                response.getEntity().writeTo(out);
+                out.close();
+                String res = out.toString();
+                if (status != HttpStatus.SC_OK)
+                    return null;
+                JSONObject result = new JSONObject(res);
+                result = result.getJSONObject("GeoObjectCollection");
+                JSONArray data = result.getJSONArray("features");
+                int length = data.length();
+                State.appendLog("Length: " + length);
+                for (int i = 0; i < length; i++) {
+                    result = data.getJSONObject(i);
+                    JSONObject jams = result.getJSONObject("properties");
+                    jams = jams.getJSONObject("JamsMetaData");
+                    if (!jams.has("level"))
+                        continue;
+                    int level = jams.getInt("level");
+                    result = result.getJSONObject("geometry");
+                    JSONArray coord = result.getJSONArray("coordinates");
+                    double lat = coord.getDouble(1);
+                    double lon = coord.getDouble(0);
+                    double d = calc_distance(lat, lon, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
+
+                    State.appendLog("d=" + d + ", " + level);
+
+                    if (d < 80000) {
+                        State.appendLog("level " + level);
+                        return level + 1;
+                    }
+                }
+                return 0;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Integer lvl) {
+            if (lvl != null) {
+                State.appendLog("level=" + lvl);
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
+                long now = new Date().getTime();
+                boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));
+                if (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)
+                    changed = true;
+                SharedPreferences.Editor ed = preferences.edit();
+                ed.putInt(State.TRAFFIC, lvl);
+                ed.putLong(State.UPD_TIME, now);
+                ed.commit();
+                if (changed) {
+                    hideYandex();
+                    if (isActiveCG(OnExitService.this))
+                        showYandex();
+                }
+            }
+            fetcher = null;
+            if (br != null)
+                unregisterReceiver(br);
+        }
+    }
+
+    int getYandexData() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        long upd_time = preferences.getLong(State.UPD_TIME, 0);
+        long interval = new Date().getTime() - upd_time;
+        State.appendLog("Interval=" + interval + "," + (currentBestLocation != null));
+        if ((fetcher == null) && (interval > UPD_INTERVAL) && (currentBestLocation != null)) {
+            State.appendLog("start fetcher");
+            fetcher = new HttpTask();
+            final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            if ((activeNetwork != null) && activeNetwork.isConnected()) {
+                fetcher.execute();
+            } else {
+                fetcher.br = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                        if ((activeNetwork != null) && activeNetwork.isConnected()) {
+                            if (fetcher.br != null) {
+                                unregisterReceiver(fetcher.br);
+                                fetcher.br = null;
+                            }
+                            fetcher.execute();
+                        }
+                    }
+                };
+                registerReceiver(fetcher.br, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+            }
+        }
+        if (interval > VALID_INTEVAL)
+            return -1;
+        return preferences.getInt(State.TRAFFIC, 0);
+    }
+
+    static final int TWO_MINUTES = 1000 * 60 * 2;
+
+    Location getLastBestLocation() {
+        Location locationGPS = null;
+        try {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        } catch (Exception ex) {
+            // ignore
+        }
+        Location locationNet = null;
+        try {
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
+                locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ex) {
+            // ignore
+        }
+        long GPSLocationTime = 0;
+        Date now = new Date();
+        if (locationGPS != null) {
+            GPSLocationTime = locationGPS.getTime();
+            if (GPSLocationTime < now.getTime() - TWO_MINUTES) {
+                locationGPS = null;
+                GPSLocationTime = 0;
+            }
+        }
+        long NetLocationTime = 0;
+        if (locationNet != null) {
+            NetLocationTime = locationNet.getTime();
+            if (NetLocationTime < now.getTime() - TWO_MINUTES) {
+                locationNet = null;
+                NetLocationTime = 0;
+            }
+        }
+        if (GPSLocationTime > NetLocationTime)
+            return locationGPS;
+        return locationNet;
+    }
+
+    public void locationChanged(Location location) {
+        if (isBetterLocation(location, currentBestLocation))
+            currentBestLocation = location;
+        if (currentBestLocation == null)
+            return;
+        State.appendLog("Location changed");
+        getYandexData();
+    }
+
+    protected boolean isBetterLocation(Location location, Location currentBestLocation) {
+        if (currentBestLocation == null)
+            return true;
+
+        long timeDelta = location.getTime() - currentBestLocation.getTime();
+        boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
+        boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
+        boolean isNewer = timeDelta > 0;
+
+        // If it's been more than two minutes since the current location, use the new location
+        // because the user has likely moved
+        if (isSignificantlyNewer) {
+            return true;
+            // If the new location is more than two minutes older, it must be worse
+        } else if (isSignificantlyOlder) {
+            return false;
+        }
+
+        // Check whether the new location fix is more or less accurate
+        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
+        boolean isLessAccurate = accuracyDelta > 0;
+        boolean isMoreAccurate = accuracyDelta < 0;
+        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
+
+        // Check if the old and new location are from the same provider
+        boolean isFromSameProvider = isSameProvider(location.getProvider(),
+                currentBestLocation.getProvider());
+
+        // Determine location quality using a combination of timeliness and accuracy
+        if (isMoreAccurate) {
+            return true;
+        } else if (isNewer && !isLessAccurate) {
+            return true;
+        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSameProvider(String provider1, String provider2) {
+        if (provider1 == null)
+            return provider2 == null;
+        return provider1.equals(provider2);
+    }
+
+    static final double D2R = 0.017453; // Константа для преобразования градусов в радианы
+    static final double a = 6378137.0; // Основные полуоси
+    static final double e2 = 0.006739496742337; // Квадрат эксцентричности эллипсоида
+
+    static double calc_distance(double lat1, double lon1, double lat2, double lon2) {
+
+        if ((lat1 == lat2) && (lon1 == lon2))
+            return 0;
+
+        double fdLambda = (lon1 - lon2) * D2R;
+        double fdPhi = (lat1 - lat2) * D2R;
+        double fPhimean = ((lat1 + lat2) / 2.0) * D2R;
+
+        double fTemp = 1 - e2 * (Math.pow(Math.sin(fPhimean), 2));
+        double fRho = (a * (1 - e2)) / Math.pow(fTemp, 1.5);
+        double fNu = a / (Math.sqrt(1 - e2 * (Math.sin(fPhimean) * Math.sin(fPhimean))));
+
+        double fz = Math.sqrt(Math.pow(Math.sin(fdPhi / 2.0), 2) +
+                Math.cos(lat2 * D2R) * Math.cos(lat1 * D2R) * Math.pow(Math.sin(fdLambda / 2.0), 2));
+        fz = 2 * Math.asin(fz);
+
+        double fAlpha = Math.cos(lat1 * D2R) * Math.sin(fdLambda) * 1 / Math.sin(fz);
+        fAlpha = Math.asin(fAlpha);
+
+        double fR = (fRho * fNu) / ((fRho * Math.pow(Math.sin(fAlpha), 2)) + (fNu * Math.pow(Math.cos(fAlpha), 2)));
+
+        return fz * fR;
+    }
+
 }

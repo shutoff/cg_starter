@@ -2,9 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
     android:versionCode="19"
-    android:versionName="1.3.1">
+    android:versionName="1.4 test2">
 
-    <uses-sdk
+<uses-sdk
         android:minSdkVersion="7"
         android:targetSdkVersion="16" />
 
@@ -42,7 +42,6 @@
 
     <application
         android:allowBackup="true"
-        android:debuggable="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
