@@ -320,20 +320,7 @@ public class OnExitService extends Service {
                     ed.remove(State.SAVE_WIFI);
                 }
                 if (preferences.getBoolean(State.SAVE_DATA, false)) {
-                    try {
-                        ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-                        Class conmanClass = Class.forName(conman.getClass().getName());
-                        Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
-                        iConnectivityManagerField.setAccessible(true);
-                        Object iConnectivityManager = iConnectivityManagerField.get(conman);
-                        Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
-
-                        Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
-                        setMobileDataEnabledMethod.setAccessible(true);
-                        setMobileDataEnabledMethod.invoke(iConnectivityManager, false);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
+                    enableMobileData(this, false);
                     ed.remove(State.SAVE_DATA);
                 }
                 try {
@@ -368,6 +355,7 @@ public class OnExitService extends Service {
                 }
                 if (preferences.getBoolean(State.YANDEX, false)) {
                     if (isActiveCG(this)) {
+                        hideInactiveOverlay();
                         showYandex();
                     } else {
                         showInactiveOverlay();
@@ -1885,4 +1873,38 @@ public class OnExitService extends Service {
         return fz * fR;
     }
 
+    static void enableMobileData(Context context, boolean enable) {
+        try {
+            ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            Class conmanClass = Class.forName(conman.getClass().getName());
+            final Method[] methods = conmanClass.getDeclaredMethods();
+            for (final Method method : methods) {
+                if (method.getName().equals("setMobileDataEnabled")) {
+                    method.invoke(conman, enable);
+                    return;
+                }
+            }
+            State.appendLog("enableMobileData not found");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            State.print(ex);
+        }
+    }
+
+    static boolean getMobileDataEnabled(Context context) {
+        try {
+            ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            Class conmanClass = Class.forName(conman.getClass().getName());
+            final Method[] methods = conmanClass.getDeclaredMethods();
+            for (final Method method : methods) {
+                if (method.getName().equals("getMobileDataEnabled"))
+                    return (Boolean) method.invoke(conman);
+            }
+            State.appendLog("enableMobileData not found");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            State.print(ex);
+        }
+        return false;
+    }
 }

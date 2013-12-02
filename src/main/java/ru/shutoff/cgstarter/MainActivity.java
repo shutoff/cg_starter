@@ -35,8 +35,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -476,7 +474,7 @@ public class MainActivity
             String start = preferences.getString(State.START_POINT, "0|0");
             BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
             writer.append("1|router|65001\n");
-            writer.append("#[CURRENT]|1|1\n");
+            writer.append("#[CURRENT]|1|0\n");
             writer.append("Start|");
             writer.append(start);
             writer.append("\n");
@@ -571,19 +569,8 @@ public class MainActivity
                 if ((activeNetwork == null) ||
                         (activeNetwork.getType() != ConnectivityManager.TYPE_MOBILE) ||
                         !activeNetwork.isConnected()) {
-                    Class conmanClass = Class.forName(conman.getClass().getName());
-                    Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
-                    iConnectivityManagerField.setAccessible(true);
-                    Object iConnectivityManager = iConnectivityManagerField.get(conman);
-                    Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
-
-                    Method getMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("getMobileDataEnabled");
-                    getMobileDataEnabledMethod.setAccessible(true); // Make the method callable
-
-                    if (!(Boolean) getMobileDataEnabledMethod.invoke(iConnectivityManager)) {
-                        Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
-                        setMobileDataEnabledMethod.setAccessible(true);
-                        setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+                    if (!OnExitService.getMobileDataEnabled(context)) {
+                        OnExitService.enableMobileData(context, true);
                         ed.putBoolean(State.SAVE_DATA, true);
                     }
                 }
