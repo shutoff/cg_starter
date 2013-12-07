@@ -26,7 +26,6 @@ public class Bookmarks {
             File poi = new File(sd, "CityGuide/CGMaps/poi.bkm");
             if (!poi.exists())
                 poi = new File(sd, "CityGuide/CGMaps/Poi.bkm");
-            State.appendLog("poi " + poi.getAbsolutePath() + " ," + poi.exists());
             BufferedReader reader = new BufferedReader(new FileReader(poi));
             while (true) {
                 String line = reader.readLine();

@@ -58,6 +58,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -65,16 +68,15 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
@@ -106,6 +108,8 @@ public class OnExitService extends Service {
     PendingIntent piAfterCall;
 
     PhoneStateListener phoneListener;
+
+    WindowManager.LayoutParams layoutParams;
 
     TelephonyManager tm;
 
@@ -176,6 +180,7 @@ public class OnExitService extends Service {
     public void onCreate() {
         super.onCreate();
 
+/*
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable ex) {
@@ -183,6 +188,7 @@ public class OnExitService extends Service {
                 ex.printStackTrace();
             }
         });
+*/
 
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
@@ -201,6 +207,18 @@ public class OnExitService extends Service {
         } catch (Exception ex) {
             // ignore
         }
+
+        layoutParams = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                PixelFormat.TRANSLUCENT);
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+
         observer.startWatching();
         initLocation();
     }
@@ -520,15 +538,8 @@ public class OnExitService extends Service {
                     button_y = event.getY();
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    int dx = 0;
-                    int dy = 0;
-                    if (setup_button) {
-                        dx = (int) (event.getX() - button_x);
-                        dy = (int) (event.getY() - button_y);
-                        moveButton(dx, dy);
-                    }
-                    button_x = event.getX() - dx;
-                    button_y = event.getY() - dy;
+                    if (setup_button)
+                        moveButton((int) (event.getRawX() - button_x), (int) (event.getRawY() - button_y));
                     break;
 
                 case MotionEvent.ACTION_UP:
@@ -571,18 +582,8 @@ public class OnExitService extends Service {
         if (timeout <= 0)
             return;
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-
-        params.x = preferences.getInt(State.PHONE_X, 50);
-        params.y = preferences.getInt(State.PHONE_Y, 50);
+        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
+        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudNotification = inflater.inflate(R.layout.notification, null);
@@ -623,7 +624,7 @@ public class OnExitService extends Service {
 
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudNotification, params);
+        wm.addView(hudNotification, layoutParams);
 
         setForeground();
 
@@ -691,18 +692,8 @@ public class OnExitService extends Service {
         if (timeout <= 0)
             return;
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-
-        params.x = preferences.getInt(State.PHONE_X, 50);
-        params.y = preferences.getInt(State.PHONE_Y, 50);
+        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
+        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudNotification = inflater.inflate(R.layout.notification, null);
@@ -734,7 +725,7 @@ public class OnExitService extends Service {
             ivIcon.setImageBitmap(photo);
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudNotification, params);
+        wm.addView(hudNotification, layoutParams);
 
         setForeground();
 
@@ -762,19 +753,8 @@ public class OnExitService extends Service {
             return;
         int level = getYandexData();
 
-        State.appendLog("showYandex " + level);
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-
-        params.x = preferences.getInt(State.PHONE_X, 50);
-        params.y = preferences.getInt(State.PHONE_Y, 50);
+        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
+        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudYandex = inflater.inflate(R.layout.yandex, null);
@@ -834,7 +814,7 @@ public class OnExitService extends Service {
         }
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudYandex, params);
+        wm.addView(hudYandex, layoutParams);
 
         setForeground();
     }
@@ -847,18 +827,8 @@ public class OnExitService extends Service {
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
             return;
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-
-        params.x = preferences.getInt(State.PHONE_X, 50);
-        params.y = preferences.getInt(State.PHONE_Y, 50);
+        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
+        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudActive = inflater.inflate(R.layout.call, null);
@@ -974,7 +944,7 @@ public class OnExitService extends Service {
 
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudActive, params);
+        wm.addView(hudActive, layoutParams);
 
         setForeground();
     }
@@ -999,18 +969,8 @@ public class OnExitService extends Service {
                 !preferences.getBoolean(State.YANDEX, false))
             return;
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-
-        params.x = preferences.getInt(State.PHONE_X, 50);
-        params.y = preferences.getInt(State.PHONE_Y, 50);
+        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
+        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudInactive = inflater.inflate(R.layout.icon, null);
@@ -1042,7 +1002,7 @@ public class OnExitService extends Service {
         });
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudInactive, params);
+        wm.addView(hudInactive, layoutParams);
 
         setForeground();
     }
@@ -1056,10 +1016,8 @@ public class OnExitService extends Service {
         startForeground(NOTIFICATION_ID, builder.build());
     }
 
-    void moveButton(int dx, int dy) {
+    void moveButton(int x, int y) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        int x = preferences.getInt(State.PHONE_X, 50) + dx;
-        int y = preferences.getInt(State.PHONE_Y, 50) + dy;
         SharedPreferences.Editor ed = preferences.edit();
         ed.putInt(State.PHONE_X, x);
         ed.putInt(State.PHONE_Y, y);
@@ -1067,24 +1025,15 @@ public class OnExitService extends Service {
         if ((hudActive == null) && (hudInactive == null) && (hudYandex == null))
             return;
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-        params.x = x;
-        params.y = y;
+        layoutParams.x = x;
+        layoutParams.y = y;
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (hudActive != null)
-            wm.updateViewLayout(hudActive, params);
+            wm.updateViewLayout(hudActive, layoutParams);
         if (hudInactive != null)
-            wm.updateViewLayout(hudInactive, params);
+            wm.updateViewLayout(hudInactive, layoutParams);
         if (hudYandex != null)
-            wm.updateViewLayout(hudYandex, params);
+            wm.updateViewLayout(hudYandex, layoutParams);
     }
 
     void setupPhoneButton() {
@@ -1106,6 +1055,9 @@ public class OnExitService extends Service {
         }
         layout.setBackgroundResource(R.drawable.setup_call);
         setup_button = true;
+        layoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.updateViewLayout(layout, layoutParams);
     }
 
     void cancelSetup() {
@@ -1115,8 +1067,12 @@ public class OnExitService extends Service {
                 layout = (LinearLayout) hudActive;
             if (hudInactive != null)
                 layout = (LinearLayout) hudInactive;
-            if (layout != null)
+            layoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+            if (layout != null) {
+                WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+                wm.updateViewLayout(layout, layoutParams);
                 layout.setBackgroundResource(R.drawable.call);
+            }
             setup_button = false;
             if (hudYandex != null) {
                 hideYandex();
@@ -1648,46 +1604,48 @@ public class OnExitService extends Service {
         protected Integer doInBackground(Void... params) {
             if (currentBestLocation == null)
                 return null;
+            HttpClient httpclient = new DefaultHttpClient();
+            Reader reader = null;
             try {
-                State.appendLog("Start fetch data");
-                HttpClient httpclient = new DefaultHttpClient();
                 HttpResponse response = httpclient.execute(new HttpGet(TRAFFIC_URL));
                 StatusLine statusLine = response.getStatusLine();
                 int status = statusLine.getStatusCode();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                response.getEntity().writeTo(out);
-                out.close();
-                String res = out.toString();
+                reader = new InputStreamReader(response.getEntity().getContent());
+                JsonObject result = JsonObject.readFrom(reader);
+                reader.close();
+                reader = null;
                 if (status != HttpStatus.SC_OK)
                     return null;
-                JSONObject result = new JSONObject(res);
-                result = result.getJSONObject("GeoObjectCollection");
-                JSONArray data = result.getJSONArray("features");
-                int length = data.length();
-                State.appendLog("Length: " + length);
+                result = result.get("GeoObjectCollection").asObject();
+                JsonArray data = result.get("features").asArray();
+                int length = data.size();
                 for (int i = 0; i < length; i++) {
-                    result = data.getJSONObject(i);
-                    JSONObject jams = result.getJSONObject("properties");
-                    jams = jams.getJSONObject("JamsMetaData");
-                    if (!jams.has("level"))
+                    result = data.get(i).asObject();
+                    JsonObject jams = result.get("properties").asObject();
+                    jams = jams.get("JamsMetaData").asObject();
+                    JsonValue lvl = jams.get("level");
+                    if (lvl == null)
                         continue;
-                    int level = jams.getInt("level");
-                    result = result.getJSONObject("geometry");
-                    JSONArray coord = result.getJSONArray("coordinates");
-                    double lat = coord.getDouble(1);
-                    double lon = coord.getDouble(0);
+                    int level = lvl.asInt();
+                    result = result.get("geometry").asObject();
+                    JsonArray coord = result.get("coordinates").asArray();
+                    double lat = coord.get(1).asDouble();
+                    double lon = coord.get(0).asDouble();
                     double d = calc_distance(lat, lon, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
-
-                    State.appendLog("d=" + d + ", " + level);
-
-                    if (d < 80000) {
-                        State.appendLog("level " + level);
+                    if (d < 80000)
                         return level + 1;
-                    }
                 }
                 return 0;
             } catch (Exception ex) {
                 ex.printStackTrace();
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
             }
             return null;
         }
@@ -1695,7 +1653,6 @@ public class OnExitService extends Service {
         @Override
         protected void onPostExecute(Integer lvl) {
             if (lvl != null) {
-                State.appendLog("level=" + lvl);
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
                 long now = new Date().getTime();
                 boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));
@@ -1721,9 +1678,7 @@ public class OnExitService extends Service {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         long upd_time = preferences.getLong(State.UPD_TIME, 0);
         long interval = new Date().getTime() - upd_time;
-        State.appendLog("Interval=" + interval + "," + (currentBestLocation != null));
         if ((fetcher == null) && (interval > UPD_INTERVAL) && (currentBestLocation != null)) {
-            State.appendLog("start fetcher");
             fetcher = new HttpTask();
             final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
@@ -1795,7 +1750,6 @@ public class OnExitService extends Service {
             currentBestLocation = location;
         if (currentBestLocation == null)
             return;
-        State.appendLog("Location changed");
         getYandexData();
     }
 
@@ -1884,10 +1838,8 @@ public class OnExitService extends Service {
                     return;
                 }
             }
-            State.appendLog("enableMobileData not found");
         } catch (Exception ex) {
             ex.printStackTrace();
-            State.print(ex);
         }
     }
 
@@ -1900,10 +1852,8 @@ public class OnExitService extends Service {
                 if (method.getName().equals("getMobileDataEnabled"))
                     return (Boolean) method.invoke(conman);
             }
-            State.appendLog("enableMobileData not found");
         } catch (Exception ex) {
             ex.printStackTrace();
-            State.print(ex);
         }
         return false;
     }
