@@ -140,4 +140,9 @@
     <string name="start_point_sum">Старт маршрута по умолчанию</string>
     <string name="yandex">Индикатор пробок</string>
     <string name="yandex_sum">Показывать индикатор Яндекс-пробок</string>
+    <string name="vertical">Запускать только в вертикальном положении</string>
+    <string name="quick_launch">Быстрый запуск</string>
+    <string name="quick_launch_sum">Выберите приложения для быстрого запуска</string>
+    <string name="add">Добавить</string>
+    <string name="remove">Удалить</string>
 </resources>

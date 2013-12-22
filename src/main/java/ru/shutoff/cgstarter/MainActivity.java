@@ -87,6 +87,13 @@ public class MainActivity
         if (orientation.equals("3"))
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
+        if (preferences.getBoolean("yandex", false)) {
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.remove("yandex");
+            ed.putString(State.APPS, "ru.yandex.yandexnavi/ru.yandex.yandexnavi.core.NavigatorActivity");
+            ed.commit();
+        }
+
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);

@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -20,6 +21,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -46,12 +48,15 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -81,6 +86,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
+import java.util.Vector;
 
 public class OnExitService extends Service {
 
@@ -116,6 +122,7 @@ public class OnExitService extends Service {
     boolean phone;
     boolean speaker;
     boolean ringing;
+    boolean landscape;
 
     static String call_number;
 
@@ -132,7 +139,7 @@ public class OnExitService extends Service {
     View hudActive;
     View hudInactive;
     View hudNotification;
-    View hudYandex;
+    View hudApps;
 
     CountDownTimer setupTimer;
     CountDownTimer notificationTimer;
@@ -151,10 +158,18 @@ public class OnExitService extends Service {
     LocationListener gpsListener;
 
     Location currentBestLocation;
+    View.OnClickListener iconListener;
+
+    PackageManager pm;
+
+    double yandex_finish_lat;
+    double yandex_finish_lon;
 
     final static long UPD_INTERVAL = 3 * 60 * 1000;
     final static long VALID_INTEVAL = 15 * 60 * 1000;
     final static String TRAFFIC_URL = "http://api-maps.yandex.ru/services/traffic-info/1.0/?format=json&lang=ru-RU'";
+
+    final static String YAN = "ru.yandex.yandexnavi";
 
     final static int res[] = {
             R.drawable.gray,
@@ -170,6 +185,13 @@ public class OnExitService extends Service {
             R.drawable.p9,
             R.drawable.p10,
     };
+
+    static class App {
+        String name;
+        Drawable icon;
+    }
+
+    Vector<App> apps;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -220,7 +242,40 @@ public class OnExitService extends Service {
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
 
         observer.startWatching();
-        initLocation();
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        pm = getPackageManager();
+        String[] quick_launch = preferences.getString(State.APPS, "").split(":");
+        boolean yandex = false;
+        apps = new Vector<App>();
+        for (String app : quick_launch) {
+            String[] component = app.split("/");
+            if (component.length != 2)
+                continue;
+            Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+            mainIntent.setPackage(component[0]);
+            mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
+            for (ResolveInfo info : infos) {
+                if (info.activityInfo == null)
+                    continue;
+                if (info.activityInfo.name.equals(component[1])) {
+                    App a = new App();
+                    a.name = app;
+                    if ((apps.size() == 0) && component[0].equals(YAN)) {
+                        yandex = true;
+                    } else {
+                        a.icon = info.loadIcon(pm);
+                        if (a.icon == null)
+                            continue;
+                    }
+                    apps.add(a);
+                    break;
+                }
+            }
+        }
+        if (yandex)
+            initLocation();
     }
 
     @Override
@@ -364,6 +419,25 @@ public class OnExitService extends Service {
                 stopSelf();
             } else {
                 setPhoneListener();
+                if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudApps != null)) {
+                    if (landscape != isLandscape()) {
+                        landscape = !landscape;
+                        if (hudActive != null) {
+                            hideActiveOverlay();
+                            showActiveOverlay();
+                        }
+                        if (hudNotification != null)
+                            hideNotification();
+                        if (hudInactive != null) {
+                            hideInactiveOverlay();
+                            showInactiveOverlay();
+                        }
+                        if (hudApps != null) {
+                            hideApps();
+                            showApps();
+                        }
+                    }
+                }
                 if (show_overlay) {
                     if (isActiveCG(this)) {
                         showActiveOverlay();
@@ -371,16 +445,22 @@ public class OnExitService extends Service {
                         showInactiveOverlay();
                     }
                 }
-                if (preferences.getBoolean(State.YANDEX, false)) {
+                if ((apps.size() > 0) && !setup_button) {
                     if (isActiveCG(this)) {
                         hideInactiveOverlay();
-                        showYandex();
+                        showApps();
                     } else {
                         showInactiveOverlay();
                     }
                 }
                 if (preferences.getBoolean(State.PING, false))
                     ping();
+                if ((yandex_finish_lat != 0) || (yandex_finish_lon != 0)) {
+                    if (!isRun(this, "ru.yandex.yandexnavi")) {
+                        yandex_finish_lat = 0;
+                        yandex_finish_lon = 0;
+                    }
+                }
             }
             return START_STICKY;
         }
@@ -558,6 +638,34 @@ public class OnExitService extends Service {
         }
     }
 
+    boolean isLandscape() {
+        int rotation = Surface.ROTATION_0;
+        try {
+            WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+            Display getOrient = wm.getDefaultDisplay();
+            Class conmanClass = Class.forName(getOrient.getClass().getName());
+            final Method[] methods = conmanClass.getDeclaredMethods();
+            for (final Method method : methods) {
+                if (method.getName().equals("getRotation"))
+                    rotation = (Integer) method.invoke(getOrient);
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+        return ((rotation == Surface.ROTATION_90) || (rotation == Surface.ROTATION_270));
+    }
+
+    int[] getHudPosition(SharedPreferences preferences) {
+        int[] res = new int[2];
+        res[0] = preferences.getInt(State.PHONE_X, 50);
+        res[1] = preferences.getInt(State.PHONE_Y, 50);
+        if (isLandscape()) {
+            res[0] = preferences.getInt(State.PHONE_LAND_X, res[0]);
+            res[1] = preferences.getInt(State.PHONE_LAND_Y, res[1]);
+        }
+        return res;
+    }
+
     void showNotification(Intent intent) {
 
         String title = intent.getStringExtra(State.TITLE);
@@ -582,8 +690,9 @@ public class OnExitService extends Service {
         if (timeout <= 0)
             return;
 
-        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
-        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
+        int[] position = getHudPosition(preferences);
+        layoutParams.x = position[0];
+        layoutParams.y = position[1];
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudNotification = inflater.inflate(R.layout.notification, null);
@@ -632,13 +741,13 @@ public class OnExitService extends Service {
             @Override
             public void onTick(long millisUntilFinished) {
                 hideNotification();
-                showYandex();
+                showApps();
             }
 
             @Override
             public void onFinish() {
                 hideNotification();
-                showYandex();
+                showApps();
             }
         };
         notificationTimer.start();
@@ -692,8 +801,9 @@ public class OnExitService extends Service {
         if (timeout <= 0)
             return;
 
-        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
-        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
+        int[] position = getHudPosition(preferences);
+        layoutParams.x = position[0];
+        layoutParams.y = position[1];
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudNotification = inflater.inflate(R.layout.notification, null);
@@ -733,88 +843,149 @@ public class OnExitService extends Service {
             @Override
             public void onTick(long millisUntilFinished) {
                 hideNotification();
+                showApps();
             }
 
             @Override
             public void onFinish() {
                 hideNotification();
+                showApps();
             }
         };
         notificationTimer.start();
     }
 
-    void showYandex() {
-        if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudYandex != null))
+    static float size = 0;
+
+    boolean isBig() {
+        if (size == 0) {
+            WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+            Display display = wm.getDefaultDisplay();
+            DisplayMetrics outMetrics = new DisplayMetrics();
+            display.getMetrics(outMetrics);
+
+            float density = getResources().getDisplayMetrics().density;
+            size = (outMetrics.heightPixels + outMetrics.widthPixels) / density;
+        }
+        return (size > 1500);
+    }
+
+    boolean yandex_error;
+
+    void showApps() {
+        if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudApps != null))
             return;
         if (!isActiveCG(this))
             return;
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (!preferences.getBoolean(State.YANDEX, false))
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (apps.size() == 0)
             return;
-        int level = getYandexData();
 
-        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
-        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
+        boolean full = false;
+        if (apps.size() > 1) {
+            long full_time = preferences.getLong(State.FULL_TIME, 0);
+            full = full_time > new Date().getTime();
+        }
+        final boolean isFull = full;
+
+        int[] position = getHudPosition(preferences);
+        layoutParams.x = position[0];
+        layoutParams.y = position[1];
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        hudYandex = inflater.inflate(R.layout.yandex, null);
+        hudApps = inflater.inflate(isBig() ? R.layout.quick_launch_big : R.layout.quick_launch, null);
 
-        hudYandex.setOnTouchListener(new OverlayTouchListener() {
-            @Override
-            void click() {
-                Intent intent = new Intent("ru.yandex.yandexnavi.action.BUILD_ROUTE_ON_MAP");
-                intent.setPackage("ru.yandex.yandexnavi");
-                PackageManager pm = getPackageManager();
-                List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
-                if ((infos != null) && (infos.size() > 0)) {
-                    if (currentBestLocation != null) {
-                        intent.putExtra("lat_from", currentBestLocation.getLatitude());
-                        intent.putExtra("lon_from", currentBestLocation.getLongitude());
-                    }
-                    try {
-                        File poi = Environment.getExternalStorageDirectory();
-                        poi = new File(poi, "CityGuide/routes.dat");
-                        BufferedReader reader = new BufferedReader(new FileReader(poi));
-                        reader.readLine();
-                        boolean current = false;
-                        while (true) {
-                            String line = reader.readLine();
-                            if (line == null)
+        ImageView iv = (ImageView) hudApps.findViewById(R.id.icon);
+        if (isFull) {
+            if (iconListener == null) {
+                iconListener = new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        SharedPreferences.Editor ed = preferences.edit();
+                        ed.remove(State.FULL_TIME);
+                        ed.commit();
+                        App app = apps.get((Integer) v.getTag());
+                        String[] component = app.name.split("/");
+                        Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+                        mainIntent.setPackage(component[0]);
+                        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                        List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
+                        for (ResolveInfo info : infos) {
+                            if (info.activityInfo == null)
+                                continue;
+                            if (info.activityInfo.name.equals(component[1])) {
+                                Intent intent = new Intent(Intent.ACTION_MAIN, null);
+                                intent.setPackage(component[0]);
+                                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                                intent.setComponent(new ComponentName(component[0], component[1]));
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
                                 break;
-                            String[] parts = line.split("\\|");
-                            if (parts.length == 0)
-                                continue;
-                            String name = parts[0];
-                            if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
-                                current = name.equals("#[CURRENT]");
-                                continue;
-                            }
-                            if (current && name.equals("Finish")) {
-                                intent.putExtra("lat_to", Double.parseDouble(parts[1]));
-                                intent.putExtra("lon_to", Double.parseDouble(parts[2]));
                             }
                         }
-                        reader.close();
-                    } catch (Exception ex) {
-                        // ignore
                     }
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
+                };
+            }
+
+            for (int i = 1; i < apps.size(); i++) {
+                iv.getLayoutParams();
+                App app = apps.get(i);
+                ImageView img = new ImageView(this);
+                img.setImageDrawable(app.icon);
+                img.setTag(i);
+                img.setOnClickListener(iconListener);
+                ViewGroup.LayoutParams layoutParams = iv.getLayoutParams();
+                img.setPadding(layoutParams.width / 6, 0, 0, 0);
+                LinearLayout layout = (LinearLayout) hudApps;
+                layout.addView(img);
+            }
+            hudApps.setBackgroundResource(R.drawable.call);
+        }
+
+        hudApps.setOnTouchListener(new OverlayTouchListener() {
+            @Override
+            void click() {
+                if (!isFull && (apps.size() > 1)) {
+                    SharedPreferences.Editor ed = preferences.edit();
+                    ed.putLong(State.FULL_TIME, new Date().getTime() + 10000);
+                    ed.commit();
+                    hideApps();
+                    showApps();
+                    CountDownTimer timer = new CountDownTimer(10000, 10000) {
+                        @Override
+                        public void onTick(long millisUntilFinished) {
+
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            hideApps();
+                            showApps();
+                        }
+                    };
+                    timer.start();
+                    return;
                 }
+                startApp();
             }
         });
 
-        ImageView iv = (ImageView) hudYandex.findViewById(R.id.img);
-        if (level < 0) {
-            iv.setImageResource(R.drawable.loading);
-            AnimationDrawable animation = (AnimationDrawable) iv.getDrawable();
-            animation.start();
+        Drawable icon = apps.get(0).icon;
+        if (icon == null) {
+            int level = getYandexData();
+            if (level < 0) {
+                iv.setImageResource(yandex_error ? R.drawable.error_loading : R.drawable.loading);
+                AnimationDrawable animation = (AnimationDrawable) iv.getDrawable();
+                animation.start();
+            } else {
+                iv.setImageResource(res[level]);
+            }
         } else {
-            iv.setImageResource(res[level]);
+            iv.setImageDrawable(icon);
         }
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudYandex, layoutParams);
+        wm.addView(hudApps, layoutParams);
 
         setForeground();
     }
@@ -827,8 +998,9 @@ public class OnExitService extends Service {
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
             return;
 
-        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
-        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
+        int[] position = getHudPosition(preferences);
+        layoutParams.x = position[0];
+        layoutParams.y = position[1];
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudActive = inflater.inflate(R.layout.call, null);
@@ -965,12 +1137,12 @@ public class OnExitService extends Service {
             return;
         hideActiveOverlay();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (!(preferences.getBoolean(State.PHONE_SHOW, false) && show_overlay) &&
-                !preferences.getBoolean(State.YANDEX, false))
+        if (!(preferences.getBoolean(State.PHONE_SHOW, false) && show_overlay) && (apps.size() == 0))
             return;
 
-        layoutParams.x = preferences.getInt(State.PHONE_X, 50);
-        layoutParams.y = preferences.getInt(State.PHONE_Y, 50);
+        int[] position = getHudPosition(preferences);
+        layoutParams.x = position[0];
+        layoutParams.y = position[1];
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudInactive = inflater.inflate(R.layout.icon, null);
@@ -993,7 +1165,7 @@ public class OnExitService extends Service {
                         showActiveOverlay();
                     } else {
                         hideInactiveOverlay();
-                        showYandex();
+                        showApps();
                     }
                 } catch (Exception ex) {
                     // ignore
@@ -1019,21 +1191,26 @@ public class OnExitService extends Service {
     void moveButton(int x, int y) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor ed = preferences.edit();
-        ed.putInt(State.PHONE_X, x);
-        ed.putInt(State.PHONE_Y, y);
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        if (isLandscape()) {
+            ed.putInt(State.PHONE_LAND_X, x);
+            ed.putInt(State.PHONE_LAND_Y, y);
+        } else {
+            ed.putInt(State.PHONE_X, x);
+            ed.putInt(State.PHONE_Y, y);
+        }
         ed.commit();
-        if ((hudActive == null) && (hudInactive == null) && (hudYandex == null))
+        if ((hudActive == null) && (hudInactive == null) && (hudApps == null))
             return;
 
         layoutParams.x = x;
         layoutParams.y = y;
-        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (hudActive != null)
             wm.updateViewLayout(hudActive, layoutParams);
         if (hudInactive != null)
             wm.updateViewLayout(hudInactive, layoutParams);
-        if (hudYandex != null)
-            wm.updateViewLayout(hudYandex, layoutParams);
+        if (hudApps != null)
+            wm.updateViewLayout(hudApps, layoutParams);
     }
 
     void setupPhoneButton() {
@@ -1043,8 +1220,8 @@ public class OnExitService extends Service {
             layout = (LinearLayout) hudActive;
         if (hudInactive != null)
             layout = (LinearLayout) hudInactive;
-        if (hudYandex != null)
-            layout = (LinearLayout) hudYandex;
+        if (hudApps != null)
+            layout = (LinearLayout) hudApps;
         if (layout == null)
             return;
         try {
@@ -1055,7 +1232,6 @@ public class OnExitService extends Service {
         }
         layout.setBackgroundResource(R.drawable.setup_call);
         setup_button = true;
-        layoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         wm.updateViewLayout(layout, layoutParams);
     }
@@ -1074,18 +1250,14 @@ public class OnExitService extends Service {
                 layout.setBackgroundResource(R.drawable.call);
             }
             setup_button = false;
-            if (hudYandex != null) {
-                hideYandex();
-                showYandex();
+            if (hudApps != null) {
+                hideApps();
+                showApps();
             }
         }
         if (setupTimer != null) {
             setupTimer.cancel();
             setupTimer = null;
-        }
-        if (notificationTimer != null) {
-            notificationTimer.cancel();
-            notificationTimer = null;
         }
     }
 
@@ -1099,7 +1271,6 @@ public class OnExitService extends Service {
     }
 
     void hideInactiveOverlay() {
-        hideNotification();
         cancelSetup();
         if (hudInactive == null)
             return;
@@ -1108,19 +1279,23 @@ public class OnExitService extends Service {
     }
 
     void hideNotification() {
-        cancelSetup();
+        hideApps();
+        if (notificationTimer != null) {
+            notificationTimer.cancel();
+            notificationTimer = null;
+        }
         if (hudNotification == null)
             return;
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudNotification);
         hudNotification = null;
     }
 
-    void hideYandex() {
+    void hideApps() {
         cancelSetup();
-        if (hudYandex == null)
+        if (hudApps == null)
             return;
-        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudYandex);
-        hudYandex = null;
+        ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudApps);
+        hudApps = null;
     }
 
     void hideOverlays(Context context) {
@@ -1128,9 +1303,9 @@ public class OnExitService extends Service {
         hideInactiveOverlay();
         hideNotification();
         if ((context != null) && isActiveCG(context)) {
-            showYandex();
+            showApps();
         } else {
-            hideYandex();
+            hideApps();
         }
     }
 
@@ -1323,7 +1498,7 @@ public class OnExitService extends Service {
         return PendingIntent.getService(this, 0, intent, 0);
     }
 
-    static boolean isRunCG(Context context) {
+    static boolean isRun(Context context, String pkg_name) {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
         if (procInfos == null)
@@ -1331,10 +1506,14 @@ public class OnExitService extends Service {
         int i;
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(State.CG_PACKAGE))
+            if (proc.processName.equals(pkg_name))
                 return true;
         }
         return false;
+    }
+
+    static boolean isRunCG(Context context) {
+        return isRun(context, State.CG_PACKAGE);
     }
 
     static ActivityManager mActivityManager;
@@ -1530,9 +1709,6 @@ public class OnExitService extends Service {
     public void initLocation() {
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (!preferences.getBoolean(State.YANDEX, false))
-            return;
-
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         netListener = new LocationListener() {
@@ -1593,7 +1769,7 @@ public class OnExitService extends Service {
             netListener = null;
         }
 
-        showYandex();
+        showApps();
     }
 
     class HttpTask extends AsyncTask<Void, Void, Integer> {
@@ -1658,19 +1834,38 @@ public class OnExitService extends Service {
                 boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));
                 if (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)
                     changed = true;
+                if (yandex_error) {
+                    yandex_error = false;
+                    changed = true;
+                }
                 SharedPreferences.Editor ed = preferences.edit();
                 ed.putInt(State.TRAFFIC, lvl);
                 ed.putLong(State.UPD_TIME, now);
                 ed.commit();
-                if (changed) {
-                    hideYandex();
+                if (!setup_button && changed) {
+                    hideApps();
                     if (isActiveCG(OnExitService.this))
-                        showYandex();
+                        showApps();
                 }
+            } else {
+                setYandexError(true);
             }
             fetcher = null;
             if (br != null)
                 unregisterReceiver(br);
+        }
+    }
+
+    void setYandexError(boolean error) {
+        if (error == yandex_error)
+            return;
+        yandex_error = error;
+        long now = new Date().getTime();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
+        if (!setup_button && (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)) {
+            hideApps();
+            if (isActiveCG(OnExitService.this))
+                showApps();
         }
     }
 
@@ -1683,6 +1878,7 @@ public class OnExitService extends Service {
             final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             if ((activeNetwork != null) && activeNetwork.isConnected()) {
+                yandex_error = false;
                 fetcher.execute();
             } else {
                 fetcher.br = new BroadcastReceiver() {
@@ -1694,10 +1890,12 @@ public class OnExitService extends Service {
                                 unregisterReceiver(fetcher.br);
                                 fetcher.br = null;
                             }
+                            setYandexError(false);
                             fetcher.execute();
                         }
                     }
                 };
+                yandex_error = true;
                 registerReceiver(fetcher.br, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
             }
         }
@@ -1725,21 +1923,11 @@ public class OnExitService extends Service {
         }
         long GPSLocationTime = 0;
         Date now = new Date();
-        if (locationGPS != null) {
+        if (locationGPS != null)
             GPSLocationTime = locationGPS.getTime();
-            if (GPSLocationTime < now.getTime() - TWO_MINUTES) {
-                locationGPS = null;
-                GPSLocationTime = 0;
-            }
-        }
         long NetLocationTime = 0;
-        if (locationNet != null) {
+        if (locationNet != null)
             NetLocationTime = locationNet.getTime();
-            if (NetLocationTime < now.getTime() - TWO_MINUTES) {
-                locationNet = null;
-                NetLocationTime = 0;
-            }
-        }
         if (GPSLocationTime > NetLocationTime)
             return locationGPS;
         return locationNet;
@@ -1856,5 +2044,87 @@ public class OnExitService extends Service {
             ex.printStackTrace();
         }
         return false;
+    }
+
+    void startApp() {
+        App app = apps.get(0);
+        if (app.icon != null) {
+            String[] component = app.name.split("/");
+            Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+            mainIntent.setPackage(component[0]);
+            mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
+            for (ResolveInfo info : infos) {
+                if (info.activityInfo == null)
+                    continue;
+                if (info.activityInfo.name.equals(component[1])) {
+                    Intent intent = new Intent(Intent.ACTION_MAIN, null);
+                    intent.setPackage(component[0]);
+                    intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                    intent.setComponent(new ComponentName(component[0], component[1]));
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    break;
+                }
+            }
+            return;
+        }
+
+        Intent intent = new Intent("ru.yandex.yandexnavi.action.BUILD_ROUTE_ON_MAP");
+        intent.setPackage("ru.yandex.yandexnavi");
+        PackageManager pm = getPackageManager();
+        List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
+        if ((infos != null) && (infos.size() > 0)) {
+            double finish_lat = 0;
+            double finish_lon = 0;
+            try {
+                File poi = Environment.getExternalStorageDirectory();
+                poi = new File(poi, "CityGuide/routes.dat");
+                BufferedReader reader = new BufferedReader(new FileReader(poi));
+                reader.readLine();
+                boolean current = false;
+                while (true) {
+                    String line = reader.readLine();
+                    if (line == null)
+                        break;
+                    String[] parts = line.split("\\|");
+                    if (parts.length == 0)
+                        continue;
+                    String name = parts[0];
+                    if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
+                        current = name.equals("#[CURRENT]");
+                        continue;
+                    }
+                    if (current && name.equals("Finish")) {
+                        finish_lat = Double.parseDouble(parts[1]);
+                        finish_lon = Double.parseDouble(parts[2]);
+                    }
+                }
+                reader.close();
+            } catch (Exception ex) {
+                // ignore
+            }
+
+            if ((finish_lat == yandex_finish_lat) && (finish_lon == yandex_finish_lon)) {
+                try {
+                    intent = getPackageManager().getLaunchIntentForPackage("ru.yandex.yandexnavi");
+                } catch (Exception ex) {
+                    // ignore
+                }
+            } else {
+                if (currentBestLocation != null) {
+                    intent.putExtra("lat_from", currentBestLocation.getLatitude());
+                    intent.putExtra("lon_from", currentBestLocation.getLongitude());
+                }
+                intent.putExtra("lat_to", finish_lat);
+                intent.putExtra("lon_to", finish_lon);
+                yandex_finish_lat = finish_lat;
+                yandex_finish_lon = finish_lon;
+            }
+            if (intent == null)
+                return;
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        }
     }
 }

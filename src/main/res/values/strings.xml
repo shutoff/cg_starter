@@ -158,4 +158,9 @@
     <string name="start_point_sum">Default start point of route</string>
     <string name="yandex">Traffic indicator</string>
     <string name="yandex_sum">Show Yandex traffic indicator</string>
+    <string name="vertical">Start only in vertical orientation</string>
+    <string name="quick_launch">Quick launch applications</string>
+    <string name="quick_launch_sum">Select application for quick launch</string>
+    <string name="add">Add</string>
+    <string name="remove">Remove</string>
 </resources>

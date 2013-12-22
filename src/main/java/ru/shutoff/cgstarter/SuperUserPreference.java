@@ -1,11 +1,11 @@
 package ru.shutoff.cgstarter;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.preference.CheckBoxPreference;
 import android.util.AttributeSet;
-import android.view.View;
+import android.widget.Toast;
 
 import java.io.DataOutputStream;
 
@@ -23,17 +23,16 @@ public class SuperUserPreference extends CheckBoxPreference {
                     .setTitle(context.getString(R.string.require_su))
                     .setMessage(context.getString(R.string.require_su_msg))
                     .setNegativeButton(R.string.cancel, null)
-                    .setPositiveButton(R.string.ok, null)
+                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (doRoot(getContext(), ""))
+                                toggleValue();
+                            dialog.dismiss();
+                        }
+                    })
                     .create();
             dialog.show();
-            dialog.getButton(Dialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (doRoot(""))
-                        toggleValue();
-                    dialog.dismiss();
-                }
-            });
             return;
         }
         super.onClick();
@@ -43,7 +42,7 @@ public class SuperUserPreference extends CheckBoxPreference {
         super.onClick();
     }
 
-    static boolean doRoot(String command) {
+    static boolean doRoot(Context context, String command) {
         try {
             Process p = Runtime.getRuntime().exec("su");
             DataOutputStream os = new DataOutputStream(p.getOutputStream());
@@ -55,6 +54,7 @@ public class SuperUserPreference extends CheckBoxPreference {
             if (ev == 0)
                 return true;
         } catch (Exception ex) {
+            Toast toast = Toast.makeText(context, ex.getMessage(), Toast.LENGTH_LONG);
             // ignore
         }
         return false;

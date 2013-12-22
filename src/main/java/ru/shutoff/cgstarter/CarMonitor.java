@@ -7,6 +7,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -21,6 +25,16 @@ public class CarMonitor extends BroadcastReceiver {
     static private final String FIRE = "com.twofortyfouram.locale.intent.action.FIRE_SETTING";
 
     private CountDownTimer power_timer;
+    private CountDownTimer power_kill_timer;
+    private CountDownTimer dock_kill_timer;
+
+    SensorManager sensorManager;
+    Sensor sensorAccelerometer;
+    Sensor sensorMagnetic;
+    SensorEventListener sensorEventListener;
+    float[] gravity;
+    float[] magnetic;
+    float[] orientation;
 
     @Override
     public void onReceive(final Context context, Intent intent) {
@@ -47,15 +61,48 @@ public class CarMonitor extends BroadcastReceiver {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String interval = preferences.getString(State.POWER_TIME, "");
             if (State.inInterval(interval)) {
+                orientation = null;
                 int power_delay = preferences.getInt(State.POWER_DELAY, 0);
-                if (power_delay == 0) {
-                    if (!OnExitService.isRunCG(context)) {
-                        Intent run = new Intent(context, MainActivity.class);
-                        run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(run);
+                if (preferences.getBoolean(State.VERTICAL, true)) {
+                    if (power_delay == 0)
+                        power_delay = 800;
+                    if (sensorEventListener == null) {
+                        sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+                        if (sensorAccelerometer == null)
+                            sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                        if (sensorMagnetic == null)
+                            sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+                        if (sensorEventListener == null) {
+                            sensorEventListener = new SensorEventListener() {
+                                @Override
+                                public void onSensorChanged(SensorEvent event) {
+                                    if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+                                        magnetic = event.values;
+                                    if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+                                        gravity = event.values;
+                                    if ((gravity == null) || (magnetic == null))
+                                        return;
+                                    float[] R = new float[9];
+                                    float[] I = new float[9];
+                                    if (!SensorManager.getRotationMatrix(R, I, gravity, magnetic))
+                                        return;
+                                    if (orientation == null)
+                                        orientation = new float[3];
+                                    SensorManager.getOrientation(R, orientation);
+                                }
+
+                                @Override
+                                public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+                                }
+                            };
+                            sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                            sensorManager.registerListener(sensorEventListener, sensorMagnetic, SensorManager.SENSOR_DELAY_NORMAL);
+                        }
                     }
-                    return;
                 }
+                if (power_delay == 0)
+                    power_delay = 1;
                 power_timer = new CountDownTimer(power_delay * 1000, power_delay * 1000) {
                     @Override
                     public void onTick(long millisUntilFinished) {
@@ -64,6 +111,18 @@ public class CarMonitor extends BroadcastReceiver {
 
                     @Override
                     public void onFinish() {
+                        power_timer = null;
+                        if (sensorEventListener != null) {
+                            sensorManager.unregisterListener(sensorEventListener);
+                            sensorEventListener = null;
+                        }
+                        if (orientation != null) {
+                            if ((Math.abs(orientation[1]) + Math.abs(orientation[2])) < 1) {
+                                orientation = null;
+                                return;
+                            }
+                            orientation = null;
+                        }
                         if (!OnExitService.isRunCG(context)) {
                             Intent run = new Intent(context, MainActivity.class);
                             run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -74,6 +133,10 @@ public class CarMonitor extends BroadcastReceiver {
                 };
                 power_timer.start();
             }
+            if (power_kill_timer != null) {
+                power_kill_timer.cancel();
+                power_kill_timer = null;
+            }
         }
         if (action.equals(Intent.ACTION_POWER_DISCONNECTED)) {
             if (power_timer != null) {
@@ -81,8 +144,22 @@ public class CarMonitor extends BroadcastReceiver {
                 power_timer = null;
             }
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-            if (preferences.getBoolean(State.KILL_POWER, false))
-                killCG(context);
+            if (preferences.getBoolean(State.KILL_POWER, false)) {
+                power_kill_timer = new CountDownTimer(2000, 2000) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        power_kill_timer = null;
+                        killCG(context);
+                    }
+                };
+                power_kill_timer.start();
+            }
+
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -164,7 +241,7 @@ public class CarMonitor extends BroadcastReceiver {
         context.startService(service);
     }
 
-    void setCarMode(Context context, boolean newMode) {
+    void setCarMode(final Context context, boolean newMode) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         boolean curMode = preferences.getBoolean(State.CAR_STATE, false);
         if (curMode != newMode) {
@@ -178,9 +255,25 @@ public class CarMonitor extends BroadcastReceiver {
                     context.startActivity(run);
                     ed.commit();
                 }
+                if (dock_kill_timer != null) {
+                    dock_kill_timer.cancel();
+                    dock_kill_timer = null;
+                }
             } else {
-                if (preferences.getBoolean(State.KILL_CAR, false))
-                    killCG(context);
+                if (preferences.getBoolean(State.KILL_CAR, false)) {
+                    dock_kill_timer = new CountDownTimer(2000, 2000) {
+                        @Override
+                        public void onTick(long millisUntilFinished) {
+
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            dock_kill_timer = null;
+                            killCG(context);
+                        }
+                    };
+                }
             }
         }
     }
@@ -194,7 +287,7 @@ public class CarMonitor extends BroadcastReceiver {
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
             if (proc.processName.equals(State.CG_PACKAGE)) {
-                SuperUserPreference.doRoot("kill " + proc.pid);
+                SuperUserPreference.doRoot(context, "kill " + proc.pid);
             }
         }
     }

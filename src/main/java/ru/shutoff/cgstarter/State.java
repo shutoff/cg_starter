@@ -47,6 +47,8 @@ public class State {
     static final String START = "start";
     static final String PHONE_X = "phone_x";
     static final String PHONE_Y = "phone_y";
+    static final String PHONE_LAND_X = "phone_land_x";
+    static final String PHONE_LAND_Y = "phone_land_y";
     static final String PHONE_SHOW = "phone_show";
     static final String RTA_LOGS = "rta_logs";
     static final String ROUTE = "route";
@@ -59,7 +61,6 @@ public class State {
     static final String SHOW_SMS = "show_sms";
     static final String MAPCAM = "mapcam";
     static final String STRELKA = "strelka";
-    static final String YANDEX = "yandex";
     static final String TRAFFIC = "traffic";
     static final String UPD_TIME = "upd_time";
 
@@ -91,6 +92,9 @@ public class State {
     static final String APP = "app";
     static final String ICON = "icon";
     static final String START_POINT = "start_point";
+    static final String VERTICAL = "vertical";
+    static final String APPS = "apps";
+    static final String FULL_TIME = "full_time";
 
     static Point[] points;
 
@@ -272,5 +276,4 @@ public class State {
         appendLog(s);
     }
 */
-
 }

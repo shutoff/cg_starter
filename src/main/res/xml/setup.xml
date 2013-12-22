@@ -133,10 +133,10 @@
             android:title="@string/sms"
             android:defaultValue="@string/def_sms" />
 
-        <CheckBoxPreference
-            android:key="yandex"
-            android:title="@string/yandex"
-            android:summary="@string/yandex_sum" />
+        <ru.shutoff.cgstarter.AppsPreference
+            android:key="apps"
+            android:title="@string/quick_launch"
+            android:summary="@string/quick_launch_sum" />
 
         <CheckBoxPreference
             android:key="mapcam"
@@ -172,6 +172,11 @@
             android:defaultValue="0"
             android:max="30"
             android:text="@string/sec" />
+
+        <CheckBoxPreference
+            android:key="vertical"
+            android:title="@string/vertical"
+            android:defaultValue="true" />
 
         <ru.shutoff.cgstarter.SuperUserPreference
             android:key="kill_power"
