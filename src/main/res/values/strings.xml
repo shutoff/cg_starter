@@ -163,4 +163,12 @@
     <string name="quick_launch_sum">Select application for quick launch</string>
     <string name="add">Add</string>
     <string name="remove">Remove</string>
+    <string name="send_finish">Send finish location</string>
+    <string name="send_current">Send current location</string>
+    <string name="send_location">Send location</string>
+    <string name="no_finish">Finish is not set</string>
+    <string name="find_location">Find location...</string>
+    <string name="go">Go to point</string>
+    <string name="traffic">Traffic indicator</string>
+    <string name="quick_alpha">Quick start icon transparency</string>
 </resources>

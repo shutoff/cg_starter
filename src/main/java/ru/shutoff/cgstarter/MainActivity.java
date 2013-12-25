@@ -90,7 +90,7 @@ public class MainActivity
         if (preferences.getBoolean("yandex", false)) {
             SharedPreferences.Editor ed = preferences.edit();
             ed.remove("yandex");
-            ed.putString(State.APPS, "ru.yandex.yandexnavi/ru.yandex.yandexnavi.core.NavigatorActivity");
+            ed.putString(State.APPS, "ru.shutoff.cgstarter/ru.shutoff.cgstarter.TrafficActivity");
             ed.commit();
         }
 

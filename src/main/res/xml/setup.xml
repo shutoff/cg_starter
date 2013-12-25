@@ -138,6 +138,12 @@
             android:title="@string/quick_launch"
             android:summary="@string/quick_launch_sum" />
 
+        <ru.shutoff.cgstarter.SeekBarPreference
+            android:key="quick_alpha"
+            android:title="@string/quick_alpha"
+            android:max="100"
+            android:text="%" />
+
         <CheckBoxPreference
             android:key="mapcam"
             android:title="@string/mapcam" />

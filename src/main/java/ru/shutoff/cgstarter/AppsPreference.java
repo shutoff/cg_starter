@@ -50,7 +50,6 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
                     String[] component = apps.get(pos).split("/");
                     Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
                     mainIntent.setPackage(component[0]);
-                    mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
                     List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
                     for (ResolveInfo info : infos) {
                         if (info.activityInfo == null)
@@ -73,14 +72,12 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
         adapter = new BaseAdapter() {
             @Override
             public int getCount() {
-                return apps.size() + 1;
+                return apps.size();
             }
 
             @Override
             public Object getItem(int position) {
-                if (position < apps.size())
-                    return apps.get(position);
-                return null;
+                return apps.get(position);
             }
 
             @Override
@@ -93,19 +90,11 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
                 View v = convertView;
                 if (v == null)
                     v = layoutInflater.inflate(R.layout.quick_item, null);
-                if (position >= apps.size()) {
-                    v.findViewById(R.id.add).setVisibility(View.VISIBLE);
-                    v.findViewById(R.id.app).setVisibility(View.GONE);
-                    return v;
-                }
-                v.findViewById(R.id.add).setVisibility(View.GONE);
-                v.findViewById(R.id.app).setVisibility(View.VISIBLE);
                 try {
                     String name = apps.get(position);
                     String[] component = name.split("/");
                     Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
                     mainIntent.setPackage(component[0]);
-                    mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
                     List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
                     for (ResolveInfo info : infos) {
                         if (info.activityInfo == null)
@@ -134,135 +123,41 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
-                if (position >= apps.size()) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                    builder.setTitle(R.string.add);
-                    builder.setView(layoutInflater.inflate(R.layout.packages, null));
-                    builder.setNegativeButton(R.string.cancel, null);
-                    final AlertDialog dialog = builder.create();
-                    dialog.show();
-                    final ListView list = (ListView) dialog.findViewById(R.id.list);
-                    AsyncTask<Void, Void, Vector<ResolveInfo>> task = new AsyncTask<Void, Void, Vector<ResolveInfo>>() {
-
-                        @Override
-                        protected Vector<ResolveInfo> doInBackground(Void... params) {
-                            final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
-                            mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-                            final List<ResolveInfo> pkgAppsList = pm.queryIntentActivities(mainIntent, 0);
-                            final Vector<ResolveInfo> apps = new Vector<ResolveInfo>();
-
-                            Vector<ResolveInfo> other = new Vector<ResolveInfo>();
-                            for (ResolveInfo info : pkgAppsList) {
-                                if (info.activityInfo == null)
-                                    continue;
-                                if (info.activityInfo.packageName.equals("ru.yandex.yandexnavi")) {
-                                    apps.add(info);
-                                } else {
-                                    other.add(info);
-                                }
-                            }
-                            Collections.sort(other, new Comparator<ResolveInfo>() {
-                                @Override
-                                public int compare(ResolveInfo lhs, ResolveInfo rhs) {
-                                    String lTitle = lhs.loadLabel(pm).toString();
-                                    String rTitle = rhs.loadLabel(pm).toString();
-                                    return lTitle.compareTo(rTitle);
-                                }
-                            });
-                            apps.addAll(other);
-                            return apps;
+                String name = apps.get(position);
+                try {
+                    String[] component = name.split("/");
+                    Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+                    mainIntent.setPackage(component[0]);
+                    List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
+                    for (ResolveInfo info : infos) {
+                        if (info.activityInfo == null)
+                            continue;
+                        if (info.activityInfo.name.equals(component[1])) {
+                            name = info.loadLabel(pm).toString();
+                            break;
                         }
-
-                        @Override
-                        protected void onPostExecute(final Vector<ResolveInfo> packages) {
-                            list.setVisibility(View.VISIBLE);
-                            dialog.findViewById(R.id.progress).setVisibility(View.GONE);
-                            list.setAdapter(new BaseAdapter() {
-                                @Override
-                                public int getCount() {
-                                    return packages.size();
-                                }
-
-                                @Override
-                                public Object getItem(int position) {
-                                    return packages.get(position);
-                                }
-
-                                @Override
-                                public long getItemId(int position) {
-                                    return position;
-                                }
-
-                                @Override
-                                public View getView(int position, View convertView, ViewGroup parent) {
-                                    View v = convertView;
-                                    if (v == null) {
-                                        LayoutInflater inflater = (LayoutInflater) getContext()
-                                                .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                                        v = inflater.inflate(R.layout.quick_item, null);
-                                    }
-                                    v.findViewById(R.id.add).setVisibility(View.GONE);
-                                    v.findViewById(R.id.app).setVisibility(View.VISIBLE);
-                                    TextView tvName = (TextView) v.findViewById(R.id.name);
-                                    ResolveInfo info = packages.get(position);
-                                    tvName.setText(info.loadLabel(pm));
-                                    ImageView ivIcon = (ImageView) v.findViewById(R.id.icon);
-                                    try {
-                                        ivIcon.setImageDrawable(info.loadIcon(pm));
-                                        ivIcon.setVisibility(View.VISIBLE);
-                                    } catch (Exception ex) {
-                                        ivIcon.setVisibility(View.GONE);
-                                    }
-                                    v.setTag(info.activityInfo);
-                                    return v;
-                                }
-                            });
-                        }
-                    };
-                    task.execute();
-                    list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                        @Override
-                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                            dialog.dismiss();
-                            if (view.getTag() == null)
-                                return;
-                            ActivityInfo info = (ActivityInfo) view.getTag();
-                            apps.add(info.packageName + "/" + info.name);
-                            adapter.notifyDataSetChanged();
-                        }
-                    });
-                } else {
-                    String name = apps.get(position);
-                    try {
-                        String[] component = name.split("/");
-                        Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
-                        mainIntent.setPackage(component[0]);
-                        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-                        List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
-                        for (ResolveInfo info : infos) {
-                            if (info.activityInfo == null)
-                                continue;
-                            if (info.activityInfo.name.equals(component[1])) {
-                                name = info.loadLabel(pm).toString();
-                                break;
-                            }
-                        }
-                    } catch (Exception ex) {
-                        // ignore
                     }
-                    AlertDialog dialog = new AlertDialog.Builder(getContext())
-                            .setTitle(R.string.remove)
-                            .setMessage(getContext().getString(R.string.remove) + " " + name + "?")
-                            .setNegativeButton(R.string.cancel, null)
-                            .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    apps.remove(position);
-                                    adapter.notifyDataSetChanged();
-                                }
-                            }).create();
-                    dialog.show();
+                } catch (Exception ex) {
+                    // ignore
                 }
+                AlertDialog dialog = new AlertDialog.Builder(getContext())
+                        .setTitle(R.string.remove)
+                        .setMessage(getContext().getString(R.string.remove) + " " + name + "?")
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                apps.remove(position);
+                                adapter.notifyDataSetChanged();
+                            }
+                        }).create();
+                dialog.show();
+            }
+        });
+        view.findViewById(R.id.add).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                addApp();
             }
         });
         return view;
@@ -290,11 +185,9 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
 
     @Override
     public void showDialog(Bundle state) {
-
         super.showDialog(state);
-
-        Button positiveButton = ((AlertDialog) getDialog()).getButton(AlertDialog.BUTTON_POSITIVE);
-        positiveButton.setOnClickListener(this);
+        Button button = ((AlertDialog) getDialog()).getButton(AlertDialog.BUTTON_POSITIVE);
+        button.setOnClickListener(this);
     }
 
     @Override
@@ -310,5 +203,119 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
         if (shouldPersist())
             persistString(res);
         ((AlertDialog) getDialog()).dismiss();
+    }
+
+    void addApp() {
+        final LayoutInflater layoutInflater = LayoutInflater.from(getContext());
+        final PackageManager pm = getContext().getPackageManager();
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle(R.string.add);
+        builder.setView(layoutInflater.inflate(R.layout.packages, null));
+        builder.setNegativeButton(R.string.cancel, null);
+        final AlertDialog dialog = builder.create();
+        dialog.show();
+        final ListView list = (ListView) dialog.findViewById(R.id.list);
+        AsyncTask<Void, Void, Vector<ResolveInfo>> task = new AsyncTask<Void, Void, Vector<ResolveInfo>>() {
+
+            @Override
+            protected Vector<ResolveInfo> doInBackground(Void... params) {
+                final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+                mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                final List<ResolveInfo> pkgAppsList = pm.queryIntentActivities(mainIntent, 0);
+                final Vector<ResolveInfo> apps = new Vector<ResolveInfo>();
+
+                Vector<ResolveInfo> other = new Vector<ResolveInfo>();
+                for (ResolveInfo info : pkgAppsList) {
+                    if (info.activityInfo == null)
+                        continue;
+                    if (info.activityInfo.packageName.equals("ru.yandex.yandexnavi"))
+                        continue;
+                    if (info.activityInfo.packageName.equals(State.CG_PACKAGE))
+                        continue;
+                    if (info.activityInfo.packageName.equals("ru.shutoff.cgstarter"))
+                        continue;
+                    other.add(info);
+                }
+
+                Intent intent = new Intent(Intent.ACTION_MAIN, null);
+                intent.setPackage("ru.shutoff.cgstarter");
+                List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
+                for (ResolveInfo info : infos) {
+                    if (info.activityInfo == null)
+                        continue;
+                    String name = info.activityInfo.name;
+                    if (name.equals("ru.shutoff.cgstarter.TrafficActivity") || name.equals("ru.shutoff.cgstarter.SendLocationActivity"))
+                        apps.add(info);
+                }
+
+                Collections.sort(other, new Comparator<ResolveInfo>() {
+                    @Override
+                    public int compare(ResolveInfo lhs, ResolveInfo rhs) {
+                        String lTitle = lhs.loadLabel(pm).toString();
+                        String rTitle = rhs.loadLabel(pm).toString();
+                        return lTitle.compareTo(rTitle);
+                    }
+                });
+                apps.addAll(other);
+                return apps;
+            }
+
+            @Override
+            protected void onPostExecute(final Vector<ResolveInfo> packages) {
+                list.setVisibility(View.VISIBLE);
+                dialog.findViewById(R.id.progress).setVisibility(View.GONE);
+                list.setAdapter(new BaseAdapter() {
+                    @Override
+                    public int getCount() {
+                        return packages.size();
+                    }
+
+                    @Override
+                    public Object getItem(int position) {
+                        return packages.get(position);
+                    }
+
+                    @Override
+                    public long getItemId(int position) {
+                        return position;
+                    }
+
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        View v = convertView;
+                        if (v == null) {
+                            LayoutInflater inflater = (LayoutInflater) getContext()
+                                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                            v = inflater.inflate(R.layout.quick_item, null);
+                        }
+                        TextView tvName = (TextView) v.findViewById(R.id.name);
+                        ResolveInfo info = packages.get(position);
+                        tvName.setText(info.loadLabel(pm));
+                        ImageView ivIcon = (ImageView) v.findViewById(R.id.icon);
+                        try {
+                            ivIcon.setImageDrawable(info.loadIcon(pm));
+                            ivIcon.setVisibility(View.VISIBLE);
+                        } catch (Exception ex) {
+                            ivIcon.setVisibility(View.GONE);
+                        }
+                        v.setTag(info.activityInfo);
+                        return v;
+                    }
+                });
+            }
+        };
+        task.execute();
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                dialog.dismiss();
+                if (view.getTag() == null)
+                    return;
+                ActivityInfo info = (ActivityInfo) view.getTag();
+                apps.add(info.packageName + "/" + info.name);
+                adapter.notifyDataSetChanged();
+                lv.setSelection(apps.size() - 1);
+            }
+        });
     }
 }

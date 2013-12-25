@@ -157,13 +157,13 @@ public class OnExitService extends Service {
     LocationListener netListener;
     LocationListener gpsListener;
 
-    Location currentBestLocation;
+    static Location currentBestLocation;
     View.OnClickListener iconListener;
 
     PackageManager pm;
 
-    double yandex_finish_lat;
-    double yandex_finish_lon;
+    static double yandex_finish_lat;
+    static double yandex_finish_lon;
 
     final static long UPD_INTERVAL = 3 * 60 * 1000;
     final static long VALID_INTEVAL = 15 * 60 * 1000;
@@ -254,7 +254,6 @@ public class OnExitService extends Service {
                 continue;
             Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
             mainIntent.setPackage(component[0]);
-            mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
             List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
             for (ResolveInfo info : infos) {
                 if (info.activityInfo == null)
@@ -262,7 +261,7 @@ public class OnExitService extends Service {
                 if (info.activityInfo.name.equals(component[1])) {
                     App a = new App();
                     a.name = app;
-                    if ((apps.size() == 0) && component[0].equals(YAN)) {
+                    if (component[0].equals(YAN) || app.equals("ru.shutoff.cgstarter/ru.shutoff.cgstarter.TrafficActivity")) {
                         yandex = true;
                     } else {
                         a.icon = info.loadIcon(pm);
@@ -895,6 +894,9 @@ public class OnExitService extends Service {
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudApps = inflater.inflate(isBig() ? R.layout.quick_launch_big : R.layout.quick_launch, null);
 
+        WindowManager.LayoutParams lp = layoutParams;
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+
         ImageView iv = (ImageView) hudApps.findViewById(R.id.icon);
         if (isFull) {
             if (iconListener == null) {
@@ -908,7 +910,6 @@ public class OnExitService extends Service {
                         String[] component = app.name.split("/");
                         Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
                         mainIntent.setPackage(component[0]);
-                        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
                         List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
                         for (ResolveInfo info : infos) {
                             if (info.activityInfo == null)
@@ -916,7 +917,6 @@ public class OnExitService extends Service {
                             if (info.activityInfo.name.equals(component[1])) {
                                 Intent intent = new Intent(Intent.ACTION_MAIN, null);
                                 intent.setPackage(component[0]);
-                                intent.addCategory(Intent.CATEGORY_LAUNCHER);
                                 intent.setComponent(new ComponentName(component[0], component[1]));
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 startActivity(intent);
@@ -927,25 +927,87 @@ public class OnExitService extends Service {
                 };
             }
 
+            ViewGroup row = (ViewGroup) hudApps.findViewById(R.id.row);
+            int in_row = 1;
+
+            int width = wm.getDefaultDisplay().getWidth();
+            int icon_width = iv.getLayoutParams().width;
+            width -= layoutParams.x - icon_width;
+            int icons = width * 3 / icon_width / 4;
+            if (icons < 3)
+                icons = 3;
+            int rows = (apps.size() + icons - 1) / icons;
+            icons = (apps.size() + rows - 1) / rows;
+
             for (int i = 1; i < apps.size(); i++) {
                 iv.getLayoutParams();
                 App app = apps.get(i);
                 ImageView img = new ImageView(this);
-                img.setImageDrawable(app.icon);
+                if (app.icon == null) {
+                    int level = getYandexData();
+                    if (level < 0) {
+                        img.setImageResource(yandex_error ? R.drawable.error_loading : R.drawable.loading);
+                        AnimationDrawable animation = (AnimationDrawable) img.getDrawable();
+                        animation.start();
+                    } else {
+                        img.setImageResource(res[level]);
+                    }
+                } else {
+                    img.setImageDrawable(app.icon);
+                }
                 img.setTag(i);
                 img.setOnClickListener(iconListener);
                 ViewGroup.LayoutParams layoutParams = iv.getLayoutParams();
                 img.setPadding(layoutParams.width / 6, 0, 0, 0);
-                LinearLayout layout = (LinearLayout) hudApps;
-                layout.addView(img);
+                img.setLayoutParams(layoutParams);
+                if (++in_row > icons) {
+                    in_row = 0;
+                    LinearLayout new_row = new LinearLayout(this);
+                    new_row.setLayoutParams(row.getLayoutParams());
+                    new_row.setOrientation(LinearLayout.HORIZONTAL);
+                    row = new_row;
+                    ViewGroup group = (ViewGroup) hudApps;
+                    group.addView(row);
+                }
+                row.addView(img);
             }
+            lp = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
+                            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    PixelFormat.TRANSLUCENT);
+            lp.gravity = Gravity.TOP | Gravity.LEFT;
+            lp.x = layoutParams.x;
+            lp.y = layoutParams.y;
             hudApps.setBackgroundResource(R.drawable.call);
+            iv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    SharedPreferences.Editor ed = preferences.edit();
+                    ed.remove(State.FULL_TIME);
+                    ed.commit();
+                    startApp();
+                }
+            });
+        } else {
+            int alpha = preferences.getInt(State.QUICK_ALPHA, 0) * 255 / 100;
+            iv.setAlpha(255 - alpha);
         }
 
         hudApps.setOnTouchListener(new OverlayTouchListener() {
             @Override
             void click() {
-                if (!isFull && (apps.size() > 1)) {
+                if (apps.size() > 1) {
+                    if (isFull) {
+                        SharedPreferences.Editor ed = preferences.edit();
+                        ed.remove(State.FULL_TIME);
+                        ed.commit();
+                        hideApps();
+                        showApps();
+                        return;
+                    }
                     SharedPreferences.Editor ed = preferences.edit();
                     ed.putLong(State.FULL_TIME, new Date().getTime() + 10000);
                     ed.commit();
@@ -968,6 +1030,13 @@ public class OnExitService extends Service {
                 }
                 startApp();
             }
+
+            @Override
+            void setup() {
+                if ((apps.size() > 1) && isFull)
+                    return;
+                super.setup();
+            }
         });
 
         Drawable icon = apps.get(0).icon;
@@ -983,9 +1052,7 @@ public class OnExitService extends Service {
         } else {
             iv.setImageDrawable(icon);
         }
-
-        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        wm.addView(hudApps, layoutParams);
+        wm.addView(hudApps, lp);
 
         setForeground();
     }
@@ -2069,10 +2136,13 @@ public class OnExitService extends Service {
             }
             return;
         }
+        startYan(this);
+    }
 
+    static void startYan(Context context) {
         Intent intent = new Intent("ru.yandex.yandexnavi.action.BUILD_ROUTE_ON_MAP");
         intent.setPackage("ru.yandex.yandexnavi");
-        PackageManager pm = getPackageManager();
+        PackageManager pm = context.getPackageManager();
         List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
         if ((infos != null) && (infos.size() > 0)) {
             double finish_lat = 0;
@@ -2107,7 +2177,7 @@ public class OnExitService extends Service {
 
             if ((finish_lat == yandex_finish_lat) && (finish_lon == yandex_finish_lon)) {
                 try {
-                    intent = getPackageManager().getLaunchIntentForPackage("ru.yandex.yandexnavi");
+                    intent = pm.getLaunchIntentForPackage("ru.yandex.yandexnavi");
                 } catch (Exception ex) {
                     // ignore
                 }
@@ -2124,7 +2194,7 @@ public class OnExitService extends Service {
             if (intent == null)
                 return;
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+            context.startActivity(intent);
         }
     }
 }

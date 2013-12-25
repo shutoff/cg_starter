@@ -14,9 +14,8 @@ import android.widget.TextView;
 
 public class SeekBarPreference
         extends DialogPreference
-        implements SeekBar.OnSeekBarChangeListener, View.OnClickListener
-{
-    private static final String androidns="http://schemas.android.com/apk/res/android";
+        implements SeekBar.OnSeekBarChangeListener, View.OnClickListener {
+    private static final String androidns = "http://schemas.android.com/apk/res/android";
 
     public SeekBar mSeekBar;
     public TextView mSplashText, mValueText;
@@ -26,16 +25,17 @@ public class SeekBarPreference
 
     public SeekBarPreference(Context context, AttributeSet attrs) {
 
-        super(context,attrs);
+        super(context, attrs);
 
         // Get string value for dialogMessage :
         int mDialogMessageId = attrs.getAttributeResourceValue(androidns, "dialogMessage", 0);
-        if(mDialogMessageId == 0) mDialogMessage = attrs.getAttributeValue(androidns, "dialogMessage");
+        if (mDialogMessageId == 0)
+            mDialogMessage = attrs.getAttributeValue(androidns, "dialogMessage");
         else mDialogMessage = context.getString(mDialogMessageId);
 
         // Get string value for suffix (text attribute in xml file) :
         int mSuffixId = attrs.getAttributeResourceValue(androidns, "text", 0);
-        if(mSuffixId == 0) mSuffix = attrs.getAttributeValue(androidns, "text");
+        if (mSuffixId == 0) mSuffix = attrs.getAttributeValue(androidns, "text");
         else mSuffix = context.getString(mSuffixId);
 
         // Get default and max seekbar values :
@@ -50,7 +50,7 @@ public class SeekBarPreference
         LinearLayout.LayoutParams params;
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(6,6,6,6);
+        layout.setPadding(6, 6, 6, 6);
 
         mSplashText = new TextView(getContext());
         if (mDialogMessage != null)
@@ -88,27 +88,28 @@ public class SeekBarPreference
     }
 
     @Override
-    protected void onSetInitialValue(boolean restore, Object defaultValue)
-    {
+    protected void onSetInitialValue(boolean restore, Object defaultValue) {
         super.onSetInitialValue(restore, defaultValue);
         if (restore)
             mValue = shouldPersist() ? getPersistedInt(mDefault) : 0;
         else
-            mValue = (Integer)defaultValue;
+            mValue = (Integer) defaultValue;
         setSummary(summary());
     }
 
     @Override
-    public void onProgressChanged(SeekBar seek, int value, boolean fromTouch)
-    {
+    public void onProgressChanged(SeekBar seek, int value, boolean fromTouch) {
         String t = String.valueOf(value + mMin);
         mValueText.setText(mSuffix == null ? t : t.concat(" " + mSuffix));
     }
 
     @Override
-    public void onStartTrackingTouch(SeekBar seek) {}
+    public void onStartTrackingTouch(SeekBar seek) {
+    }
+
     @Override
-    public void onStopTrackingTouch(SeekBar seek) {}
+    public void onStopTrackingTouch(SeekBar seek) {
+    }
 
     @Override
     public void showDialog(Bundle state) {
@@ -130,7 +131,7 @@ public class SeekBarPreference
         ((AlertDialog) getDialog()).dismiss();
     }
 
-    public void setMin(int min){
+    public void setMin(int min) {
         mMin = min;
     }
 
@@ -138,7 +139,7 @@ public class SeekBarPreference
     }
 
     String summary() {
-        return getContext().getString(R.string.after) + " " + mValue + " " + mSuffix;
+        return (mSuffix.equals("%") ? "" : getContext().getString(R.string.after) + " ") + mValue + " " + mSuffix;
     }
 
 }

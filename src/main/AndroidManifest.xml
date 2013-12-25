@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
-    android:versionCode="21"
-    android:versionName="1.5 test">
+    android:versionCode="22"
+    android:versionName="1.5.1 test3">
 
     <uses-sdk
         android:minSdkVersion="8"
@@ -58,6 +58,17 @@
         </activity>
 
         <activity
+            android:name=".SendLocationActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme"
+            android:label="@string/send_location">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".EditActivity"
             android:label="@string/plugin"
             android:icon="@drawable/plugin"
@@ -70,6 +81,20 @@
         <activity
             android:name=".NotificationIgnore"
             android:theme="@style/Theme.Transparent"></activity>
+
+        <activity
+            android:name=".SmsDialog"
+            android:theme="@style/Theme.Transparent"></activity>
+
+        <activity
+            android:name=".TrafficActivity"
+            android:theme="@style/Theme.Transparent"
+            android:label="@string/traffic"
+            android:icon="@drawable/traffic">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
 
         <activity android:name=".SetupButton" />
 
@@ -94,7 +119,7 @@
         </service>
 
         <receiver android:name=".CarMonitor">
-            <intent-filter android:priority="6000">
+            <intent-filter android:priority="60000">
                 <action android:name="android.intent.action.DOCK_EVENT" />
                 <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
                 <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
@@ -104,6 +129,7 @@
                 <action android:name="android.intent.action.ENTER_CAR_MODE" />
                 <action android:name="android.intent.action.PHONE_STATE" />
                 <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
                 <action android:name="ru.shutoff.cgstarter.START" />
                 <action android:name="com.twofortyfouram.locale.intent.action.FIRE_SETTING" />
             </intent-filter>

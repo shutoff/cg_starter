@@ -15,9 +15,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
+import android.telephony.SmsMessage;
 import android.widget.Toast;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CarMonitor extends BroadcastReceiver {
 
@@ -55,7 +58,35 @@ public class CarMonitor extends BroadcastReceiver {
             if (preferences.getBoolean(State.CAR_MODE, false)) {
                 int dockState = intent.getIntExtra(Intent.EXTRA_DOCK_STATE, -1);
                 setCarMode(context, (dockState == Intent.EXTRA_DOCK_STATE_CAR));
+                abortBroadcast();
             }
+        }
+        if (action.equals("android.provider.Telephony.SMS_RECEIVED")) {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            if (!preferences.getBoolean(State.SHOW_SMS, false))
+                return;
+            Object[] pduArray = (Object[]) intent.getExtras().get("pdus");
+            SmsMessage[] messages = new SmsMessage[pduArray.length];
+            for (int i = 0; i < pduArray.length; i++) {
+                messages[i] = SmsMessage.createFromPdu((byte[]) pduArray[i]);
+            }
+            final String sms_from = messages[0].getOriginatingAddress();
+            StringBuilder bodyText = new StringBuilder();
+            for (SmsMessage m : messages) {
+                bodyText.append(m.getMessageBody());
+            }
+            final String body = bodyText.toString();
+            Pattern pattern = Pattern.compile("([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
+            Matcher matcher = pattern.matcher(body);
+            if (!matcher.find())
+                return;
+            Intent i = new Intent(context, SmsDialog.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.putExtra(State.LATITUDE, matcher.group(1));
+            i.putExtra(State.LONGITUDE, matcher.group(2));
+            i.putExtra(State.INFO, sms_from);
+            i.putExtra(State.TEXT, body);
+            context.startActivity(i);
         }
         if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -177,6 +208,18 @@ public class CarMonitor extends BroadcastReceiver {
         }
         if (action.equals(Intent.ACTION_NEW_OUTGOING_CALL)) {
             OnExitService.call_number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER);
+            Pattern pattern = Pattern.compile("([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
+            Matcher matcher = pattern.matcher(OnExitService.call_number);
+            if (!matcher.find())
+                return;
+            Intent i = new Intent(context, SmsDialog.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.putExtra(State.LATITUDE, matcher.group(1));
+            i.putExtra(State.LONGITUDE, matcher.group(2));
+            i.putExtra(State.INFO, R.string.go);
+            i.putExtra(State.TEXT, OnExitService.call_number);
+            context.startActivity(i);
+            abortBroadcast();
         }
         if (action.equals(FIRE)) {
             Bundle data = intent.getBundleExtra(EditActivity.EXTRA_BUNDLE);
@@ -214,7 +257,7 @@ public class CarMonitor extends BroadcastReceiver {
         }
     }
 
-    void startCG(Context context, String route, String route_points) {
+    static void startCG(Context context, String route, String route_points) {
         if (route.equals("-")) {
             MainActivity.removeRoute(context);
         } else if (!route.equals("")) {
@@ -278,7 +321,7 @@ public class CarMonitor extends BroadcastReceiver {
         }
     }
 
-    void killCG(Context context) {
+    static void killCG(Context context) {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
         if (procInfos == null)

@@ -145,4 +145,12 @@
     <string name="quick_launch_sum">Выберите приложения для быстрого запуска</string>
     <string name="add">Добавить</string>
     <string name="remove">Удалить</string>
+    <string name="send_finish">Отправить координаты финиша</string>
+    <string name="send_current">Отправить текущие координаты</string>
+    <string name="send_location">Отправить местоположение</string>
+    <string name="no_finish">Финиш не задан</string>
+    <string name="find_location">Определение положения...</string>
+    <string name="go">Поехали</string>
+    <string name="traffic">Индикатор пробок</string>
+    <string name="quick_alpha">Прозрачность иконки запуска</string>
 </resources>
