@@ -171,4 +171,10 @@
     <string name="go">Go to point</string>
     <string name="traffic">Traffic indicator</string>
     <string name="quick_alpha">Quick start icon transparency</string>
+    <string name="sensor_off">Orientation is not use</string>
+    <string name="sensor_unknown">Orientation is unknown</string>
+    <string name="sensor_vertical">Orientation is vertical now</string>
+    <string name="sensor_horizontal">Orientation is horizontal now</string>
+    <string name="from_contacts">Select finish from contacts</string>
+    <string name="from_sms">Select finish from SMS</string>
 </resources>

@@ -153,4 +153,10 @@
     <string name="go">Поехали</string>
     <string name="traffic">Индикатор пробок</string>
     <string name="quick_alpha">Прозрачность иконки запуска</string>
+    <string name="sensor_off">Ориентация не используется</string>
+    <string name="sensor_unknown">Ориентация не известна</string>
+    <string name="sensor_vertical">Вертикальная ориентация</string>
+    <string name="sensor_horizontal">Горизонтальная ориентация</string>
+    <string name="from_contacts">Финиш из контактов</string>
+    <string name="from_sms">Финиш из СМС</string>
 </resources>

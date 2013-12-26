@@ -1,10 +1,15 @@
 package ru.shutoff.cgstarter;
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -27,9 +32,19 @@ public class Setup extends PreferenceActivity {
     ListPreference ringPref;
     ListPreference rotatePref;
     SharedPreferences prefs;
-    CheckBoxPreference phoneShowPrefs;
+    CheckBoxPreference phoneShowPref;
     EditTextPreference smsPref;
     ListPreference startPref;
+    CheckBoxPreference verticalPref;
+
+    SensorManager sensorManager;
+    Sensor sensorAccelerometer;
+    Sensor sensorMagnetic;
+    SensorEventListener sensorEventListener;
+
+    float[] gravity;
+    float[] magnetic;
+    float[] orientation;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -141,20 +156,20 @@ public class Setup extends PreferenceActivity {
             }
         });
 
-        phoneShowPrefs = (CheckBoxPreference) findPreference(State.PHONE_SHOW);
+        phoneShowPref = (CheckBoxPreference) findPreference(State.PHONE_SHOW);
         CheckBoxPreference phonePrefs = (CheckBoxPreference) findPreference(State.PHONE);
         phonePrefs.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 if (newValue instanceof Boolean) {
                     Boolean v = (Boolean) newValue;
-                    phoneShowPrefs.setEnabled(v);
+                    phoneShowPref.setEnabled(v);
                     return true;
                 }
                 return false;
             }
         });
-        phoneShowPrefs.setEnabled(prefs.getBoolean(State.PHONE, false));
+        phoneShowPref.setEnabled(prefs.getBoolean(State.PHONE, false));
 
         CheckBoxPreference rtaPref = (CheckBoxPreference) findPreference(State.RTA_LOGS);
         File rta_ini = Environment.getExternalStorageDirectory();
@@ -218,6 +233,19 @@ public class Setup extends PreferenceActivity {
             phoneGorup.removePreference(findPreference(State.STRELKA));
         }
 
+        verticalPref = (CheckBoxPreference) findPreference("vertical");
+        verticalPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    setVertSum((Boolean) newValue);
+                    return true;
+                }
+                return false;
+            }
+        });
+        setVertSum(prefs.getBoolean(State.VERTICAL, true));
+
         startPref = (ListPreference) findPreference("start_point");
         Bookmarks.Point[] poi = Bookmarks.get();
 
@@ -270,6 +298,58 @@ public class Setup extends PreferenceActivity {
             if (values[i].equals(rotate)) {
                 rotatePref.setSummary(entries[i]);
                 break;
+            }
+        }
+    }
+
+    void setVertSum(boolean set) {
+        if (!set) {
+            if (sensorEventListener != null)
+                sensorManager.unregisterListener(sensorEventListener);
+            sensorEventListener = null;
+            verticalPref.setSummary(R.string.sensor_off);
+            return;
+        }
+        if (sensorEventListener == null) {
+            if (sensorManager == null) {
+                sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+                if (sensorAccelerometer == null)
+                    sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                if (sensorMagnetic == null)
+                    sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+                if (sensorEventListener == null) {
+                    sensorEventListener = new SensorEventListener() {
+                        @Override
+                        public void onSensorChanged(SensorEvent event) {
+                            if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+                                magnetic = event.values;
+                            if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+                                gravity = event.values;
+                            if ((gravity == null) || (magnetic == null))
+                                return;
+                            float[] fR = new float[9];
+                            float[] fI = new float[9];
+                            if (!SensorManager.getRotationMatrix(fR, fI, gravity, magnetic))
+                                return;
+                            if (orientation == null)
+                                orientation = new float[3];
+                            SensorManager.getOrientation(fR, orientation);
+                            if ((Math.abs(orientation[1]) + Math.abs(orientation[2])) < 1) {
+                                verticalPref.setSummary(R.string.sensor_horizontal);
+                            } else {
+                                verticalPref.setSummary(R.string.sensor_vertical);
+                            }
+                        }
+
+                        @Override
+                        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+                        }
+                    };
+                    sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                    sensorManager.registerListener(sensorEventListener, sensorMagnetic, SensorManager.SENSOR_DELAY_NORMAL);
+                    verticalPref.setSummary(R.string.sensor_unknown);
+                }
             }
         }
     }
