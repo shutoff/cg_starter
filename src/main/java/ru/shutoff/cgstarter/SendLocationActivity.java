@@ -1,43 +1,19 @@
 package ru.shutoff.cgstarter;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.URLEncoder;
-import java.util.Date;
-import java.util.Locale;
 
-public class SendLocationActivity extends Activity {
-
-    static final String OSM_URL = "http://nominatim.openstreetmap.org/reverse?lat=$1&lon=$2&osm_type=N&format=json&address_details=0&accept-language=$3";
+public class SendLocationActivity extends GpsActivity {
 
     double finish_lat;
     double finish_lon;
@@ -46,12 +22,6 @@ public class SendLocationActivity extends Activity {
 
     Button current;
     TextView current_info;
-
-    LocationManager locationManager;
-    LocationListener netListener;
-    LocationListener gpsListener;
-
-    Location currentBestLocation;
 
     boolean location_changed;
     AddressRequest request;
@@ -131,7 +101,7 @@ public class SendLocationActivity extends Activity {
                         finish_info.setText(format(finish_lat) + ", " + format(finish_lon) + "\n" + s);
                 }
             };
-            req.execute(OSM_URL, finish_lat + "", finish_lon + "", Locale.getDefault().getLanguage());
+            req.execute(finish_lat, finish_lon);
         }
 
         current = (Button) findViewById(R.id.current);
@@ -149,122 +119,10 @@ public class SendLocationActivity extends Activity {
             }
         });
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        netListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                locationChanged(location);
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        };
-
-        gpsListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                locationChanged(location);
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        };
-
-        try {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
-        } catch (Exception ex) {
-            gpsListener = null;
-        }
-
-        try {
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, netListener);
-        } catch (Exception ex) {
-            netListener = null;
-        }
-
-        locationChanged(getLastBestLocation());
-
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (netListener != null)
-            locationManager.removeUpdates(netListener);
-        if (gpsListener != null)
-            locationManager.removeUpdates(gpsListener);
-    }
-
-    static final int TWO_MINUTES = 1000 * 60 * 2;
-
-    Location getLastBestLocation() {
-        Location locationGPS = null;
-        try {
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-                locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        } catch (Exception ex) {
-            // ignore
-        }
-        Location locationNet = null;
-        try {
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
-                locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        } catch (Exception ex) {
-            // ignore
-        }
-        long GPSLocationTime = 0;
-        if (locationGPS != null)
-            GPSLocationTime = locationGPS.getTime();
-        long NetLocationTime = 0;
-        if (locationNet != null)
-            NetLocationTime = locationNet.getTime();
-        if (GPSLocationTime > NetLocationTime)
-            return locationGPS;
-        return locationNet;
-    }
-
-    public void locationChanged(Location location) {
-        if ((location != null) && isBetterLocation(location, currentBestLocation))
-            currentBestLocation = location;
-        if (currentBestLocation != null) {
-            long t1 = currentBestLocation.getTime() + TWO_MINUTES;
-            long t2 = new Date().getTime();
-            if (t1 < t2)
-                currentBestLocation = null;
-        }
-        setAddr();
-    }
-
-    void setAddr() {
+    void locationChanged() {
         if (currentBestLocation == null) {
             current.setEnabled(false);
             current_info.setText(R.string.find_location);
@@ -288,59 +146,14 @@ public class SendLocationActivity extends Activity {
                         @Override
                         protected void onPostExecute(String s) {
                             address = s;
-                            setAddr();
+                            locationChanged();
                         }
                     };
-                    request.execute(OSM_URL, currentBestLocation.getLatitude() + "", currentBestLocation.getLongitude() + "", Locale.getDefault().getLanguage());
+                    request.execute(currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
                 }
             }
         }
         current_info.setText(info);
-    }
-
-    protected boolean isBetterLocation(Location location, Location currentBestLocation) {
-        if (currentBestLocation == null)
-            return true;
-
-        long timeDelta = location.getTime() - currentBestLocation.getTime();
-        boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
-        boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
-        boolean isNewer = timeDelta > 0;
-
-        // If it's been more than two minutes since the current location, use the new location
-        // because the user has likely moved
-        if (isSignificantlyNewer) {
-            return true;
-            // If the new location is more than two minutes older, it must be worse
-        } else if (isSignificantlyOlder) {
-            return false;
-        }
-
-        // Check whether the new location fix is more or less accurate
-        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
-        boolean isLessAccurate = accuracyDelta > 0;
-        boolean isMoreAccurate = accuracyDelta < 0;
-        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
-
-        // Check if the old and new location are from the same provider
-        boolean isFromSameProvider = isSameProvider(location.getProvider(),
-                currentBestLocation.getProvider());
-
-        // Determine location quality using a combination of timeliness and accuracy
-        if (isMoreAccurate) {
-            return true;
-        } else if (isNewer && !isLessAccurate) {
-            return true;
-        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isSameProvider(String provider1, String provider2) {
-        if (provider1 == null)
-            return provider2 == null;
-        return provider1.equals(provider2);
     }
 
     static String format(double n) {
@@ -350,48 +163,4 @@ public class SendLocationActivity extends Activity {
         return res;
     }
 
-    class AddressRequest extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected String doInBackground(String... params) {
-            HttpClient httpclient = new DefaultHttpClient();
-            String url = params[0];
-            Reader reader = null;
-            try {
-                for (int i = 1; i < params.length; i++) {
-                    url = url.replace("$" + i, URLEncoder.encode(params[i], "UTF-8"));
-                }
-                Log.v("url", url);
-                HttpResponse response = httpclient.execute(new HttpGet(url));
-                StatusLine statusLine = response.getStatusLine();
-                int status = statusLine.getStatusCode();
-                reader = new InputStreamReader(response.getEntity().getContent());
-                JsonValue res = JsonValue.readFrom(reader);
-                reader.close();
-                reader = null;
-                JsonObject result;
-                if (res.isObject()) {
-                    result = res.asObject();
-                } else {
-                    result = new JsonObject();
-                    result.set("data", res);
-                }
-                if (status != HttpStatus.SC_OK) {
-                    return null;
-                }
-                return result.get("display_name").asString();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                }
-            }
-            return null;
-        }
-    }
 }

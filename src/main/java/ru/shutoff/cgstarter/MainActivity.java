@@ -383,8 +383,8 @@ public class MainActivity
             return;
         }
         if (activeButton == findViewById(R.id.cg)) {
-            Intent i = new Intent(this, CGActivity.class);
-            startActivity(i);
+            removeRoute(this);
+            launch();
             return;
         }
 
