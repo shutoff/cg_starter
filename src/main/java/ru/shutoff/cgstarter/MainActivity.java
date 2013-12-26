@@ -383,8 +383,8 @@ public class MainActivity
             return;
         }
         if (activeButton == findViewById(R.id.cg)) {
-            removeRoute(this);
-            launch();
+            Intent i = new Intent(this, SMSActivity.class);
+            startActivity(i);
             return;
         }
 
