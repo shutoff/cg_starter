@@ -2,10 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
     android:versionCode="22"
-    android:versionName="1.5.1 test3">
+    android:versionName="1.5.1 test4">
 
     <uses-sdk
-        android:minSdkVersion="8"
+        android:minSdkVersion="7"
         android:targetSdkVersion="16" />
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -29,6 +29,7 @@
     <uses-permission android:name="android.permission.WRITE_SMS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <uses-feature
         android:name="android.hardware.bluetooth"
@@ -78,7 +79,7 @@
             android:name=".SMSActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme"
-            android:label="@string/send_location"
+            android:label="@string/from_sms"
             android:icon="@drawable/sms">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -90,13 +91,20 @@
             android:name=".ContactActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme"
-            android:label="@string/send_location"
+            android:label="@string/from_contacts"
             android:icon="@drawable/contacts">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".VoiceSearch"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme"
+            android:label="@string/voice_search"
+            android:icon="@drawable/voice_search"></activity>
 
         <activity
             android:name=".EditActivity"

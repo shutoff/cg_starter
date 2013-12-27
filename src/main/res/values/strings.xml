@@ -177,4 +177,11 @@
     <string name="sensor_horizontal">Orientation is horizontal now</string>
     <string name="from_contacts">Select finish from contacts</string>
     <string name="from_sms">Select finish from SMS</string>
+    <string name="select_addr">Select address</string>
+    <string name="no_address">Address not found</string>
+    <string name="error">Error</string>
+    <string name="voice_search">Voice search</string>
+    <string name="prepare">Prepare</string>
+    <string name="speak">Speak</string>
+    <string name="search">Search</string>
 </resources>

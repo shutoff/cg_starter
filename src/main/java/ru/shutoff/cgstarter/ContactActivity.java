@@ -5,10 +5,11 @@ import android.content.ContentUris;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.Contacts;
+import android.provider.BaseColumns;
 import android.provider.ContactsContract;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,33 +19,15 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONObject;
+import android.widget.Toast;
 
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.Vector;
 
 public class ContactActivity extends GpsActivity implements AdapterView.OnItemClickListener {
 
     Vector<Contact> contacts;
     BaseAdapter adapter;
-
-    @Override
-    void locationChanged() {
-
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,53 +41,144 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         Contact contact = contacts.get(i);
-        LocationRequest request = new LocationRequest();
+        SearchRequest request = new SearchRequest() {
+            @Override
+            Location getLocation() {
+                return currentBestLocation;
+            }
+
+            @Override
+            void showError(String error) {
+                error(error);
+            }
+
+            @Override
+            void result(Vector<Address> result) {
+                searchResult(result);
+            }
+        };
         request.execute(contact.address);
+    }
+
+    public void locationChanged(Location location) {
+        if ((location != null) && isBetterLocation(location, currentBestLocation))
+            currentBestLocation = location;
+        locationChanged();
+    }
+
+    void error(String err) {
+        Toast toast = Toast.makeText(this, err, Toast.LENGTH_LONG);
+        ;
+        toast.show();
+    }
+
+    void searchResult(final Vector<SearchRequest.Address> res) {
+        if (res.size() == 0) {
+            error(getString(R.string.no_address));
+            return;
+        }
+        if (res.size() == 1) {
+            try {
+                SearchRequest.Address addr = res.get(0);
+                if (OnExitService.isRunCG(ContactActivity.this))
+                    CarMonitor.killCG(ContactActivity.this);
+                CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null);
+                setResult(RESULT_OK);
+                finish();
+                return;
+            } catch (Exception ex) {
+                error(ex.toString());
+            }
+            return;
+        }
+        if (res.size() > 1) {
+            final LayoutInflater layoutInflater = LayoutInflater.from(ContactActivity.this);
+            AlertDialog dialog = new AlertDialog.Builder(ContactActivity.this)
+                    .setTitle(R.string.select_addr)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setView(layoutInflater.inflate(R.layout.list, null))
+                    .create();
+            dialog.show();
+            dialog.findViewById(R.id.progress).setVisibility(View.GONE);
+            ListView lv = (ListView) dialog.findViewById(R.id.list);
+            lv.setVisibility(View.VISIBLE);
+            lv.setAdapter(new BaseAdapter() {
+                @Override
+                public int getCount() {
+                    return res.size();
+                }
+
+                @Override
+                public Object getItem(int position) {
+                    return res.get(position);
+                }
+
+                @Override
+                public long getItemId(int position) {
+                    return position;
+                }
+
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    View v = convertView;
+                    if (v == null) {
+                        final LayoutInflater layoutInflater = LayoutInflater.from(ContactActivity.this);
+                        v = layoutInflater.inflate(R.layout.addr_item, null);
+                    }
+                    TextView tv = (TextView) v.findViewById(R.id.name);
+                    tv.setText(res.get(position).address);
+                    return v;
+                }
+            });
+            lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    SearchRequest.Address addr = res.get(position);
+                    if (OnExitService.isRunCG(ContactActivity.this))
+                        CarMonitor.killCG(ContactActivity.this);
+                    CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null);
+                    setResult(RESULT_OK);
+                    finish();
+                }
+            });
+        }
+
     }
 
     class ContactLoader extends AsyncTask<Void, Void, Void> {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            String sortOrder = Contacts.ContactMethods.DISPLAY_NAME + " COLLATE LOCALIZED ASC";
-            Cursor c = getContentResolver().query(ContactsContract.Data.CONTENT_URI,
-                    null, null, null, sortOrder);
             contacts = new Vector<Contact>();
-            if (c.moveToFirst()) {
-                int totalContacts = c.getCount();
-                for (int i = 0; i < totalContacts; i++) {
-                    long id = c.getLong(c.getColumnIndex(ContactsContract.Contacts._ID));
-                    String name = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                    Cursor cursor = getContentResolver().query(ContactsContract.Data.CONTENT_URI,
-                            new String[]{
-                                    ContactsContract.CommonDataKinds.StructuredPostal.DATA1
-                            },
-                            ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.CommonDataKinds.StructuredPostal.MIMETYPE + "=?",
-                            new String[]{String.valueOf(id), ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE},
-                            null);
-                    if (cursor.moveToFirst()) {
-                        for (; ; ) {
-                            Contact contact = new Contact();
-                            contact.name = name;
-                            contact.address = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredPostal.DATA1));
-                            try {
-                                Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
-                                InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(getContentResolver(), photo_uri);
-                                if (input != null)
-                                    contact.photo = BitmapFactory.decodeStream(input);
-                            } catch (Exception ex) {
-                                // ignore
-                            }
-                            contacts.add(contact);
-                            if (!cursor.moveToNext())
-                                break;
-                        }
+            Cursor cursor = getContentResolver().query(ContactsContract.Data.CONTENT_URI,
+                    new String[]{
+                            BaseColumns._ID,
+                            ContactsContract.Contacts.DISPLAY_NAME,
+                            ContactsContract.CommonDataKinds.StructuredPostal.DATA1
+                    },
+                    ContactsContract.CommonDataKinds.StructuredPostal.MIMETYPE + "=?",
+                    new String[]{ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE},
+                    ContactsContract.Contacts.DISPLAY_NAME);
+            if (cursor.moveToFirst()) {
+                for (; ; ) {
+                    Contact contact = new Contact();
+                    contact.name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    contact.address = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredPostal.DATA1));
+                    long id = cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
+                    try {
+                        Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
+                        InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(getContentResolver(), photo_uri);
+                        if (input != null)
+                            contact.photo = BitmapFactory.decodeStream(input);
+                    } catch (Exception ex) {
+                        // ignore
                     }
-                    cursor.close();
-                    c.moveToNext();
+                    contacts.add(contact);
+                    if (!cursor.moveToNext())
+                        break;
                 }
             }
-            c.close();
+            cursor.close();
             return null;
         }
 
@@ -156,73 +230,10 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
         }
     }
 
-    class LocationRequest extends AsyncTask<String, Void, JsonArray> {
-
-        @Override
-        protected JsonArray doInBackground(String... strings) {
-            HttpClient httpclient = new DefaultHttpClient();
-            Reader reader = null;
-            try {
-                String url = "http://maps.googleapis.com/maps/api/geocode/json?address=";
-                url += Uri.encode(strings[0]);
-                url += "&sensor=true";
-                if (currentBestLocation != null) {
-                    double lat = currentBestLocation.getLatitude();
-                    double lon = currentBestLocation.getLongitude();
-                    url += "&bounds=" + (lat - 1.5) + "," + (lon - 1.5) + "|" + (lat + 1.5) + "," + (lon + 1.5);
-                }
-                HttpResponse response = httpclient.execute(new HttpGet(url));
-                StatusLine statusLine = response.getStatusLine();
-                int status = statusLine.getStatusCode();
-                reader = new InputStreamReader(response.getEntity().getContent());
-                JsonValue res = JsonValue.readFrom(reader);
-                reader.close();
-                reader = null;
-                if (!res.isObject())
-                    return null;
-                if (status != HttpStatus.SC_OK)
-                    return null;
-                return res.asObject().get("results").asArray();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(JsonArray res) {
-            if (res.size() == 1){
-                try{
-                    JsonObject obj = res.get(0).asObject();
-                    obj = obj.get("geometry").asObject();
-                    obj = obj.get("location").asObject();
-                    double lat = obj.get("lat").asDouble();
-                    double lon = obj.get("lon").asDouble();
-                    if (OnExitService.isRunCG(ContactActivity.this))
-                        CarMonitor.killCG(ContactActivity.this);
-                    CarMonitor.startCG(ContactActivity.this, lat + "|" + lon, null);
-                    setResult(RESULT_OK);
-                    finish();
-                    return;
-                }catch (Exception ex){
-                    // ignore
-                }
-                return;
-            }
-        }
-    }
-
     static class Contact {
         String address;
         String name;
         Bitmap photo;
     }
+
 }

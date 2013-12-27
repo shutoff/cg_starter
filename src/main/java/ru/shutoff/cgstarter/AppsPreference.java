@@ -244,7 +244,11 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
                     if (info.activityInfo == null)
                         continue;
                     String name = info.activityInfo.name;
-                    if (name.equals("ru.shutoff.cgstarter.TrafficActivity") || name.equals("ru.shutoff.cgstarter.SendLocationActivity"))
+                    if (name.equals("ru.shutoff.cgstarter.TrafficActivity") ||
+                            name.equals("ru.shutoff.cgstarter.SendLocationActivity") ||
+                            name.equals("ru.shutoff.cgstarter.ContactActivity") ||
+                            name.equals("ru.shutoff.cgstarter.VoiceSearch") ||
+                            name.equals("ru.shutoff.cgstarter.SMSActivity"))
                         apps.add(info);
                 }
 

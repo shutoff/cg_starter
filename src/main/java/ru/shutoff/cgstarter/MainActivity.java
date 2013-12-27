@@ -58,7 +58,7 @@ public class MainActivity
 
     static final int SETUP_BUTTON = 3000;
     static final int RUN_CG = 3001;
-    ;
+    static final int RUN_DIALOG = 3002;
 
     static int[][] holidays = {
             {1, 1},
@@ -322,6 +322,10 @@ public class MainActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
+            case RUN_DIALOG:
+                if (resultCode == RESULT_OK)
+                    finish();
+                return;
             case SETUP_BUTTON:
                 if (data != null) {
                     int id = data.getIntExtra(State.ID, -1);
@@ -383,8 +387,8 @@ public class MainActivity
             return;
         }
         if (activeButton == findViewById(R.id.cg)) {
-            removeRoute(this);
-            launch();
+            Intent i = new Intent(this, VoiceSearch.class);
+            startActivityForResult(i, RUN_DIALOG);
             return;
         }
 

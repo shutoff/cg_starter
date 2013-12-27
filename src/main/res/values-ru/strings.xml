@@ -159,4 +159,11 @@
     <string name="sensor_horizontal">Горизонтальная ориентация</string>
     <string name="from_contacts">Финиш из контактов</string>
     <string name="from_sms">Финиш из СМС</string>
+    <string name="select_addr">Выберите адрес</string>
+    <string name="no_address">Адрес не найден</string>
+    <string name="error">Ошибка</string>
+    <string name="voice_search">Голосовой поиск</string>
+    <string name="prepare">Подготовка</string>
+    <string name="speak">Говорите</string>
+    <string name="search">Поиск</string>
 </resources>

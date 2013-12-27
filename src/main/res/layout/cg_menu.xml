@@ -8,21 +8,31 @@
     android:padding="30dp">
 
     <Button
+        android:id="@+id/no_route"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/no_route"
         android:padding="25dp" />
 
     <Button
+        android:id="@+id/from_contacts"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/from_contacts"
         android:padding="25dp" />
 
     <Button
+        android:id="@+id/from_sms"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/from_sms"
+        android:padding="25dp" />
+
+    <Button
+        android:id="@+id/voice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/voice_search"
         android:padding="25dp" />
 
 </LinearLayout>

@@ -9,7 +9,7 @@ import android.os.Bundle;
 
 import java.util.Date;
 
-public abstract class GpsActivity extends Activity {
+public class GpsActivity extends Activity {
 
     private LocationManager locationManager;
     private LocationListener netListener;
@@ -17,7 +17,8 @@ public abstract class GpsActivity extends Activity {
 
     Location currentBestLocation;
 
-    abstract void locationChanged();
+    void locationChanged() {
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
