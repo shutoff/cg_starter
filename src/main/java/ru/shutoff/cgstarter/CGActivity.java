@@ -28,6 +28,13 @@ public class CGActivity extends Activity {
                 startActivityForResult(i, 1);
             }
         });
+        findViewById(R.id.voice).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(CGActivity.this, VoiceSearch.class);
+                startActivityForResult(i, 1);
+            }
+        });
         findViewById(R.id.no_route).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

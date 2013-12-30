@@ -57,7 +57,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                 searchResult(result);
             }
         };
-        request.execute(contact.address);
+        request.search(contact.address);
     }
 
     public void locationChanged(Location location) {
@@ -125,7 +125,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                         final LayoutInflater layoutInflater = LayoutInflater.from(ContactActivity.this);
                         v = layoutInflater.inflate(R.layout.addr_item, null);
                     }
-                    TextView tv = (TextView) v.findViewById(R.id.name);
+                    TextView tv = (TextView) v.findViewById(R.id.addr);
                     tv.setText(res.get(position).address);
                     return v;
                 }

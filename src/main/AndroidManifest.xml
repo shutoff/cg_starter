@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
     android:versionCode="22"
-    android:versionName="1.5.1 test4">
+    android:versionName="1.5.1 test5">
 
     <uses-sdk
         android:minSdkVersion="7"
@@ -83,7 +83,6 @@
             android:icon="@drawable/sms">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
@@ -95,7 +94,6 @@
             android:icon="@drawable/contacts">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
@@ -104,7 +102,11 @@
             android:launchMode="singleTop"
             android:theme="@style/AppTheme"
             android:label="@string/voice_search"
-            android:icon="@drawable/voice_search"></activity>
+            android:icon="@drawable/voice_search">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".EditActivity"

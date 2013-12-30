@@ -1,6 +1,7 @@
 package ru.shutoff.cgstarter;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.location.Location;
@@ -10,13 +11,15 @@ import android.speech.SpeechRecognizer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
 
@@ -33,6 +36,7 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setResult(RESULT_CANCELED);
         addr_list = new Vector<SearchRequest.Address>();
         try {
             recognizer = SpeechRecognizer.createSpeechRecognizer(this);
@@ -67,12 +71,6 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
                     finish();
             }
         });
-        ArrayList<String> stub = new ArrayList<String>();
-        stub.add("Авиаконструткторов 4");
-        stub.add("Суши бар");
-        Bundle bundle = new Bundle();
-        bundle.putStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION, stub);
-        onResults(bundle);
     }
 
     void showResults() {
@@ -80,6 +78,23 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
         if (addr_list.size() == 0)
             return;
         dialog.dismiss();
+        if (currentBestLocation != null) {
+            double lat = currentBestLocation.getLatitude();
+            double lon = currentBestLocation.getLongitude();
+            for (SearchRequest.Address addr : addr_list) {
+                addr.distance = OnExitService.calc_distance(lat, lon, addr.lat, addr.lon);
+            }
+            Collections.sort(addr_list, new Comparator<SearchRequest.Address>() {
+                @Override
+                public int compare(SearchRequest.Address address, SearchRequest.Address address2) {
+                    if (address.distance < address2.distance)
+                        return -1;
+                    if (address.distance > address2.distance)
+                        return 1;
+                    return 0;
+                }
+            });
+        }
         findViewById(R.id.progress).setVisibility(View.GONE);
         ListView lv = (ListView) findViewById(R.id.list);
         lv.setAdapter(new BaseAdapter() {
@@ -105,12 +120,38 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
                     final LayoutInflater layoutInflater = LayoutInflater.from(VoiceSearch.this);
                     v = layoutInflater.inflate(R.layout.addr_item, null);
                 }
-                TextView tv = (TextView) v.findViewById(R.id.name);
-                tv.setText(addr_list.get(position).address);
+                SearchRequest.Address addr = addr_list.get(position);
+                TextView tv = (TextView) v.findViewById(R.id.addr);
+                tv.setText(addr.address);
+                tv = (TextView) v.findViewById(R.id.name);
+                tv.setText(addr.name);
+                tv = (TextView) v.findViewById(R.id.dist);
+                if (addr.distance == 0) {
+                    tv.setText("");
+                } else if (addr.distance < 1000) {
+                    tv.setText((int) (addr.distance) + " m");
+                } else if (addr.distance < 10000) {
+                    String s = addr.distance + "";
+                    s = s.substring(0, 3);
+                    tv.setText(s + " km");
+                } else {
+                    tv.setText((int) (addr.distance / 1000) + " km");
+                }
                 return v;
             }
         });
         lv.setVisibility(View.VISIBLE);
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                SearchRequest.Address addr = addr_list.get(i);
+                if (OnExitService.isRunCG(VoiceSearch.this))
+                    CarMonitor.killCG(VoiceSearch.this);
+                CarMonitor.startCG(VoiceSearch.this, addr.lat + "|" + addr.lon, null);
+                setResult(RESULT_OK);
+                finish();
+            }
+        });
     }
 
     @Override
@@ -156,6 +197,23 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
     public void onResults(Bundle results) {
         List<String> res = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         phrases = new Vector<String>();
+        Bookmarks.Point[] points = Bookmarks.get();
+        for (String r : res) {
+            for (Bookmarks.Point p : points) {
+                if (p.name.equalsIgnoreCase(r)) {
+                    SearchRequest.Address address = new SearchRequest.Address();
+                    address.name = p.name;
+                    address.address = "";
+                    address.lat = p.lat;
+                    address.lon = p.lng;
+                    addr_list.add(address);
+                }
+            }
+        }
+        if (addr_list.size() > 0) {
+            showResults();
+            return;
+        }
         for (String r : res) {
             phrases.add(r);
         }
@@ -180,7 +238,7 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
                 return;
             }
             State.appendLog("search: " + phrases.get(phrase));
-            execute(phrases.get(phrase++));
+            search(phrases.get(phrase++));
         }
 
         @Override
@@ -216,5 +274,8 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
         }
     }
 
-    // https://maps.googleapis.com/maps/api/place/textsearch/xml?query=%D0%BB%D0%B5%D0%BD%D0%B8%D0%BD%D0%B0%2040&location=60.0045,30.34456&radius=1000&sensor=true&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0
+    static boolean isAvailable(Context context) {
+        return SpeechRecognizer.isRecognitionAvailable(context);
+    }
+
 }
