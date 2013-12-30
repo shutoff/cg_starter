@@ -216,5 +216,4 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
         }
     }
 
-    // https://maps.googleapis.com/maps/api/place/textsearch/xml?query=%D0%BB%D0%B5%D0%BD%D0%B8%D0%BD%D0%B0%2040&location=60.0045,30.34456&radius=1000&sensor=true&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0
 }
