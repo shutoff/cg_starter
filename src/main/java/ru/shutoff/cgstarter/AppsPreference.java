@@ -250,6 +250,8 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
                             name.equals("ru.shutoff.cgstarter.VoiceSearch") ||
                             name.equals("ru.shutoff.cgstarter.SMSActivity"))
                         apps.add(info);
+                    if (name.equals("ru.shutoff.cgstarter.VoiceSearch") && VoiceSearch.isAvailable(getContext()))
+                        apps.add(info);
                 }
 
                 Collections.sort(other, new Comparator<ResolveInfo>() {

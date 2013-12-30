@@ -387,7 +387,7 @@ public class MainActivity
             return;
         }
         if (activeButton == findViewById(R.id.cg)) {
-            Intent i = new Intent(this, VoiceSearch.class);
+            Intent i = new Intent(this, CGActivity.class);
             startActivityForResult(i, RUN_DIALOG);
             return;
         }

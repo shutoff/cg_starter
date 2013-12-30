@@ -81,7 +81,7 @@ public class StartActivity extends GpsActivity {
                         showResult(result);
                     }
                 };
-                req.execute(query);
+                req.search(query);
             }
         };
 

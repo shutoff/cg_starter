@@ -21,74 +21,22 @@ import java.io.Reader;
 import java.util.Locale;
 import java.util.Vector;
 
-public abstract class SearchRequest extends AsyncTask<String, Void, JsonArray> {
-
-    String error;
+public abstract class PlaceRequest extends AsyncTask<String, Void, JsonArray> {
 
     abstract Location getLocation();
 
     abstract void showError(String error);
 
-    abstract void result(Vector<Address> result);
+    abstract void result(Vector<SearchRequest.Address> result);
 
-    static class Address {
-        String address;
-        String name;
-        double lat;
-        double lon;
-        double distance;
-    }
-
-    void search(final String query) {
-        PlaceRequest request = new PlaceRequest() {
-            @Override
-            Location getLocation() {
-                return SearchRequest.this.getLocation();
-            }
-
-            @Override
-            void showError(String error) {
-                SearchRequest.this.showError(error);
-            }
-
-            @Override
-            void result(Vector<Address> result) {
-                if (result.size() > 0) {
-                    SearchRequest.this.result(result);
-                    return;
-                }
-                PlaceRequest req = new PlaceRequest() {
-                    @Override
-                    Location getLocation() {
-                        return SearchRequest.this.getLocation();
-                    }
-
-                    @Override
-                    void showError(String error) {
-                        SearchRequest.this.showError(error);
-                    }
-
-                    @Override
-                    void result(Vector<Address> result) {
-                        if (result.size() > 0) {
-                            SearchRequest.this.result(result);
-                            return;
-                        }
-                        execute(query);
-                    }
-                };
-                req.execute(query, "50000");
-            }
-        };
-        request.execute(query, "1000");
-    }
+    String error;
 
     @Override
     protected JsonArray doInBackground(String... strings) {
         HttpClient httpclient = new DefaultHttpClient();
         Reader reader = null;
         try {
-            String url = "http://maps.googleapis.com/maps/api/geocode/json?address=";
+            String url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=";
             String addr = strings[0];
             url += Uri.encode(addr);
             url += "&sensor=true";
@@ -96,8 +44,9 @@ public abstract class SearchRequest extends AsyncTask<String, Void, JsonArray> {
             if (location != null) {
                 double lat = location.getLatitude();
                 double lon = location.getLongitude();
-                url += "&bounds=" + (lat - 1.5) + "," + (lon - 1.5) + Uri.encode("|") + (lat + 1.5) + "," + (lon + 1.5);
+                url += "&location=" + lat + "," + lon + "&radius=" + strings[1];
             }
+            url += "&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0";
             url += "&language=" + Locale.getDefault().getLanguage();
             Log.v("url", url);
             HttpResponse response = httpclient.execute(new HttpGet(url));
@@ -133,11 +82,12 @@ public abstract class SearchRequest extends AsyncTask<String, Void, JsonArray> {
             showError(error);
             return;
         }
-        Vector<Address> r = new Vector<Address>();
+        Vector<SearchRequest.Address> r = new Vector<SearchRequest.Address>();
         for (int i = 0; i < res.size(); i++) {
             JsonObject o = res.get(i).asObject();
-            Address addr = new Address();
+            SearchRequest.Address addr = new SearchRequest.Address();
             addr.address = o.get("formatted_address").asString();
+            addr.name = o.get("name").asString();
             JsonObject geo = o.get("geometry").asObject().get("location").asObject();
             addr.lat = geo.get("lat").asDouble();
             addr.lon = geo.get("lng").asDouble();
