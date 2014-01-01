@@ -1895,6 +1895,9 @@ public class OnExitService extends Service {
 
         @Override
         protected void onPostExecute(Integer lvl) {
+            fetcher = null;
+            if (br != null)
+                unregisterReceiver(br);
             if (lvl != null) {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
                 long now = new Date().getTime();
@@ -1917,9 +1920,6 @@ public class OnExitService extends Service {
             } else {
                 setYandexError(true);
             }
-            fetcher = null;
-            if (br != null)
-                unregisterReceiver(br);
         }
     }
 
@@ -1940,12 +1940,20 @@ public class OnExitService extends Service {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         long upd_time = preferences.getLong(State.UPD_TIME, 0);
         long interval = new Date().getTime() - upd_time;
+        State.appendLog("fetcher: " + ((fetcher == null) ? "null" : "not null"));
+        State.appendLog("interval " + interval);
+        if (currentBestLocation == null) {
+            State.appendLog("location unknown");
+        } else {
+            State.appendLog("? " + currentBestLocation.getLatitude() + "," + currentBestLocation.getLongitude());
+        }
         if ((fetcher == null) && (interval > UPD_INTERVAL) && (currentBestLocation != null)) {
             fetcher = new HttpTask();
             final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             if ((activeNetwork != null) && activeNetwork.isConnected()) {
                 yandex_error = false;
+                State.appendLog("Start yandex fetcher");
                 fetcher.execute();
             } else {
                 fetcher.br = new BroadcastReceiver() {

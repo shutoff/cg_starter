@@ -322,14 +322,18 @@ public class CarMonitor extends BroadcastReceiver {
     }
 
     static void killCG(Context context) {
+        State.appendLog("killCG");
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
-        if (procInfos == null)
+        if (procInfos == null) {
+            State.appendLog("CG is not running");
             return;
+        }
         int i;
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
             if (proc.processName.equals(State.CG_PACKAGE)) {
+                State.appendLog("kill " + proc.pid);
                 SuperUserPreference.doRoot(context, "kill " + proc.pid);
             }
         }

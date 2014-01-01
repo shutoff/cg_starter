@@ -45,6 +45,10 @@ public class CGActivity extends Activity {
                 finish();
             }
         });
+        if (!VoiceSearch.isAvailable(this))
+            findViewById(R.id.voice).setVisibility(View.GONE);
+        if (!State.hasTelephony(this))
+            findViewById(R.id.from_sms).setVisibility(View.GONE);
     }
 
     @Override
@@ -55,4 +59,6 @@ public class CGActivity extends Activity {
             finish();
         }
     }
+
+
 }

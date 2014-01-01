@@ -33,13 +33,6 @@ public class SendLocationActivity extends GpsActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable ex) {
-                State.print(ex);
-            }
-        });
-
         super.onCreate(savedInstanceState);
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);

@@ -7,15 +7,15 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -256,6 +256,31 @@ public class State {
         return false;
     }
 
+    static int telephony_state = 0;
+
+    static boolean isDebug() {
+        return Build.FINGERPRINT.startsWith("generic");
+    }
+
+    static boolean hasTelephony(Context context) {
+        if (isDebug())
+            return true;
+        if (telephony_state == 0) {
+            PackageManager pm = context.getPackageManager();
+            if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                telephony_state = -1;
+                return false;
+            }
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            if (tm.getSimState() == TelephonyManager.SIM_STATE_ABSENT) {
+                telephony_state = -1;
+                return false;
+            }
+            telephony_state = 1;
+        }
+        return telephony_state > 0;
+    }
+
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -276,6 +301,7 @@ public class State {
         }
     }
 
+/*
     static public void print(Throwable ex) {
         appendLog("Error: " + ex.toString());
         StringWriter sw = new StringWriter();
@@ -283,5 +309,6 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
+*/
 
 }

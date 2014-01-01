@@ -166,4 +166,5 @@
     <string name="prepare">Подготовка</string>
     <string name="speak">Говорите</string>
     <string name="search">Поиск</string>
+    <string name="km">км</string>
 </resources>

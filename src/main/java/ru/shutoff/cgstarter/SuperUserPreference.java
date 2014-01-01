@@ -54,7 +54,8 @@ public class SuperUserPreference extends CheckBoxPreference {
             if (ev == 0)
                 return true;
         } catch (Exception ex) {
-            Toast toast = Toast.makeText(context, ex.getMessage(), Toast.LENGTH_LONG);
+            Toast toast = Toast.makeText(context, ex.toString(), Toast.LENGTH_LONG);
+            State.appendLog("su error " + command + " - " + ex.toString());
             // ignore
         }
         return false;

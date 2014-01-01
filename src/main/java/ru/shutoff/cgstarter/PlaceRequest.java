@@ -46,12 +46,15 @@ public abstract class PlaceRequest extends AsyncTask<String, Void, JsonArray> {
                 double lon = location.getLongitude();
                 url += "&location=" + lat + "," + lon + "&radius=" + strings[1];
             }
-            url += "&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0";
+//          url += "&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0";
+            url += "&key=AIzaSyBljQKazFWpl9nyGHp-lu8ati7QjMbwzsU";
             url += "&language=" + Locale.getDefault().getLanguage();
             Log.v("url", url);
+            State.appendLog("url=" + url);
             HttpResponse response = httpclient.execute(new HttpGet(url));
             StatusLine statusLine = response.getStatusLine();
             int status = statusLine.getStatusCode();
+            State.appendLog("status=" + status);
             reader = new InputStreamReader(response.getEntity().getContent());
             JsonValue res = JsonValue.readFrom(reader);
             reader.close();
@@ -78,6 +81,7 @@ public abstract class PlaceRequest extends AsyncTask<String, Void, JsonArray> {
 
     @Override
     protected void onPostExecute(JsonArray res) {
+        State.appendLog("done");
         if (res == null) {
             showError(error);
             return;

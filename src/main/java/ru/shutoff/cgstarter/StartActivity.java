@@ -84,8 +84,6 @@ public class StartActivity extends GpsActivity {
                 req.search(query);
             }
         };
-
-        State.appendLog(query);
         timer.start();
     }
 

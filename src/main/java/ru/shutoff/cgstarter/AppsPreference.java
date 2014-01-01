@@ -243,17 +243,16 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
                 for (ResolveInfo info : infos) {
                     if (info.activityInfo == null)
                         continue;
-                    String name = info.activityInfo.name;
-                    if (name.equals("ru.shutoff.cgstarter.TrafficActivity") ||
-                            name.equals("ru.shutoff.cgstarter.SendLocationActivity") ||
-                            name.equals("ru.shutoff.cgstarter.ContactActivity") ||
-                            name.equals("ru.shutoff.cgstarter.VoiceSearch") ||
-                            name.equals("ru.shutoff.cgstarter.SMSActivity"))
+                    String name = info.activityInfo.name.substring(21);
+                    if (name.equals("TrafficActivity") || name.equals("ContactActivity"))
                         apps.add(info);
-                    if (name.equals("ru.shutoff.cgstarter.VoiceSearch") && VoiceSearch.isAvailable(getContext()))
+                    if (name.equals("VoiceSearch") && VoiceSearch.isAvailable(getContext()))
                         apps.add(info);
+                    if (State.hasTelephony(getContext())) {
+                        if (name.equals("SMSActivity") || name.equals("SendLocationActivity"))
+                            apps.add(info);
+                    }
                 }
-
                 Collections.sort(other, new Comparator<ResolveInfo>() {
                     @Override
                     public int compare(ResolveInfo lhs, ResolveInfo rhs) {
@@ -311,7 +310,9 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
             }
         };
         task.execute();
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener()
+
+        {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 dialog.dismiss();
@@ -322,6 +323,8 @@ public class AppsPreference extends DialogPreference implements View.OnClickList
                 adapter.notifyDataSetChanged();
                 lv.setSelection(apps.size() - 1);
             }
-        });
+        }
+
+        );
     }
 }
