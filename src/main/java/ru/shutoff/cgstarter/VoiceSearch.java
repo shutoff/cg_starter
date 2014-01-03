@@ -12,17 +12,15 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.text.DecimalFormat;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -55,7 +53,7 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
             toast.show();
             finish();
         }
-        setContentView(R.layout.list);
+
         LayoutInflater inflater = LayoutInflater.from(this);
         dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.voice_search)
@@ -69,6 +67,7 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
         recognizer.setRecognitionListener(this);
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, "ru.shutoff.cgstarter");
         recognizer.startListening(intent);
         dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
@@ -83,6 +82,16 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
                 showResult();
             }
         });
+/*
+        Bundle bundle = new Bundle();
+        ArrayList<String> res = new ArrayList<String>();
+        res.add("Aviakonstruktorov 4");
+        bundle.putStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION, res);
+        float[] scopes = new float[1];
+        scopes[0] = 1f;
+        bundle.putFloatArray(SpeechRecognizer.CONFIDENCE_SCORES, scopes);
+        onResults(bundle);
+*/
     }
 
     void showResult() {
@@ -107,58 +116,30 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
                 }
             });
         }
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        ListView lv = (ListView) findViewById(R.id.list);
-        lv.setAdapter(new BaseAdapter() {
-            @Override
-            public int getCount() {
-                return addr_list.size();
-            }
+        Intent i = new Intent(this, SearchResult.class);
+        byte[] data = null;
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutput out = new ObjectOutputStream(bos);
+            out.writeObject(addr_list);
+            data = bos.toByteArray();
+            out.close();
+            bos.close();
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (data == null) {
+            finish();
+            return;
+        }
+        i.putExtra(State.INFO, data);
+        startActivityForResult(i, 1);
+    }
 
-            @Override
-            public Object getItem(int position) {
-                return addr_list.get(position);
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return position;
-            }
-
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View v = convertView;
-                if (v == null) {
-                    final LayoutInflater layoutInflater = LayoutInflater.from(VoiceSearch.this);
-                    v = layoutInflater.inflate(R.layout.addr_item, null);
-                }
-                SearchRequest.Address addr = addr_list.get(position);
-                TextView tv = (TextView) v.findViewById(R.id.addr);
-                tv.setText(addr.address);
-                tv = (TextView) v.findViewById(R.id.name);
-                tv.setText(addr.name);
-                tv = (TextView) v.findViewById(R.id.dist);
-                if (addr.distance < 100) {
-                    tv.setText("");
-                } else {
-                    DecimalFormat df = new DecimalFormat("#.#");
-                    tv.setText(df.format(addr.distance / 1000) + getString(R.string.km));
-                }
-                return v;
-            }
-        });
-        lv.setVisibility(View.VISIBLE);
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                SearchRequest.Address addr = addr_list.get(i);
-                if (OnExitService.isRunCG(VoiceSearch.this))
-                    CarMonitor.killCG(VoiceSearch.this);
-                CarMonitor.startCG(VoiceSearch.this, addr.lat + "|" + addr.lon, null);
-                setResult(RESULT_OK);
-                finish();
-            }
-        });
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        setResult(resultCode);
+        finish();
     }
 
     @Override
@@ -213,12 +194,9 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
         Bookmarks.Point[] points = Bookmarks.get();
         for (int i = 0; i < res.size(); i++) {
             String r = res.get(i);
-            State.appendLog(r);
             float scope = (i < scopes.length) ? scopes[i] : 0.01f;
             for (Bookmarks.Point p : points) {
                 float ratio = compare(p.name, r) * 10;
-                if (ratio > 0)
-                    State.appendLog(p.name + " " + r + " " + ratio);
                 if (ratio > 4) {
                     int n = 0;
                     for (n = 0; n < addr_list.size(); n++) {
@@ -245,7 +223,6 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
             phrase.phrase = r;
             phrase.scope = scope;
             phrases.add(phrase);
-            State.appendLog("add " + r + " " + scope);
         }
         phrase = 0;
         new Request();
@@ -285,13 +262,11 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
         float scope;
 
         Request() {
-            State.appendLog("new Request " + phrase + "," + phrases.size());
             if (phrase >= phrases.size()) {
                 dialog.dismiss();
                 return;
             }
             Phrase p = phrases.get(phrase++);
-            State.appendLog("search " + p.phrase);
             search(p.phrase);
             scope = p.scope;
         }
@@ -303,7 +278,6 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
 
         @Override
         void showError(String error) {
-            State.appendLog("error " + error);
             next();
         }
 

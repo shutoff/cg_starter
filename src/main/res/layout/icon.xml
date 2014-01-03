@@ -8,8 +8,8 @@
 
     <ImageView
         android:id="@+id/photo"
-        android:layout_width="54dp"
-        android:layout_height="54dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:padding="5dp" />
 
 </LinearLayout>

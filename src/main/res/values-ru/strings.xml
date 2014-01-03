@@ -22,8 +22,8 @@
     <string name="button_sum">Нажмите и удерживайте кнопку для настройки</string>
     <string name="about">О программе</string>
     <string name="version">Версия</string>
-    <string name="auto_pause">Запуск точки</string>
-    <string name="inactive_pause">Если ничего не выбрали</string>
+    <string name="auto_pause">Автоматический запуск точки через %1 сек</string>
+    <string name="inactive_pause">Если ничего не выбрали в течении %1 сек</string>
     <string name="sec">сек</string>
     <string name="rotate">Поворот экрана</string>
     <string name="rotate_sum">Запретить поворот экрана при запуске CityGuide</string>
@@ -121,7 +121,7 @@
     <string name="ping">Проверка соединения</string>
     <string name="ping_sum">Периодическая проверка и соединения и сброс его при недоступности</string>
     <string name="beer">Разработчику на пиво</string>
-    <string name="notification">Показывать уведомления</string>
+    <string name="show_notification">Показывать уведомления</string>
     <string name="notification_sum">Показ системных уведомлений отключен</string>
     <string name="notification_title">Включить уведомления</string>
     <string name="notification_message">Для того, чтобы включить отображение уведомлений откройте системные настройки. выберите там Специальные возможности и предоставьте доступ к уведомлениям</string>
@@ -141,7 +141,7 @@
     <string name="yandex">Индикатор пробок</string>
     <string name="yandex_sum">Показывать индикатор Яндекс-пробок</string>
     <string name="vertical">Запускать только в вертикальном положении</string>
-    <string name="quick_launch">Быстрый запуск</string>
+    <string name="quick_launch">Панель запуска</string>
     <string name="quick_launch_sum">Выберите приложения для быстрого запуска</string>
     <string name="add">Добавить</string>
     <string name="remove">Удалить</string>
@@ -167,4 +167,15 @@
     <string name="speak">Говорите</string>
     <string name="search">Поиск</string>
     <string name="km">км</string>
+    <string name="help">Справка</string>
+    <string name="beer_sum">Вам понравилось приложение?\nВы можете помочь развитию проекта и улучшить настроение разработчика, переведя некоторую сумму денег одним из удобных Вам способов:\n- перевод на QIWI кошелек +79811926130\n- перевод на Яндекс кошелек 41001624374507\n\nСпасибо!</string>
+    <string name="apps">Приложения</string>
+    <string name="quick_size">Размер иконок</string>
+    <string name="notification">Уведомления</string>
+    <string name="notification_time">Скрывать уведомления после %1 сек</string>
+    <string name="start">Запуск</string>
+    <string-array name="inactive_values">
+        <item>Запустить СГ</item>
+        <item>Выйти из приложения</item>
+    </string-array>
 </resources>

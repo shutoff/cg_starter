@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
     android:versionCode="22"
-    android:versionName="1.5.1 test5">
+    android:versionName="1.6 test1">
 
     <uses-sdk
         android:minSdkVersion="7"
@@ -100,13 +100,24 @@
         <activity
             android:name=".VoiceSearch"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme"
             android:label="@string/voice_search"
-            android:icon="@drawable/voice_search">
+            android:icon="@drawable/voice_search"
+            android:theme="@style/Theme.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SearchResult"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.AppCompat" />
+
+        <activity
+            android:name=".Preferences"
+            android:launchMode="singleTop"
+            android:label="@string/settings"
+            android:theme="@style/Theme.AppCompat" />
 
         <activity
             android:name=".EditActivity"
@@ -142,11 +153,11 @@
 
         <activity
             android:name=".NotificationIgnore"
-            android:theme="@style/Theme.Transparent"></activity>
+            android:theme="@style/Theme.Transparent" />
 
         <activity
             android:name=".SmsDialog"
-            android:theme="@style/Theme.Transparent"></activity>
+            android:theme="@style/Theme.Transparent" />
 
         <activity
             android:name=".TrafficActivity"
@@ -159,13 +170,6 @@
         </activity>
 
         <activity android:name=".SetupButton" />
-
-        <activity android:name=".Setup" />
-
-        <activity
-            android:name=".WebViewActivity"
-            android:theme="@style/Theme.AppCompat"
-            android:label="@string/app_name" />
 
         <service android:name=".OnExitService"></service>
 

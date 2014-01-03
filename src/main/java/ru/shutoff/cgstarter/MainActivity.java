@@ -163,7 +163,7 @@ public class MainActivity
 
                 @Override
                 public void onFinish() {
-                    if (preferences.getBoolean(State.INACTIVE_LAUNCH, false)) {
+                    if (preferences.getString(State.INACTIVE_MODE, "0").equals("0")) {
                         launch();
                     } else {
                         finish();
@@ -690,7 +690,7 @@ public class MainActivity
     void setup_app() {
         timer.cancel();
         stopTimers();
-        Intent intent = new Intent(this, Setup.class);
+        Intent intent = new Intent(this, Preferences.class);
         startActivity(intent);
     }
 

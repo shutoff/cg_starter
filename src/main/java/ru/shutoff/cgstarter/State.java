@@ -8,16 +8,12 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.widget.Toast;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.DataOutputStream;
 import java.util.Calendar;
-import java.util.Date;
 
 public class State {
 
@@ -25,7 +21,7 @@ public class State {
 
     static final String AUTO_PAUSE = "auto_pause";
     static final String INACTIVE_PAUSE = "inactive_pause";
-    static final String INACTIVE_LAUNCH = "inactive_launch";
+    static final String INACTIVE_MODE = "inactive_mode";
     static final String CAR_MODE = "carmode";
     static final String CAR_STATE = "car_state";
     static final String POWER_TIME = "powertime";
@@ -65,7 +61,6 @@ public class State {
     static final String PING = "ping";
     static final String NOTIFICATION = "notification";
     static final String NOTIFICATION_IGNORE = "notification_ignore";
-    static final String POWER_DELAY = "power_delay";
     static final String SHOW_SMS = "show_sms";
     static final String MAPCAM = "mapcam";
     static final String STRELKA = "strelka";
@@ -104,6 +99,7 @@ public class State {
     static final String APPS = "apps";
     static final String FULL_TIME = "full_time";
     static final String QUICK_ALPHA = "quick_alpha";
+    static final String QUICK_SIZE = "quick_size";
 
     static Point[] points;
 
@@ -281,6 +277,27 @@ public class State {
         return telephony_state > 0;
     }
 
+    static boolean doRoot(Context context, String command) {
+        try {
+            Process p = Runtime.getRuntime().exec("su");
+            DataOutputStream os = new DataOutputStream(p.getOutputStream());
+            os.writeBytes(command);
+            os.writeBytes("\nexit\n");
+            os.flush();
+            p.waitFor();
+            int ev = p.exitValue();
+            if (ev == 0)
+                return true;
+        } catch (Exception ex) {
+            Toast toast = Toast.makeText(context, ex.toString(), Toast.LENGTH_LONG);
+            // State.appendLog("su error " + command + " - " + ex.toString());
+            // ignore
+        }
+        return false;
+    }
+
+/*
+
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -301,7 +318,6 @@ public class State {
         }
     }
 
-/*
     static public void print(Throwable ex) {
         appendLog("Error: " + ex.toString());
         StringWriter sw = new StringWriter();

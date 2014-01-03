@@ -2,6 +2,7 @@ package ru.shutoff.cgstarter;
 
 import android.location.Location;
 
+import java.io.Serializable;
 import java.util.Vector;
 
 public abstract class SearchRequest {
@@ -14,7 +15,7 @@ public abstract class SearchRequest {
 
     abstract void result(Vector<Address> result);
 
-    static class Address {
+    static class Address implements Serializable {
         String address;
         String name;
         double lat;
@@ -32,13 +33,11 @@ public abstract class SearchRequest {
 
             @Override
             void showError(String error) {
-                State.appendLog("error...");
                 SearchRequest.this.showError(error);
             }
 
             @Override
             void result(Vector<Address> result) {
-                State.appendLog("result " + result.size());
                 if (result.size() > 0) {
                     SearchRequest.this.result(result);
                     return;
@@ -56,7 +55,6 @@ public abstract class SearchRequest {
 
                     @Override
                     void result(Vector<Address> result) {
-                        State.appendLog("result " + result.size());
                         if (result.size() > 0) {
                             SearchRequest.this.result(result);
                             return;
@@ -74,19 +72,15 @@ public abstract class SearchRequest {
 
                             @Override
                             void result(Vector<Address> result) {
-                                State.appendLog("res " + result.size());
                                 SearchRequest.this.result(result);
                             }
                         };
                         req.execute(query);
-                        State.appendLog("Execute location request " + query);
                     }
                 };
-                State.appendLog("execute request " + query);
                 req.execute(query, "50000");
             }
         };
-        State.appendLog("execute near request " + query);
         request.execute(query, "1000");
     }
 

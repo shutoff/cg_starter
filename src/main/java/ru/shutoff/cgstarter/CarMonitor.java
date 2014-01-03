@@ -39,6 +39,8 @@ public class CarMonitor extends BroadcastReceiver {
     float[] magnetic;
     float[] orientation;
 
+    boolean force_exit;
+
     @Override
     public void onReceive(final Context context, Intent intent) {
         if (intent == null)
@@ -93,10 +95,7 @@ public class CarMonitor extends BroadcastReceiver {
             String interval = preferences.getString(State.POWER_TIME, "");
             if (State.inInterval(interval)) {
                 orientation = null;
-                int power_delay = preferences.getInt(State.POWER_DELAY, 0);
                 if (preferences.getBoolean(State.VERTICAL, true)) {
-                    if (power_delay == 0)
-                        power_delay = 800;
                     if (sensorEventListener == null) {
                         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
                         if (sensorAccelerometer == null)
@@ -132,9 +131,7 @@ public class CarMonitor extends BroadcastReceiver {
                         }
                     }
                 }
-                if (power_delay == 0)
-                    power_delay = 1;
-                power_timer = new CountDownTimer(power_delay * 1000, power_delay * 1000) {
+                power_timer = new CountDownTimer(2000, 2000) {
                     @Override
                     public void onTick(long millisUntilFinished) {
 
@@ -185,6 +182,7 @@ public class CarMonitor extends BroadcastReceiver {
                     @Override
                     public void onFinish() {
                         power_kill_timer = null;
+                        OnExitService.force_exit = true;
                         killCG(context);
                     }
                 };
@@ -313,6 +311,7 @@ public class CarMonitor extends BroadcastReceiver {
                         @Override
                         public void onFinish() {
                             dock_kill_timer = null;
+                            OnExitService.force_exit = true;
                             killCG(context);
                         }
                     };
@@ -322,20 +321,15 @@ public class CarMonitor extends BroadcastReceiver {
     }
 
     static void killCG(Context context) {
-        State.appendLog("killCG");
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
-        if (procInfos == null) {
-            State.appendLog("CG is not running");
+        if (procInfos == null)
             return;
-        }
         int i;
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(State.CG_PACKAGE)) {
-                State.appendLog("kill " + proc.pid);
-                SuperUserPreference.doRoot(context, "kill " + proc.pid);
-            }
+            if (proc.processName.equals(State.CG_PACKAGE))
+                State.doRoot(context, "kill " + proc.pid);
         }
     }
 }

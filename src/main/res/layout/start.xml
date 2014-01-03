@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="5dp">
+
+        <TextView
+            android:id="@+id/auto_pause_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <SeekBar
+            android:id="@+id/auto_pause"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="18"
+            android:layout_margin="8dp" />
+
+        <TextView
+            android:id="@+id/inactive_pause_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <SeekBar
+            android:id="@+id/inactive_pause"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="175"
+            android:layout_margin="8dp" />
+
+        <Spinner
+            android:id="@+id/inactive_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <CheckBox
+            android:id="@+id/carmode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/carmode"
+            android:textStyle="bold"
+            android:paddingTop="5dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/carmode_sum"
+            android:paddingLeft="10dp"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <CheckBox
+            android:id="@+id/kill_car"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/kill_cg"
+            android:textStyle="bold"
+            android:paddingTop="5dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/kill_car"
+            android:paddingLeft="10dp"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <LinearLayout
+            android:id="@+id/power_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/powermode"
+                android:textStyle="bold"
+                android:paddingTop="5dp"
+                android:paddingLeft="28dp"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <TextView
+                android:id="@+id/powertime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/kill_power"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/kill_cg"
+            android:textStyle="bold"
+            android:paddingTop="5dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/kill_power"
+            android:paddingLeft="10dp"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <CheckBox
+            android:id="@+id/vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/vertical"
+            android:textStyle="bold"
+            android:paddingTop="5dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:id="@+id/sensor_vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sensor_unknown"
+            android:paddingLeft="10dp"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <CheckBox
+            android:id="@+id/mapcam"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/mapcam"
+            android:textStyle="bold"
+            android:paddingTop="5dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <CheckBox
+            android:id="@+id/strelka"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/strelka"
+            android:textStyle="bold"
+            android:paddingTop="5dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/start_point"
+            android:textStyle="bold"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:paddingTop="10dp" />
+
+        <Spinner
+            android:id="@+id/start_point"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <LinearLayout
+            android:id="@+id/rta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <CheckBox
+                android:id="@+id/remove_rta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/remove_rta"
+                android:textStyle="bold"
+                android:paddingTop="5dp"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <TextView
+                android:id="@+id/sensor_vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/remove_rta_sum"
+                android:paddingLeft="10dp"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -1,6 +1,9 @@
 package ru.shutoff.cgstarter;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.res.TypedArray;
 import android.preference.DialogPreference;
 import android.util.AttributeSet;
@@ -314,5 +317,37 @@ public class TimePreference extends DialogPreference {
         int hours = time / 60;
         int min = time % 60;
         return String.format("%02d:%02d", hours, min);
+    }
+
+    boolean positive_click;
+
+    void showDialog() {
+        Context context = getContext();
+        positive_click = false;
+        AlertDialog.Builder builder = new AlertDialog.Builder(context)
+                .setTitle(getTitle())
+                .setPositiveButton(getPositiveButtonText(), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        positive_click = true;
+                    }
+                })
+                .setNegativeButton(getNegativeButtonText(), null);
+
+        View contentView = onCreateDialogView();
+        onBindDialogView(contentView);
+        builder.setView(contentView);
+
+        onPrepareDialogBuilder(builder);
+
+        final Dialog dialog = builder.create();
+        dialog.show();
+
+        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                onDialogClosed(positive_click);
+            }
+        });
     }
 }

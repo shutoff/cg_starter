@@ -19,6 +19,8 @@ import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
@@ -117,6 +119,7 @@ public class OnExitService extends Service {
 
     WindowManager.LayoutParams layoutParams;
 
+    BroadcastReceiver networkReciever;
     TelephonyManager tm;
 
     boolean phone;
@@ -135,6 +138,7 @@ public class OnExitService extends Service {
 
     boolean show_overlay;
     boolean foreground;
+    boolean inactive_run;
 
     View hudActive;
     View hudInactive;
@@ -152,11 +156,13 @@ public class OnExitService extends Service {
     PingTask pingTask;
     BroadcastReceiver br;
 
-    HttpTask fetcher;
     LocationManager locationManager;
     LocationListener netListener;
     LocationListener gpsListener;
 
+    long fetcher_time;
+
+    static boolean force_exit;
     static Location currentBestLocation;
     View.OnClickListener iconListener;
 
@@ -292,8 +298,8 @@ public class OnExitService extends Service {
             locationManager.removeUpdates(netListener);
         if (gpsListener != null)
             locationManager.removeUpdates(gpsListener);
-        if ((fetcher != null) && (fetcher.br != null))
-            unregisterReceiver(fetcher.br);
+        if (networkReciever != null)
+            unregisterReceiver(networkReciever);
         super.onDestroy();
     }
 
@@ -343,7 +349,8 @@ public class OnExitService extends Service {
         }
         if (action.equals(TIMER)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            if (!isRunCG(this)) {
+            if (!isRunCG(this) && (force_exit || (hudInactive == null))) {
+                force_exit = false;
                 alarmMgr.cancel(pi);
                 SharedPreferences.Editor ed = preferences.edit();
                 int rotate = preferences.getInt(State.SAVE_ROTATE, 0);
@@ -411,54 +418,60 @@ public class OnExitService extends Service {
                     sendBroadcast(i);
                 }
                 ed.commit();
-                if ((fetcher != null) && (fetcher.br != null)) {
-                    unregisterReceiver(fetcher.br);
-                    fetcher.br = null;
+                if (networkReciever != null) {
+                    unregisterReceiver(networkReciever);
+                    networkReciever = null;
                 }
                 stopSelf();
-            } else {
-                setPhoneListener();
-                if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudApps != null)) {
-                    if (landscape != isLandscape()) {
-                        landscape = !landscape;
-                        if (hudActive != null) {
-                            hideActiveOverlay();
-                            showActiveOverlay();
-                        }
-                        if (hudNotification != null)
-                            hideNotification();
-                        if (hudInactive != null) {
-                            hideInactiveOverlay();
-                            showInactiveOverlay();
-                        }
-                        if (hudApps != null) {
-                            hideApps();
-                            showApps();
-                        }
-                    }
-                }
-                if (show_overlay) {
-                    if (isActiveCG(this)) {
+                return START_NOT_STICKY;
+            }
+            setPhoneListener();
+            if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudApps != null)) {
+                if (landscape != isLandscape()) {
+                    landscape = !landscape;
+                    if (hudActive != null) {
+                        hideActiveOverlay();
                         showActiveOverlay();
-                    } else {
-                        showInactiveOverlay();
                     }
-                }
-                if ((apps.size() > 0) && !setup_button) {
-                    if (isActiveCG(this)) {
+                    if (hudNotification != null)
+                        hideNotification();
+                    if (hudInactive != null) {
                         hideInactiveOverlay();
-                        showApps();
-                    } else {
                         showInactiveOverlay();
                     }
-                }
-                if (preferences.getBoolean(State.PING, false))
-                    ping();
-                if ((yandex_finish_lat != 0) || (yandex_finish_lon != 0)) {
-                    if (!isRun(this, "ru.yandex.yandexnavi")) {
-                        yandex_finish_lat = 0;
-                        yandex_finish_lon = 0;
+                    if (hudApps != null) {
+                        hideApps();
+                        showApps();
                     }
+                }
+            }
+            if (show_overlay) {
+                if (isActiveCG(this)) {
+                    showActiveOverlay();
+                } else {
+                    boolean run = isRunCG(this);
+                    if (run != inactive_run)
+                        hideInactiveOverlay();
+                    showInactiveOverlay();
+                }
+            }
+            if ((apps.size() > 0) && !setup_button) {
+                if (isActiveCG(this)) {
+                    hideInactiveOverlay();
+                    showApps();
+                } else {
+                    boolean run = isRunCG(this);
+                    if (run != inactive_run)
+                        hideInactiveOverlay();
+                    showInactiveOverlay();
+                }
+            }
+            if (preferences.getBoolean(State.PING, false))
+                ping();
+            if ((yandex_finish_lat != 0) || (yandex_finish_lon != 0)) {
+                if (!isRun(this, "ru.yandex.yandexnavi")) {
+                    yandex_finish_lat = 0;
+                    yandex_finish_lon = 0;
                 }
             }
             return START_STICKY;
@@ -892,12 +905,18 @@ public class OnExitService extends Service {
         layoutParams.y = position[1];
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        hudApps = inflater.inflate(isBig() ? R.layout.quick_launch_big : R.layout.quick_launch, null);
+        hudApps = inflater.inflate(R.layout.quick_launch, null);
+        int icon_size = preferences.getInt(State.QUICK_SIZE, isBig() ? 45 : 30);
+        ImageView iv = (ImageView) hudApps.findViewById(R.id.icon);
+        ViewGroup.LayoutParams ivLayoutParams = iv.getLayoutParams();
+        int size = ivLayoutParams.width * icon_size / 30;
+        ivLayoutParams.width = size;
+        ivLayoutParams.height = size;
+        iv.setLayoutParams(ivLayoutParams);
 
         WindowManager.LayoutParams lp = layoutParams;
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        ImageView iv = (ImageView) hudApps.findViewById(R.id.icon);
         if (isFull) {
             if (iconListener == null) {
                 iconListener = new View.OnClickListener() {
@@ -1213,10 +1232,26 @@ public class OnExitService extends Service {
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudInactive = inflater.inflate(R.layout.icon, null);
+
+        ImageView ivIcon = (ImageView) hudInactive.findViewById(R.id.photo);
+        int icon_size = preferences.getInt(State.QUICK_SIZE, isBig() ? 45 : 30);
+        ViewGroup.LayoutParams ivLayoutParams = ivIcon.getLayoutParams();
+        int size = ivLayoutParams.width * icon_size / 30;
+        ivLayoutParams.width = size;
+        ivLayoutParams.height = size;
+        ivIcon.setLayoutParams(ivLayoutParams);
+
         try {
-            ImageView ivIcon = (ImageView) hudInactive.findViewById(R.id.photo);
             PackageManager manager = getPackageManager();
-            ivIcon.setImageDrawable(manager.getApplicationIcon(State.CG_PACKAGE));
+            Drawable drawable = manager.getApplicationIcon(State.CG_PACKAGE);
+            inactive_run = isRunCG(this);
+            if (!inactive_run) {
+                ColorMatrix matrix = new ColorMatrix();
+                matrix.setSaturation(0);
+                ColorMatrixColorFilter filter = new ColorMatrixColorFilter(matrix);
+                drawable.setColorFilter(filter);
+            }
+            ivIcon.setImageDrawable(drawable);
         } catch (Exception ex) {
             // ignore
         }
@@ -1895,7 +1930,6 @@ public class OnExitService extends Service {
 
         @Override
         protected void onPostExecute(Integer lvl) {
-            fetcher = null;
             if (br != null)
                 unregisterReceiver(br);
             if (lvl != null) {
@@ -1940,38 +1974,32 @@ public class OnExitService extends Service {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         long upd_time = preferences.getLong(State.UPD_TIME, 0);
         long interval = new Date().getTime() - upd_time;
-        State.appendLog("fetcher: " + ((fetcher == null) ? "null" : "not null"));
-        State.appendLog("interval " + interval);
-        if (currentBestLocation == null) {
-            State.appendLog("location unknown");
-        } else {
-            State.appendLog("? " + currentBestLocation.getLatitude() + "," + currentBestLocation.getLongitude());
-        }
-        if ((fetcher == null) && (interval > UPD_INTERVAL) && (currentBestLocation != null)) {
-            fetcher = new HttpTask();
+        if ((interval > UPD_INTERVAL) && (currentBestLocation != null)) {
             final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             if ((activeNetwork != null) && activeNetwork.isConnected()) {
-                yandex_error = false;
-                State.appendLog("Start yandex fetcher");
-                fetcher.execute();
+                if (fetcher_time < new Date().getTime()) {
+                    yandex_error = false;
+                    fetcher_time = new Date().getTime() + 180000;
+                    HttpTask fetcher = new HttpTask();
+                    fetcher.execute();
+                }
             } else {
-                fetcher.br = new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-                        if ((activeNetwork != null) && activeNetwork.isConnected()) {
-                            if (fetcher.br != null) {
-                                unregisterReceiver(fetcher.br);
-                                fetcher.br = null;
+                if (networkReciever == null) {
+                    networkReciever = new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                            if ((activeNetwork != null) && activeNetwork.isConnected()) {
+                                unregisterReceiver(networkReciever);
+                                networkReciever = null;
+                                getYandexData();
                             }
-                            setYandexError(false);
-                            fetcher.execute();
                         }
-                    }
-                };
+                    };
+                    registerReceiver(networkReciever, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+                }
                 yandex_error = true;
-                registerReceiver(fetcher.br, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
             }
         }
         if (interval > VALID_INTEVAL)
