@@ -39,8 +39,6 @@ public class CarMonitor extends BroadcastReceiver {
     float[] magnetic;
     float[] orientation;
 
-    boolean force_exit;
-
     @Override
     public void onReceive(final Context context, Intent intent) {
         if (intent == null)

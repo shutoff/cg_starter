@@ -8,12 +8,20 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Calendar;
+import java.util.Date;
 
 public class State {
 
@@ -25,8 +33,6 @@ public class State {
     static final String CAR_MODE = "carmode";
     static final String CAR_STATE = "car_state";
     static final String POWER_TIME = "powertime";
-    static final String ABOUT = "about";
-    static final String DONATE = "donate";
     static final String BT = "bt";
     static final String BT_DEVICES = "bt_devices";
     static final String VOLUME = "volume";
@@ -45,7 +51,6 @@ public class State {
     static final String SAVE_LEVEL = "save_level";
     static final String GPS = "gps";
     static final String GPS_SAVE = "gps_save";
-    static final String URL = "URL";
     static final String SAVE_WIFI = "save_wifi";
     static final String SAVE_DATA = "save_data";
     static final String START = "start";
@@ -290,13 +295,12 @@ public class State {
                 return true;
         } catch (Exception ex) {
             Toast toast = Toast.makeText(context, ex.toString(), Toast.LENGTH_LONG);
+            toast.show();
             // State.appendLog("su error " + command + " - " + ex.toString());
             // ignore
         }
         return false;
     }
-
-/*
 
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
@@ -325,6 +329,5 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
-*/
 
 }

@@ -23,8 +23,9 @@ public class SendLocationActivity extends GpsActivity {
     Button current;
     TextView current_info;
 
-    boolean location_changed;
     AddressRequest request;
+
+    boolean location_changed;
 
     double addr_lat;
     double addr_lon;

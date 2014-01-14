@@ -208,7 +208,6 @@ public class OnExitService extends Service {
     public void onCreate() {
         super.onCreate();
 
-/*
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable ex) {
@@ -216,7 +215,6 @@ public class OnExitService extends Service {
                 ex.printStackTrace();
             }
         });
-*/
 
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
@@ -423,7 +421,7 @@ public class OnExitService extends Service {
                     networkReciever = null;
                 }
                 stopSelf();
-                return START_NOT_STICKY;
+                return START_STICKY;
             }
             setPhoneListener();
             if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudApps != null)) {
@@ -1876,8 +1874,6 @@ public class OnExitService extends Service {
 
     class HttpTask extends AsyncTask<Void, Void, Integer> {
 
-        BroadcastReceiver br;
-
         @Override
         protected Integer doInBackground(Void... params) {
             if (currentBestLocation == null)
@@ -1930,8 +1926,6 @@ public class OnExitService extends Service {
 
         @Override
         protected void onPostExecute(Integer lvl) {
-            if (br != null)
-                unregisterReceiver(br);
             if (lvl != null) {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
                 long now = new Date().getTime();
@@ -1952,15 +1946,15 @@ public class OnExitService extends Service {
                         showApps();
                 }
             } else {
-                setYandexError(true);
+                setYandexError();
             }
         }
     }
 
-    void setYandexError(boolean error) {
-        if (error == yandex_error)
+    void setYandexError() {
+        if (yandex_error)
             return;
-        yandex_error = error;
+        yandex_error = true;
         long now = new Date().getTime();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
         if (!setup_button && (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)) {

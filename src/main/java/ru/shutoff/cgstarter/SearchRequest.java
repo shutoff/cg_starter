@@ -7,8 +7,6 @@ import java.util.Vector;
 
 public abstract class SearchRequest {
 
-    String error;
-
     abstract Location getLocation();
 
     abstract void showError(String error);
