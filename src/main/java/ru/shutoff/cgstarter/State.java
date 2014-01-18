@@ -8,20 +8,12 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.widget.Toast;
 
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Calendar;
-import java.util.Date;
 
 public class State {
 
@@ -303,7 +295,6 @@ public class State {
     }
 
 /*
-
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -331,7 +322,6 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
-
 */
 
 }

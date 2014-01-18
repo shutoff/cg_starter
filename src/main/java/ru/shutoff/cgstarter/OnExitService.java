@@ -155,7 +155,7 @@ public class OnExitService extends Service {
     String screenshots_path;
 
     PingTask pingTask;
-    BroadcastReceiver br;
+    BroadcastReceiver phoneReceiver;
 
     LocationManager locationManager;
     LocationListener netListener;
@@ -292,8 +292,8 @@ public class OnExitService extends Service {
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
         if (observer != null)
             observer.startWatching();
-        if (br != null)
-            unregisterReceiver(br);
+        if (phoneReceiver != null)
+            unregisterReceiver(phoneReceiver);
         if (foreground)
             stopForeground(true);
         hideOverlays(null);
@@ -313,8 +313,8 @@ public class OnExitService extends Service {
         String action = intent.getAction();
         if (action == null)
             return START_STICKY;
-        if (br == null) {
-            br = new BroadcastReceiver() {
+        if (phoneReceiver == null) {
+            phoneReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     if (intent.getAction().equals(SMS_RECEIVED)) {
@@ -330,7 +330,7 @@ public class OnExitService extends Service {
                 filter.addAction(SMS_RECEIVED);
                 filter.setPriority(10);
             }
-            registerReceiver(br, filter);
+            registerReceiver(phoneReceiver, filter);
         }
         if (action.equals(START)) {
             alarmMgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + TIMEOUT, TIMEOUT, pi);
@@ -542,6 +542,32 @@ public class OnExitService extends Service {
         }
         return START_STICKY;
     }
+
+/*
+    double getNoise() {
+        try {
+            int sampleRate = 8000;
+            int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT);
+            AudioRecord audio = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+            audio.startRecording();
+            short[] buffer = new short[bufferSize];
+            int bufferReadResult = audio.read(buffer, 0, bufferSize);
+            if (bufferReadResult > 0){
+                double sumLevel = 0;
+                for (int i = 0; i < bufferReadResult; i++) {
+                    sumLevel += Math.abs(buffer[i]);
+                }
+                return sumLevel / bufferReadResult;
+            }
+        } catch (Exception e) {
+            State.print(e);
+        }
+        return 0;
+    }
+*/
 
     void ping() {
         if (pingTask != null)
@@ -1668,26 +1694,8 @@ public class OnExitService extends Service {
         if (mActivityManager == null)
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         try {
-            for (ActivityManager.RunningAppProcessInfo info : mActivityManager.getRunningAppProcesses()) {
-                if (info.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-                        && !isRunningService(info.processName)
-                        && info.processName.equals(State.CG_PACKAGE))
-                    return true;
-            }
-        } catch (Exception ex) {
-            // ignore
-        }
-        return false;
-    }
-
-    static boolean isRunningService(String processname) {
-        if (processname == null || processname.equals(""))
-            return false;
-        try {
-            for (ActivityManager.RunningServiceInfo service : mActivityManager.getRunningServices(9999)) {
-                if (service.process.equals(processname))
-                    return true;
-            }
+            List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
+            return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_PACKAGE);
         } catch (Exception ex) {
             // ignore
         }
@@ -2274,4 +2282,43 @@ public class OnExitService extends Service {
             context.startActivity(intent);
         }
     }
+
+/*
+    static class Kalman1D {
+
+        final double Q;
+        final double R;
+        final double F;
+        final double H;
+
+        double State;
+        double Covariance;
+
+        Kalman1D(double q, double r, double f, double h) {
+            Q = q;
+            R = r;
+            F = f;
+            H = h;
+        }
+
+        public void setState(double state, double covariance) {
+            State = state;
+            Covariance = covariance;
+        }
+
+        public double correct(double data) {
+            //time update - prediction
+            double X0 = F * State;
+            double P0 = F * Covariance * F + Q;
+
+            //measurement update - correction
+            double K = H * P0 / (H * P0 * H + R);
+            State = X0 + K * (data - H * X0);
+            Covariance = (1 - K * H) * P0;
+
+            return State;
+        }
+    }
+*/
+
 }

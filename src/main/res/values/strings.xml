@@ -201,4 +201,5 @@
         <item>Exit application</item>
     </string-array>
     <string name="text_search">Search</string>
+    <string name="not_found">Not found</string>
 </resources>
