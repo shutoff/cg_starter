@@ -202,4 +202,11 @@
     </string-array>
     <string name="text_search">Search</string>
     <string name="not_found">Not found</string>
+    <string name="call_contact">Contact</string>
+    <string name="no_phone">No phone number for contact</string>
+    <string name="select_phone">Select phone</string>
+    <string name="phone_home">home</string>
+    <string name="phone_work">work</string>
+    <string name="phone_mobile">mobile</string>
+    <string name="last_call">Call last number</string>
 </resources>

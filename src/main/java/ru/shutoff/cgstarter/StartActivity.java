@@ -14,6 +14,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class StartActivity extends GpsActivity {
 
@@ -36,6 +38,22 @@ public class StartActivity extends GpsActivity {
         if (q == null) {
             finish();
             return;
+        }
+        Pattern pat = Pattern.compile("loc:([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
+        Matcher matcher = pat.matcher(q);
+        if (matcher.find()) {
+            try {
+                double lat = Double.parseDouble(matcher.group(1));
+                double lon = Double.parseDouble(matcher.group(2));
+                if (OnExitService.isRunCG(StartActivity.this))
+                    CarMonitor.killCG(StartActivity.this);
+                CarMonitor.startCG(StartActivity.this, lat + "|" + lon, null);
+                setResult(RESULT_OK);
+                finish();
+                return;
+            } catch (Exception ex) {
+                // ignore
+            }
         }
         final String query = q;
         setContentView(R.layout.list);

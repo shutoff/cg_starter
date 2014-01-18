@@ -1,15 +1,25 @@
 package ru.shutoff.cgstarter;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.provider.BaseColumns;
+import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,9 +29,11 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mobeta.android.dslv.DragSortListView;
 
+import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -31,6 +43,10 @@ public class AppsFragment extends Fragment {
 
     Vector<String> apps;
     SharedPreferences preferences;
+
+    DragSortListView lv;
+    BaseAdapter adapter;
+
     int app_index;
     int app_top;
 
@@ -46,6 +62,10 @@ public class AppsFragment extends Fragment {
                 String[] component = app.split("/");
                 if (component.length != 2)
                     continue;
+                if (component[0].equals("tel")) {
+                    apps.add(app);
+                    continue;
+                }
                 boolean install = false;
                 try {
                     Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
@@ -66,8 +86,8 @@ public class AppsFragment extends Fragment {
                     apps.add(app);
             }
         }
-        final DragSortListView lv = (DragSortListView) v.findViewById(R.id.apps);
-        final BaseAdapter adapter = new BaseAdapter() {
+        lv = (DragSortListView) v.findViewById(R.id.apps);
+        adapter = new BaseAdapter() {
             @Override
             public int getCount() {
                 return apps.size();
@@ -88,9 +108,51 @@ public class AppsFragment extends Fragment {
                 View v = convertView;
                 if (v == null)
                     v = inflater.inflate(R.layout.quick_item, null);
+                TextView tv = (TextView) v.findViewById(R.id.name);
+                TextView tvNumber = (TextView) v.findViewById(R.id.number);
+                ImageView ivIcon = (ImageView) v.findViewById(R.id.icon);
+                tvNumber.setVisibility(View.GONE);
                 try {
                     String name = apps.get(position);
                     String[] component = name.split("/");
+                    if (component[0].equals("tel")) {
+                        tv.setText(component[1]);
+                        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(component[1]));
+                        ContentResolver contentResolver = getActivity().getContentResolver();
+                        Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
+                                ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+                        ivIcon.setImageResource(R.drawable.call_contact);
+                        try {
+                            if (contactLookup != null && contactLookup.getCount() > 0) {
+                                contactLookup.moveToNext();
+                                tv.setText(contactLookup.getString(contactLookup.getColumnIndex(ContactsContract.Data.DISPLAY_NAME)));
+                                tvNumber.setText(component[1]);
+                                tvNumber.setVisibility(View.VISIBLE);
+                                long contactId = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
+                                Uri contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId);
+                                Uri photoUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.CONTENT_DIRECTORY);
+                                Cursor cursor = getActivity().getContentResolver().query(photoUri, new String[]{ContactsContract.Contacts.Photo.PHOTO}, null, null, null);
+                                if (cursor != null) {
+                                    try {
+                                        if (cursor.moveToFirst()) {
+                                            byte[] data = cursor.getBlob(0);
+                                            if (data != null) {
+                                                Bitmap photo = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
+                                                ivIcon.setImageBitmap(photo);
+                                            }
+                                        }
+                                    } finally {
+                                        cursor.close();
+                                    }
+                                }
+                            }
+                        } finally {
+                            if (contactLookup != null) {
+                                contactLookup.close();
+                            }
+                        }
+                        return v;
+                    }
                     Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
                     mainIntent.setPackage(component[0]);
                     List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
@@ -98,9 +160,7 @@ public class AppsFragment extends Fragment {
                         if (info.activityInfo == null)
                             continue;
                         if (info.activityInfo.name.equals(component[1])) {
-                            TextView tv = (TextView) v.findViewById(R.id.name);
                             tv.setText(info.loadLabel(pm));
-                            ImageView ivIcon = (ImageView) v.findViewById(R.id.icon);
                             try {
                                 ivIcon.setImageDrawable(info.loadIcon(pm));
                                 ivIcon.setVisibility(View.VISIBLE);
@@ -216,10 +276,11 @@ public class AppsFragment extends Fragment {
                             if (name.equals("VoiceSearch") && VoiceSearch.isAvailable(getActivity()))
                                 apps.add(info);
                             if (State.hasTelephony(getActivity())) {
-                                if (name.equals("SMSActivity") || name.equals("SendLocationActivity"))
+                                if (name.equals("SMSActivity") || name.equals("SendLocationActivity") || name.equals("CallContactActivity") || name.equals("LastCallActivity"))
                                     apps.add(info);
                             }
                         }
+
                         Collections.sort(other, new Comparator<ResolveInfo>() {
                             @Override
                             public int compare(ResolveInfo lhs, ResolveInfo rhs) {
@@ -282,7 +343,13 @@ public class AppsFragment extends Fragment {
                         if (view.getTag() == null)
                             return;
                         ActivityInfo info = (ActivityInfo) view.getTag();
-                        apps.add(info.packageName + "/" + info.name);
+                        String name = info.packageName + "/" + info.name;
+                        if (name.equals("ru.shutoff.cgstarter/ru.shutoff.cgstarter.CallContactActivity")) {
+                            Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+                            startActivityForResult(intent, 1);
+                            return;
+                        }
+                        apps.add(name);
                         adapter.notifyDataSetChanged();
                         lv.setSelection(apps.size() - 1);
                         saveValue();
@@ -301,6 +368,100 @@ public class AppsFragment extends Fragment {
         return v;
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if ((resultCode == Activity.RESULT_OK) && (requestCode == 1)) {
+            final Vector<PhoneWithType> allNumbers = new Vector<PhoneWithType>();
+            try {
+                Uri result = data.getData();
+                String id = result.getLastPathSegment();
+                Cursor cursor = getActivity().getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=?", new String[]{id}, null);
+                int phoneIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA);
+                int typeIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA2);
+
+                if (cursor.moveToFirst()) {
+                    while (!cursor.isAfterLast()) {
+                        PhoneWithType phone = new PhoneWithType();
+                        phone.number = cursor.getString(phoneIdx);
+                        phone.type = cursor.getInt(typeIdx);
+                        allNumbers.add(phone);
+                        cursor.moveToNext();
+                    }
+                }
+            } catch (Exception ex) {
+                // ignore
+            }
+            if (allNumbers.size() == 0) {
+                Toast toast = Toast.makeText(getActivity(), R.string.no_phone, Toast.LENGTH_SHORT);
+                toast.show();
+                return;
+            }
+            if (allNumbers.size() == 1) {
+                addPhoneNumber(allNumbers.get(0).number);
+                return;
+            }
+            ListView list = new ListView(getActivity());
+            list.setAdapter(new BaseAdapter() {
+                @Override
+                public int getCount() {
+                    return allNumbers.size();
+                }
+
+                @Override
+                public Object getItem(int position) {
+                    return allNumbers.get(position);
+                }
+
+                @Override
+                public long getItemId(int position) {
+                    return position;
+                }
+
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    View v = convertView;
+                    if (v == null) {
+                        LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        v = inflater.inflate(R.layout.number_item, null);
+                    }
+                    TextView tvNumber = (TextView) v.findViewById(R.id.number);
+                    tvNumber.setText(allNumbers.get(position).number);
+                    TextView tvType = (TextView) v.findViewById(R.id.type);
+                    String type = "";
+                    switch (allNumbers.get(position).type) {
+                        case ContactsContract.CommonDataKinds.Phone.TYPE_HOME:
+                            type = getString(R.string.phone_home);
+                            break;
+                        case ContactsContract.CommonDataKinds.Phone.TYPE_WORK:
+                            type = getString(R.string.phone_work);
+                            break;
+                        case ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE:
+                            type = getString(R.string.phone_mobile);
+                            break;
+                    }
+                    tvType.setText(type);
+                    return v;
+                }
+            });
+            final AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.select_phone)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setView(list)
+                    .create();
+            dialog.show();
+            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    addPhoneNumber(allNumbers.get(position).number);
+                    dialog.dismiss();
+                }
+            });
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+
+    }
+
     void saveValue() {
         String res = null;
         for (String app : apps) {
@@ -317,5 +478,17 @@ public class AppsFragment extends Fragment {
             ed.putString(State.APPS, res);
         }
         ed.commit();
+    }
+
+    void addPhoneNumber(String number) {
+        apps.add("tel/" + number);
+        adapter.notifyDataSetChanged();
+        lv.setSelection(apps.size() - 1);
+        saveValue();
+    }
+
+    static class PhoneWithType {
+        String number;
+        int type;
     }
 }

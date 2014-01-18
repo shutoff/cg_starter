@@ -23,6 +23,7 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
@@ -73,6 +74,7 @@ import org.apache.http.HttpStatus;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -261,6 +263,43 @@ public class OnExitService extends Service {
             String[] component = app.split("/");
             if (component.length != 2)
                 continue;
+            if (component[0].equals("tel")) {
+                App a = new App();
+                a.name = app;
+                a.icon = getResources().getDrawable(R.drawable.call_contact);
+                Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(component[1]));
+                ContentResolver contentResolver = getContentResolver();
+                Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
+                        ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+                try {
+                    if (contactLookup != null && contactLookup.getCount() > 0) {
+                        contactLookup.moveToNext();
+                        long contactId = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
+                        Uri contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId);
+                        Uri photoUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.CONTENT_DIRECTORY);
+                        Cursor cursor = getContentResolver().query(photoUri, new String[]{ContactsContract.Contacts.Photo.PHOTO}, null, null, null);
+                        if (cursor != null) {
+                            try {
+                                if (cursor.moveToFirst()) {
+                                    byte[] data = cursor.getBlob(0);
+                                    if (data != null) {
+                                        Bitmap photo = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
+                                        a.icon = new BitmapDrawable(photo);
+                                    }
+                                }
+                            } finally {
+                                cursor.close();
+                            }
+                        }
+                    }
+                } finally {
+                    if (contactLookup != null) {
+                        contactLookup.close();
+                    }
+                }
+                apps.add(a);
+                continue;
+            }
             Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
             mainIntent.setPackage(component[0]);
             List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
@@ -997,6 +1036,13 @@ public class OnExitService extends Service {
                         ed.commit();
                         App app = apps.get((Integer) v.getTag());
                         String[] component = app.name.split("/");
+                        if (component[0].equals("tel")) {
+                            Intent intent = new Intent(Intent.ACTION_CALL);
+                            intent.setData(Uri.parse("tel:" + component[1]));
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                            return;
+                        }
                         Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
                         mainIntent.setPackage(component[0]);
                         List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);

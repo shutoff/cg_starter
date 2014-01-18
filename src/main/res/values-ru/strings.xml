@@ -180,4 +180,11 @@
     </string-array>
     <string name="text_search">Поиск</string>
     <string name="not_found">Ничего не найдено</string>
+    <string name="call_contact">Контакт</string>
+    <string name="no_phone">Нет телефонного номера для контакта</string>
+    <string name="select_phone">Выберите номер</string>
+    <string name="phone_home">домашний</string>
+    <string name="phone_work">рабочий</string>
+    <string name="phone_mobile">мобильный</string>
+    <string name="last_call">Перезвонить не последний номер</string>
 </resources>

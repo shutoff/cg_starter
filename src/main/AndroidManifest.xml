@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
-    android:versionCode="23"
-    android:versionName="1.6">
+    android:versionCode="24"
+    android:versionName="1.6.1">
 
     <uses-sdk
         android:minSdkVersion="7"
@@ -31,6 +31,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
 
     <uses-feature
         android:name="android.hardware.bluetooth"
@@ -40,6 +41,9 @@
         android:required="false" />
     <uses-feature
         android:name="android.hardware.telephony"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.microphone"
         android:required="false" />
 
     <application
@@ -100,6 +104,28 @@
         </activity>
 
         <activity
+            android:name=".CallContactActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme"
+            android:label="@string/call_contact"
+            android:icon="@drawable/call_contact">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".LastCallActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme"
+            android:label="@string/last_call"
+            android:icon="@drawable/call_contact">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".VoiceSearch"
             android:launchMode="singleTop"
             android:label="@string/voice_search"
@@ -150,6 +176,26 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="google.navigation" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="maps.google.com" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="http"
+                    android:host="maps.google.com" />
             </intent-filter>
         </activity>
 
