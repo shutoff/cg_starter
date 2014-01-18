@@ -28,6 +28,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -65,17 +66,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
-import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -86,6 +82,9 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector;
@@ -116,6 +115,8 @@ public class OnExitService extends Service {
     PendingIntent piAfterCall;
 
     PhoneStateListener phoneListener;
+
+    static int background_count;
 
     WindowManager.LayoutParams layoutParams;
 
@@ -161,6 +162,8 @@ public class OnExitService extends Service {
     LocationListener gpsListener;
 
     long fetcher_time;
+    long last_run;
+    boolean cg_running;
 
     static boolean force_exit;
     static Location currentBestLocation;
@@ -173,7 +176,7 @@ public class OnExitService extends Service {
 
     final static long UPD_INTERVAL = 3 * 60 * 1000;
     final static long VALID_INTEVAL = 15 * 60 * 1000;
-    final static String TRAFFIC_URL = "http://api-maps.yandex.ru/services/traffic-info/1.0/?format=json&lang=ru-RU'";
+    final static String TRAFFIC_URL = "https://api.shutoff.ru/level?lat=$1&lng=$2";
 
     final static String YAN = "ru.yandex.yandexnavi";
 
@@ -208,6 +211,7 @@ public class OnExitService extends Service {
     public void onCreate() {
         super.onCreate();
 
+/*
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable ex) {
@@ -215,6 +219,7 @@ public class OnExitService extends Service {
                 ex.printStackTrace();
             }
         });
+*/
 
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
@@ -347,81 +352,116 @@ public class OnExitService extends Service {
         }
         if (action.equals(TIMER)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            if (!isRunCG(this) && (force_exit || (hudInactive == null))) {
-                force_exit = false;
-                alarmMgr.cancel(pi);
-                SharedPreferences.Editor ed = preferences.edit();
-                int rotate = preferences.getInt(State.SAVE_ROTATE, 0);
-                if (rotate > 0) {
+            if (isRunCG(this)) {
+                last_run = new Date().getTime();
+                cg_running = true;
+            } else {
+                if (background_count < 4)
+                    force_exit = true;
+                if (last_run + 600000 < new Date().getTime())
+                    force_exit = true;
+                if (force_exit || (hudInactive == null)) {
+                    force_exit = false;
+                    alarmMgr.cancel(pi);
+                    SharedPreferences.Editor ed = preferences.edit();
+                    int rotate = preferences.getInt(State.SAVE_ROTATE, 0);
+                    if (rotate > 0) {
+                        try {
+                            Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, rotate);
+                        } catch (Exception ex) {
+                            // ignore
+                        }
+                        ed.remove(State.SAVE_ROTATE);
+                    }
+                    rotate = preferences.getInt(State.SAVE_ORIENTATION, -1);
+                    if (rotate >= 0) {
+                        try {
+                            Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, Surface.ROTATION_0);
+                        } catch (Exception ex) {
+                            // ignore
+                        }
+                        ed.remove(State.SAVE_ORIENTATION);
+                    }
+                    if (preferences.getBoolean(State.GPS_SAVE, false)) {
+                        try {
+                            State.turnGPSOff(this);
+                        } catch (Exception ex) {
+                            // ignore
+                        }
+                        ed.remove(State.GPS_SAVE);
+                    }
+                    turnOffBT(this, "-");
+                    int channel = preferences.getInt(State.SAVE_CHANNEL, 0);
+                    if (channel > 0) {
+                        int level = preferences.getInt(State.SAVE_LEVEL, 0);
+                        AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                        audio.setStreamVolume(channel, level, 0);
+                        ed.remove(State.SAVE_LEVEL);
+                        ed.remove(State.SAVE_CHANNEL);
+                    }
+                    if (preferences.getBoolean(State.SAVE_WIFI, false)) {
+                        try {
+                            WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                            if (wifiManager != null)
+                                wifiManager.setWifiEnabled(true);
+                        } catch (Exception ex) {
+                            // ignore
+                        }
+                        ed.remove(State.SAVE_WIFI);
+                    }
+                    if (preferences.getBoolean(State.SAVE_DATA, false)) {
+                        enableMobileData(this, false);
+                        ed.remove(State.SAVE_DATA);
+                    }
                     try {
-                        Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, rotate);
+                        sendBroadcast(new Intent("com.latedroid.juicedefender.action.ALLOW_APN")
+                                .putExtra("tag", "cg_starter")
+                                .putExtra("reply", true));
                     } catch (Exception ex) {
                         // ignore
                     }
-                    ed.remove(State.SAVE_ROTATE);
+                    if (preferences.getBoolean(State.MAPCAM, false)) {
+                        Intent i = new Intent("info.mapcam.droid.SERVICE_STOP");
+                        sendBroadcast(i);
+                    }
+                    if (preferences.getBoolean(State.STRELKA, false)) {
+                        Intent i = new Intent("com.ivolk.StrelkaGPS.action.STOP_SERVICE");
+                        sendBroadcast(i);
+                    }
+                    ed.commit();
+                    if (networkReciever != null) {
+                        unregisterReceiver(networkReciever);
+                        networkReciever = null;
+                    }
+                    stopSelf();
+                    return START_NOT_STICKY;
                 }
-                rotate = preferences.getInt(State.SAVE_ORIENTATION, -1);
-                if (rotate >= 0) {
+                if (cg_running) {
+                    cg_running = false;
+                    AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                     try {
-                        Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, Surface.ROTATION_0);
+                        final MediaPlayer player = new MediaPlayer();
+                        Uri uri = Uri.parse("android.resource://ru.shutoff.cgstarter/raw/warning");
+                        player.setDataSource(this, uri);
+                        player.setAudioStreamType(AudioManager.STREAM_RING);
+                        player.setLooping(false);
+                        player.prepare();
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO) {
+                            player.start();
+                        } else {
+                            if (am.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
+                                @Override
+                                public void onAudioFocusChange(int focusChange) {
+                                    player.stop();
+                                }
+                            }, AudioManager.STREAM_NOTIFICATION, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                                player.start();
+                            }
+                        }
                     } catch (Exception ex) {
                         // ignore
                     }
-                    ed.remove(State.SAVE_ORIENTATION);
                 }
-                if (preferences.getBoolean(State.GPS_SAVE, false)) {
-                    try {
-                        State.turnGPSOff(this);
-                    } catch (Exception ex) {
-                        // ignore
-                    }
-                    ed.remove(State.GPS_SAVE);
-                }
-                turnOffBT(this, "-");
-                int channel = preferences.getInt(State.SAVE_CHANNEL, 0);
-                if (channel > 0) {
-                    int level = preferences.getInt(State.SAVE_LEVEL, 0);
-                    AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    audio.setStreamVolume(channel, level, 0);
-                    ed.remove(State.SAVE_LEVEL);
-                    ed.remove(State.SAVE_CHANNEL);
-                }
-                if (preferences.getBoolean(State.SAVE_WIFI, false)) {
-                    try {
-                        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-                        if (wifiManager != null)
-                            wifiManager.setWifiEnabled(true);
-                    } catch (Exception ex) {
-                        // ignore
-                    }
-                    ed.remove(State.SAVE_WIFI);
-                }
-                if (preferences.getBoolean(State.SAVE_DATA, false)) {
-                    enableMobileData(this, false);
-                    ed.remove(State.SAVE_DATA);
-                }
-                try {
-                    sendBroadcast(new Intent("com.latedroid.juicedefender.action.ALLOW_APN")
-                            .putExtra("tag", "cg_starter")
-                            .putExtra("reply", true));
-                } catch (Exception ex) {
-                    // ignore
-                }
-                if (preferences.getBoolean(State.MAPCAM, false)) {
-                    Intent i = new Intent("info.mapcam.droid.SERVICE_STOP");
-                    sendBroadcast(i);
-                }
-                if (preferences.getBoolean(State.STRELKA, false)) {
-                    Intent i = new Intent("com.ivolk.StrelkaGPS.action.STOP_SERVICE");
-                    sendBroadcast(i);
-                }
-                ed.commit();
-                if (networkReciever != null) {
-                    unregisterReceiver(networkReciever);
-                    networkReciever = null;
-                }
-                stopSelf();
-                return START_STICKY;
             }
             setPhoneListener();
             if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudApps != null)) {
@@ -443,6 +483,12 @@ public class OnExitService extends Service {
                     }
                 }
             }
+            if (isActiveCG(this)) {
+                background_count = 0;
+            } else {
+                background_count++;
+            }
+
             if (show_overlay) {
                 if (isActiveCG(this)) {
                     showActiveOverlay();
@@ -1872,47 +1918,45 @@ public class OnExitService extends Service {
         showApps();
     }
 
-    class HttpTask extends AsyncTask<Void, Void, Integer> {
+    class HttpTask extends AsyncTask<Object, Void, Integer> {
+
+        BroadcastReceiver br;
 
         @Override
-        protected Integer doInBackground(Void... params) {
-            if (currentBestLocation == null)
-                return null;
-            HttpClient httpclient = new DefaultHttpClient();
+        protected Integer doInBackground(Object... params) {
+            String url = params[0].toString();
             Reader reader = null;
+            HttpURLConnection connection = null;
             try {
-                HttpResponse response = httpclient.execute(new HttpGet(TRAFFIC_URL));
-                StatusLine statusLine = response.getStatusLine();
-                int status = statusLine.getStatusCode();
-                reader = new InputStreamReader(response.getEntity().getContent());
-                JsonObject result = JsonObject.readFrom(reader);
+                for (int i = 1; i < params.length; i++) {
+                    url = url.replace("$" + i, URLEncoder.encode(params[i].toString(), "UTF-8"));
+                }
+                URL u = new URL(url);
+                connection = (HttpURLConnection) u.openConnection();
+                InputStream in = new BufferedInputStream(connection.getInputStream());
+                int status = connection.getResponseCode();
+                reader = new InputStreamReader(in);
+                JsonValue res = JsonValue.readFrom(reader);
                 reader.close();
                 reader = null;
+                JsonObject result;
+                if (res.isObject()) {
+                    result = res.asObject();
+                } else {
+                    result = new JsonObject();
+                    result.set("data", res);
+                }
                 if (status != HttpStatus.SC_OK)
                     return null;
-                result = result.get("GeoObjectCollection").asObject();
-                JsonArray data = result.get("features").asArray();
-                int length = data.size();
-                for (int i = 0; i < length; i++) {
-                    result = data.get(i).asObject();
-                    JsonObject jams = result.get("properties").asObject();
-                    jams = jams.get("JamsMetaData").asObject();
-                    JsonValue lvl = jams.get("level");
-                    if (lvl == null)
-                        continue;
-                    int level = lvl.asInt();
-                    result = result.get("geometry").asObject();
-                    JsonArray coord = result.get("coordinates").asArray();
-                    double lat = coord.get(1).asDouble();
-                    double lon = coord.get(0).asDouble();
-                    double d = calc_distance(lat, lon, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
-                    if (d < 80000)
-                        return level + 1;
-                }
+                JsonValue level = result.get("lvl");
+                if (level != null)
+                    return level.asInt() + 1;
                 return 0;
             } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {
+                if (connection != null)
+                    connection.disconnect();
                 if (reader != null) {
                     try {
                         reader.close();
@@ -1946,15 +1990,15 @@ public class OnExitService extends Service {
                         showApps();
                 }
             } else {
-                setYandexError();
+                setYandexError(true);
             }
         }
     }
 
-    void setYandexError() {
-        if (yandex_error)
+    void setYandexError(boolean error) {
+        if (error == yandex_error)
             return;
-        yandex_error = true;
+        yandex_error = error;
         long now = new Date().getTime();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
         if (!setup_button && (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)) {
@@ -1972,11 +2016,15 @@ public class OnExitService extends Service {
             final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             if ((activeNetwork != null) && activeNetwork.isConnected()) {
+                if (networkReciever != null) {
+                    unregisterReceiver(networkReciever);
+                    networkReciever = null;
+                }
                 if (fetcher_time < new Date().getTime()) {
                     yandex_error = false;
                     fetcher_time = new Date().getTime() + 180000;
                     HttpTask fetcher = new HttpTask();
-                    fetcher.execute();
+                    fetcher.execute(TRAFFIC_URL, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
                 }
             } else {
                 if (networkReciever == null) {
@@ -2019,7 +2067,6 @@ public class OnExitService extends Service {
             // ignore
         }
         long GPSLocationTime = 0;
-        Date now = new Date();
         if (locationGPS != null)
             GPSLocationTime = locationGPS.getTime();
         long NetLocationTime = 0;

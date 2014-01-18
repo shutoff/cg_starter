@@ -178,4 +178,5 @@
         <item>Запустить СГ</item>
         <item>Выйти из приложения</item>
     </string-array>
+    <string name="text_search">Поиск</string>
 </resources>

@@ -200,4 +200,5 @@
         <item>Start CG</item>
         <item>Exit application</item>
     </string-array>
+    <string name="text_search">Search</string>
 </resources>

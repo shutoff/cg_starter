@@ -313,6 +313,7 @@ public class CarMonitor extends BroadcastReceiver {
                             killCG(context);
                         }
                     };
+                    dock_kill_timer.start();
                 }
             }
         }
@@ -326,8 +327,9 @@ public class CarMonitor extends BroadcastReceiver {
         int i;
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(State.CG_PACKAGE))
+            if (proc.processName.equals(State.CG_PACKAGE)) {
                 State.doRoot(context, "kill " + proc.pid);
+            }
         }
     }
 }

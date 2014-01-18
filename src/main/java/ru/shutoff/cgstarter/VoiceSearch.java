@@ -95,6 +95,11 @@ public class VoiceSearch extends GpsActivity implements RecognitionListener {
     }
 
     void showResult() {
+        if (addr_list.size() == 0) {
+            Toast toast = Toast.makeText(this, R.string.not_found, Toast.LENGTH_SHORT);
+            toast.show();
+            return;
+        }
         dialog.dismiss();
         if (addr_list.size() == 0)
             return;

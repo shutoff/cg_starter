@@ -109,6 +109,17 @@
         </activity>
 
         <activity
+            android:name=".TextSearch"
+            android:launchMode="singleTop"
+            android:label="@string/text_search"
+            android:icon="@drawable/text_search"
+            android:theme="@style/Theme.Transparent">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".SearchResult"
             android:launchMode="singleTop"
             android:theme="@style/Theme.AppCompat" />
