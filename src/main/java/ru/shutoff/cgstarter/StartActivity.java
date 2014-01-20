@@ -25,6 +25,7 @@ public class StartActivity extends GpsActivity {
         Uri uri = getIntent().getData();
         if (uri == null)
             finish();
+        State.appendLog(uri.getQuery());
         String[] parts = uri.getQuery().split("&");
         String q = null;
         for (String part : parts) {

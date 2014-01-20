@@ -16,6 +16,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
@@ -273,7 +274,7 @@ public class AppsFragment extends Fragment {
                             String name = info.activityInfo.name.substring(21);
                             if (name.equals("TrafficActivity") || name.equals("ContactActivity"))
                                 apps.add(info);
-                            if (name.equals("VoiceSearch") && VoiceSearch.isAvailable(getActivity()))
+                            if (name.equals("VoiceSearch") && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) && VoiceSearch.isAvailable(getActivity()))
                                 apps.add(info);
                             if (State.hasTelephony(getActivity())) {
                                 if (name.equals("SMSActivity") || name.equals("SendLocationActivity") || name.equals("CallContactActivity") || name.equals("LastCallActivity"))

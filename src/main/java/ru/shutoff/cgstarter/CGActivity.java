@@ -2,6 +2,7 @@ package ru.shutoff.cgstarter;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -45,7 +46,7 @@ public class CGActivity extends Activity {
                 finish();
             }
         });
-        if (!VoiceSearch.isAvailable(this))
+        if ((Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO) || !VoiceSearch.isAvailable(this))
             findViewById(R.id.voice).setVisibility(View.GONE);
         if (!State.hasTelephony(this))
             findViewById(R.id.from_sms).setVisibility(View.GONE);

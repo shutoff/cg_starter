@@ -11,11 +11,14 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -27,12 +30,13 @@ import java.util.Vector;
 public class ContactActivity extends GpsActivity implements AdapterView.OnItemClickListener {
 
     Vector<Contact> contacts;
+    Vector<Contact> filtered;
     BaseAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.list);
+        setContentView(R.layout.list_filter);
         setResult(RESULT_CANCELED);
         ContactLoader loader = new ContactLoader();
         loader.execute();
@@ -187,15 +191,20 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
             findViewById(R.id.progress).setVisibility(View.GONE);
             ListView lv = (ListView) findViewById(R.id.list);
             lv.setVisibility(View.VISIBLE);
+            final EditText et = (EditText) findViewById(R.id.filter);
+            et.setVisibility(View.VISIBLE);
+            et.setText("");
+            lv.requestFocus();
+            filtered = contacts;
             adapter = new BaseAdapter() {
                 @Override
                 public int getCount() {
-                    return contacts.size();
+                    return filtered.size();
                 }
 
                 @Override
                 public Object getItem(int i) {
-                    return contacts.get(i);
+                    return filtered.get(i);
                 }
 
                 @Override
@@ -210,7 +219,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                         final LayoutInflater layoutInflater = LayoutInflater.from(ContactActivity.this);
                         v = layoutInflater.inflate(R.layout.sms_item, null);
                     }
-                    Contact contact = contacts.get(i);
+                    Contact contact = filtered.get(i);
                     TextView tvAddr = (TextView) v.findViewById(R.id.text);
                     tvAddr.setText(contact.address);
                     TextView tvName = (TextView) v.findViewById(R.id.to);
@@ -227,13 +236,73 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
             };
             lv.setAdapter(adapter);
             lv.setOnItemClickListener(ContactActivity.this);
+            et.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    final String pat = s.toString();
+                    AsyncTask<String, Void, Vector<Contact>> searcher = new AsyncTask<String, Void, Vector<Contact>>() {
+                        @Override
+                        protected Vector<Contact> doInBackground(String... params) {
+                            String p = params[0].toLowerCase();
+                            Vector<Contact> res = new Vector<Contact>();
+                            for (Contact contact : contacts) {
+                                if (contact.match(p))
+                                    res.add(contact);
+                            }
+                            return res;
+                        }
+
+                        @Override
+                        protected void onPostExecute(Vector<Contact> contacts) {
+                            String current = et.getText().toString().toLowerCase();
+                            if (!pat.equals(current))
+                                return;
+                            filtered = contacts;
+                            adapter.notifyDataSetChanged();
+                        }
+                    };
+                    searcher.execute(pat);
+                }
+            });
         }
     }
+
+    static final String divs = " .,";
 
     static class Contact {
         String address;
         String name;
         Bitmap photo;
+
+        boolean match(String pat) {
+            return match(name, pat) || match(address, pat);
+        }
+
+        boolean match(String s, String pat) {
+            s = s.toLowerCase();
+            int start = 0;
+            for (; ; ) {
+                int pos = s.indexOf(pat, start);
+                if (pos < 0)
+                    return false;
+                if (pos == 0)
+                    return true;
+                int ch = s.charAt(pos - 1);
+                if (divs.indexOf(ch) >= 0)
+                    return true;
+                start = pos + 1;
+            }
+        }
     }
 
 }
