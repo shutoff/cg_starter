@@ -157,10 +157,14 @@ public class PreferencesFragment extends Fragment {
         Spinner spinner = (Spinner) v.findViewById(id);
         final String[] entries = getResources().getStringArray(id_entries);
         final String[] values = getResources().getStringArray(id_values);
+        int len = entries.length;
+        if (len > values.length)
+            len = values.length;
+        final int length = len;
         spinner.setAdapter(new BaseAdapter() {
             @Override
             public int getCount() {
-                return entries.length;
+                return length;
             }
 
             @Override

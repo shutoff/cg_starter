@@ -30,7 +30,7 @@ public class EditActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Bookmarks.Point[] p = Bookmarks.get();
+        Bookmarks.Point[] p = Bookmarks.get(this);
         poi = new Bookmarks.Point[p.length + 2];
         poi[0] = new Bookmarks.Point();
         poi[0].name = getString(R.string.cg_start);

@@ -3,7 +3,6 @@ package ru.shutoff.cgstarter;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -34,14 +33,15 @@ public class SendLocationActivity extends GpsActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
+        need_fine = true;
+
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.location);
 
         try {
-            File poi = Environment.getExternalStorageDirectory();
-            poi = new File(poi, "CityGuide/routes.dat");
+            File poi = State.CG_Folder(this);
+            poi = new File(poi, "routes.dat");
             BufferedReader reader = new BufferedReader(new FileReader(poi));
             reader.readLine();
             boolean current = false;

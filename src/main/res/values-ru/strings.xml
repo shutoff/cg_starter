@@ -187,4 +187,5 @@
     <string name="phone_work">рабочий</string>
     <string name="phone_mobile">мобильный</string>
     <string name="last_call">Перезвонить на последний номер</string>
+    <string name="cg_run">Запускать:</string>
 </resources>

@@ -15,7 +15,6 @@ import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.view.KeyEvent;
@@ -121,7 +120,7 @@ public class MainActivity
             launch_pause = 10;
         launch_pause = launch_pause * 1000;
 
-        points = State.get(preferences);
+        points = State.get(this);
 
         Calendar calendar = Calendar.getInstance();
         int now_day = calendar.get(Calendar.DAY_OF_MONTH);
@@ -217,7 +216,7 @@ public class MainActivity
         ImageView cg_icon = (ImageView) findViewById(R.id.cg_icon);
         try {
             PackageManager manager = getPackageManager();
-            cg_icon.setImageDrawable(manager.getApplicationIcon(State.CG_PACKAGE));
+            cg_icon.setImageDrawable(manager.getApplicationIcon(State.CG_Package(this)));
             View cg_button = findViewById(R.id.cg);
             cg_button.setOnTouchListener(this);
         } catch (Exception e) {
@@ -233,10 +232,10 @@ public class MainActivity
         }
 
         if (savedInstanceState == null) {
-            OnExitService.convertFiles();
+            OnExitService.convertFiles(this);
             if (preferences.getBoolean(State.RTA_LOGS, false))
-                OnExitService.removeRTA();
-            int route_type = SettingsIni.getParam("route_type");
+                OnExitService.removeRTA(this);
+            int route_type = SettingsIni.getParam(this, "route_type");
             if ((route_type > 0) && (route_type <= 2)) {
                 stopTimers();
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -245,7 +244,7 @@ public class MainActivity
                 builder.setPositiveButton(R.string.cont, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        SettingsIni.setParam("route_type", "0");
+                        SettingsIni.setParam(MainActivity.this, "route_type", "0");
                     }
                 });
                 builder.setNegativeButton(R.string.cancel, null);
@@ -407,10 +406,10 @@ public class MainActivity
         launch();
     }
 
-    static String routes() {
+    static String routes(Context context) {
         try {
-            File routes_dat = Environment.getExternalStorageDirectory();
-            routes_dat = new File(routes_dat, "CityGuide/routes.dat");
+            File routes_dat = State.CG_Folder(context);
+            routes_dat = new File(routes_dat, "routes.dat");
             BufferedReader reader = new BufferedReader(new FileReader(routes_dat));
             String line = reader.readLine();
             if (line == null)
@@ -443,31 +442,56 @@ public class MainActivity
 
     static void createRoute(Context context, String route, String points_str) {
         try {
-            String tail = routes();
-            File routes_dat = Environment.getExternalStorageDirectory();
-            routes_dat = new File(routes_dat, "CityGuide/routes.dat");
-            if (!routes_dat.exists())
-                routes_dat.createNewFile();
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-            String start = preferences.getString(State.START_POINT, "0|0");
-            BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
-            writer.append("1|router|65001\n");
-            writer.append("#[CURRENT]|1|1\n");
-            writer.append("Start|");
-            writer.append(start);
-            writer.append("\n");
-            if ((points_str != null) && !points_str.equals("")) {
-                String[] points = points_str.split(";");
-                for (String point : points) {
-                    writer.append("Point|");
-                    writer.append(point);
-                    writer.append("\n");
+            File routes_dat = State.CG_Folder(context);
+            if (State.cg_app) {
+                String tail = routes(context);
+                routes_dat = new File(routes_dat, "routes.dat");
+                if (!routes_dat.exists())
+                    routes_dat.createNewFile();
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                String start = preferences.getString(State.START_POINT, "0|0");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
+                writer.append("1|router|65001\n");
+                writer.append("#[CURRENT]|1|1\n");
+                writer.append("Start|");
+                writer.append(start);
+                writer.append("\n");
+                if ((points_str != null) && !points_str.equals("")) {
+                    String[] points = points_str.split(";");
+                    for (String point : points) {
+                        writer.append("Point|");
+                        writer.append(point);
+                        writer.append("\n");
+                    }
                 }
+                writer.append("Finish|");
+                writer.append(route);
+                writer.append(tail);
+                writer.close();
+            } else {
+                routes_dat = new File(routes_dat, "Routes/Route.curr");
+                if (!routes_dat.exists())
+                    routes_dat.createNewFile();
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                String start = preferences.getString(State.START_POINT, "0|0");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
+                writer.append("2|AuxObjects|65001|\n");
+                writer.append("3||");
+                writer.append(route);
+                writer.append("|1750|0|\n");
+                if ((points_str != null) && !points_str.equals("")) {
+                    String[] points = points_str.split(";");
+                    for (String point : points) {
+                        writer.append("2||");
+                        writer.append(point);
+                        writer.append("|1750|0|\n");
+                    }
+                }
+                writer.append("1||");
+                writer.append(start);
+                writer.append("|1750|0|\n");
+                writer.close();
             }
-            writer.append("Finish|");
-            writer.append(route);
-            writer.append(tail);
-            writer.close();
         } catch (IOException e) {
             Toast toast = Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG);
             toast.show();
@@ -476,21 +500,35 @@ public class MainActivity
 
     static void removeRoute(Context context) {
         try {
-            String tail = routes();
-            File routes_dat = Environment.getExternalStorageDirectory();
-            routes_dat = new File(routes_dat, "CityGuide/routes.dat");
-            if (!routes_dat.exists())
-                routes_dat.createNewFile();
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-            String start = preferences.getString(State.START_POINT, "0|0");
-            BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
-            writer.append("1|router|65001\n");
-            writer.append("#[CURRENT]|1|0\n");
-            writer.append("Start|");
-            writer.append(start);
-            writer.append("\n");
-            writer.append(tail);
-            writer.close();
+            File routes_dat = State.CG_Folder(context);
+            if (State.cg_app) {
+                String tail = routes(context);
+                routes_dat = new File(routes_dat, "routes.dat");
+                if (!routes_dat.exists())
+                    routes_dat.createNewFile();
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                String start = preferences.getString(State.START_POINT, "0|0");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
+                writer.append("1|router|65001\n");
+                writer.append("#[CURRENT]|1|0\n");
+                writer.append("Start|");
+                writer.append(start);
+                writer.append("\n");
+                writer.append(tail);
+                writer.close();
+            } else {
+                routes_dat = new File(routes_dat, "Routes/Route.curr");
+                if (!routes_dat.exists())
+                    routes_dat.createNewFile();
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                String start = preferences.getString(State.START_POINT, "0|0");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
+                writer.append("2|AuxObjects|65001|\n");
+                writer.append("1||");
+                writer.append(start);
+                writer.append("|1750|0|\n");
+                writer.close();
+            }
         } catch (IOException e) {
             Toast toast = Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG);
             toast.show();
@@ -593,7 +631,7 @@ public class MainActivity
         if (preferences.getBoolean(State.VOLUME, false)) {
             try {
                 int level = preferences.getInt(State.LEVEL, 100);
-                int channel = SettingsIni.getParam("audiostream");
+                int channel = SettingsIni.getParam(context, "audiostream");
                 switch (channel) {
                     case 0:
                         channel = AudioManager.STREAM_SYSTEM;
@@ -662,7 +700,7 @@ public class MainActivity
     }
 
     void launch_cg() {
-        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_Package(this));
         if (intent == null) {
             Toast toast = Toast.makeText(this, getString(R.string.no_cg), Toast.LENGTH_SHORT);
             toast.show();
@@ -716,4 +754,5 @@ public class MainActivity
         });
         ad.show();
     }
+
 }

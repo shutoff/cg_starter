@@ -1,38 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:gravity="center"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="30dp">
+    android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/no_route"
+    <LinearLayout
+        android:orientation="vertical"
+        android:gravity="center"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/no_route"
-        android:padding="25dp" />
+        android:layout_height="match_parent"
+        android:padding="30dp">
 
-    <Button
-        android:id="@+id/from_contacts"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/from_contacts"
-        android:padding="25dp" />
+        <Button
+            android:id="@+id/no_route"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/no_route"
+            android:padding="25dp" />
 
-    <Button
-        android:id="@+id/from_sms"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/from_sms"
-        android:padding="25dp" />
+        <Button
+            android:id="@+id/from_contacts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/from_contacts"
+            android:padding="25dp" />
 
-    <Button
-        android:id="@+id/voice"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/voice_search"
-        android:padding="25dp" />
+        <Button
+            android:id="@+id/from_sms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/from_sms"
+            android:padding="25dp" />
 
-</LinearLayout>
+        <Button
+            android:id="@+id/voice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/voice_search"
+            android:padding="25dp" />
+
+        <Button
+            android:id="@+id/search"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/search"
+            android:padding="25dp" />
+
+    </LinearLayout>
+
+</ScrollView>

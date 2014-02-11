@@ -28,7 +28,7 @@ public class SetupButton extends PreferenceActivity {
     public void onCreate(Bundle savedInstanceState) {
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        State.Point[] points = State.get(preferences);
+        State.Point[] points = State.get(this);
 
         intent = getIntent();
         if (intent != null)
@@ -64,7 +64,7 @@ public class SetupButton extends PreferenceActivity {
 
         setupInterval();
 
-        Bookmarks.Point[] poi = Bookmarks.get();
+        Bookmarks.Point[] poi = Bookmarks.get(this);
 
         String[] values = new String[poi.length];
         for (int i = 0; i < values.length; i++) {
@@ -81,7 +81,7 @@ public class SetupButton extends PreferenceActivity {
                     namePref.setText(v);
                     namePref.setSummary(v);
                     itemsPref.setSummary(v);
-                    Bookmarks.Point[] points = Bookmarks.get();
+                    Bookmarks.Point[] points = Bookmarks.get(SetupButton.this);
                     for (Bookmarks.Point p : points) {
                         if (p.name.equals(v)) {
                             point.lat = p.lat + "";

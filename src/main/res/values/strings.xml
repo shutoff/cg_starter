@@ -209,4 +209,5 @@
     <string name="phone_work">work</string>
     <string name="phone_mobile">mobile</string>
     <string name="last_call">Call last number</string>
+    <string name="cg_run">Run:</string>
 </resources>

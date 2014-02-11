@@ -237,7 +237,7 @@ public class CarMonitor extends BroadcastReceiver {
                 route_points = "";
             int n_route = intent.getIntExtra("ROUTE", 0);
             if (n_route > 0) {
-                State.Point[] points = State.get(preferences);
+                State.Point[] points = State.get(context);
                 if (n_route > points.length)
                     return;
                 State.Point p = points[n_route - 1];
@@ -268,7 +268,7 @@ public class CarMonitor extends BroadcastReceiver {
         })) {
             MainActivity.setState(context, null);
         }
-        Intent run = context.getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+        Intent run = context.getPackageManager().getLaunchIntentForPackage(State.CG_Package(context));
         if (run == null) {
             Toast toast = Toast.makeText(context, context.getString(R.string.no_cg), Toast.LENGTH_SHORT);
             toast.show();
@@ -327,7 +327,7 @@ public class CarMonitor extends BroadcastReceiver {
         int i;
         for (i = 0; i < procInfos.size(); i++) {
             ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(State.CG_PACKAGE)) {
+            if (proc.processName.equals(State.CG_Package(context))) {
                 State.doRoot(context, "kill " + proc.pid);
             }
         }

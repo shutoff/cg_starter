@@ -11,6 +11,20 @@
         android:padding="5dp">
 
         <TextView
+            android:id="@+id/cg_run"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="@string/cg_run"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <Spinner
+            android:id="@+id/cg_app"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <TextView
             android:id="@+id/auto_pause_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

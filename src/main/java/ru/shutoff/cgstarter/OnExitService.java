@@ -16,6 +16,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -38,7 +39,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Environment;
 import android.os.FileObserver;
 import android.os.IBinder;
 import android.os.Vibrator;
@@ -226,8 +226,8 @@ public class OnExitService extends Service {
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
         try {
-            File screenshots = Environment.getExternalStorageDirectory();
-            screenshots = new File(screenshots, "CityGuide/screenshots");
+            File screenshots = State.CG_Folder(this);
+            screenshots = new File(screenshots, "screenshots");
             screenshots_path = screenshots.getAbsolutePath();
             observer = new FileObserver(screenshots.getAbsolutePath(), FileObserver.CLOSE_WRITE) {
                 @Override
@@ -237,6 +237,7 @@ public class OnExitService extends Service {
                     }
                 }
             };
+            observer.startWatching();
         } catch (Exception ex) {
             // ignore
         }
@@ -251,8 +252,6 @@ public class OnExitService extends Service {
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-
-        observer.startWatching();
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         pm = getPackageManager();
@@ -380,7 +379,7 @@ public class OnExitService extends Service {
             stopAfterCall();
             if (isRunCG(getApplicationContext()) && !isActiveCG(getApplicationContext())) {
                 try {
-                    Intent launch = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                    Intent launch = getPackageManager().getLaunchIntentForPackage(State.CG_Package(this));
                     if (launch != null)
                         startActivity(launch);
                 } catch (Exception ex) {
@@ -688,7 +687,7 @@ public class OnExitService extends Service {
     void switchToCG() {
         if (!isActiveCG(getApplicationContext())) {
             try {
-                Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_Package(this));
                 if (intent != null)
                     startActivity(intent);
             } catch (Exception ex) {
@@ -1063,12 +1062,15 @@ public class OnExitService extends Service {
             }
 
             ViewGroup row = (ViewGroup) hudApps.findViewById(R.id.row);
-            int in_row = 1;
+            int in_row = 0;
 
             int width = wm.getDefaultDisplay().getWidth();
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
+                width = wm.getDefaultDisplay().getHeight();
+
             int icon_width = iv.getLayoutParams().width;
-            width -= layoutParams.x - icon_width;
-            int icons = width * 3 / icon_width / 4;
+            width -= (layoutParams.x - icon_width) * 2;
+            int icons = width / icon_width;
             if (icons < 3)
                 icons = 3;
             int rows = (apps.size() + icons - 1) / icons;
@@ -1359,7 +1361,7 @@ public class OnExitService extends Service {
 
         try {
             PackageManager manager = getPackageManager();
-            Drawable drawable = manager.getApplicationIcon(State.CG_PACKAGE);
+            Drawable drawable = manager.getApplicationIcon(State.CG_Package(this));
             inactive_run = isRunCG(this);
             if (!inactive_run) {
                 ColorMatrix matrix = new ColorMatrix();
@@ -1376,7 +1378,7 @@ public class OnExitService extends Service {
             @Override
             void click() {
                 try {
-                    Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                    Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_Package(OnExitService.this));
                     if (intent != null)
                         startActivity(intent);
                     if (show_overlay) {
@@ -1609,8 +1611,10 @@ public class OnExitService extends Service {
         phone = preferences.getBoolean(State.PHONE, false);
         speaker = preferences.getBoolean(State.SPEAKER, false);
         try {
-            autoanswer = Integer.parseInt(preferences.getString(State.ANSWER_TIME, "0")) * 1000;
-            autoswitch = Integer.parseInt(preferences.getString(State.RINGING_TIME, "-1")) * 1000 + 1;
+            int answer_time = Integer.parseInt(preferences.getString(State.ANSWER_TIME, "0"));
+            int ringing_time = Integer.parseInt(preferences.getString(State.RINGING_TIME, "-1"));
+            autoanswer = answer_time * 1000;
+            autoswitch = ringing_time * 1000 + 1;
         } catch (Exception ex) {
             // ignore
         }
@@ -1642,7 +1646,7 @@ public class OnExitService extends Service {
                                     cg_run = isRunCG(getApplicationContext());
                                 if (cg_run && !isActiveCG(getApplicationContext())) {
                                     try {
-                                        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_PACKAGE);
+                                        Intent intent = getPackageManager().getLaunchIntentForPackage(State.CG_Package(OnExitService.this));
                                         if (intent != null)
                                             startActivity(intent);
                                     } catch (Exception ex) {
@@ -1664,8 +1668,8 @@ public class OnExitService extends Service {
                             ringing = true;
                             showInactiveOverlay();
                             cg_run = isRunCG(getApplicationContext());
+                            AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                             if (autoanswer > 0) {
-                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 if (speaker || audio.isBluetoothScoOn()) {
                                     if (piAnswer == null)
                                         piAnswer = createPendingIntent(ANSWER);
@@ -1731,7 +1735,7 @@ public class OnExitService extends Service {
     }
 
     static boolean isRunCG(Context context) {
-        return isRun(context, State.CG_PACKAGE);
+        return isRun(context, State.CG_Package(context));
     }
 
     static ActivityManager mActivityManager;
@@ -1741,7 +1745,7 @@ public class OnExitService extends Service {
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         try {
             List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
-            return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_PACKAGE);
+            return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_Package(context));
         } catch (Exception ex) {
             // ignore
         }
@@ -1753,7 +1757,8 @@ public class OnExitService extends Service {
             File bmp_file = new File(bmp_name);
             long last_modified = bmp_file.lastModified();
             Bitmap bmp = BitmapFactory.decodeFile(bmp_name);
-            String png_name = bmp_name.substring(0, bmp_name.length() - 3) + "png";
+            String png_name = bmp_name.substring(0, bmp_name.length() - 4);
+            png_name += ".png";
             FileOutputStream out = new FileOutputStream(png_name);
             boolean res = bmp.compress(Bitmap.CompressFormat.PNG, 1, out);
             out.flush();
@@ -1780,13 +1785,13 @@ public class OnExitService extends Service {
         task.execute(path);
     }
 
-    static void convertFiles() {
+    static void convertFiles(final Context context) {
         AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
                 try {
-                    File screenshots = Environment.getExternalStorageDirectory();
-                    screenshots = new File(screenshots, "CityGuide/screenshots");
+                    File screenshots = State.CG_Folder(context);
+                    screenshots = new File(screenshots, "screenshots");
                     String[] bmp_files = screenshots.list(new FilenameFilter() {
                         @Override
                         public boolean accept(File dir, String filename) {
@@ -1825,13 +1830,13 @@ public class OnExitService extends Service {
         return true;
     }
 
-    static void removeRTA() {
+    static void removeRTA(final Context context) {
         AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
                 try {
-                    File rta = Environment.getExternalStorageDirectory();
-                    rta = new File(rta, "CityGuide/RtaLog");
+                    File rta = State.CG_Folder(context);
+                    rta = new File(rta, "RtaLog");
                     String[] files = rta.list();
                     for (String file : files) {
                         removeOldFile(new File(rta, file));
@@ -1908,7 +1913,6 @@ public class OnExitService extends Service {
 
     public void initLocation() {
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         netListener = new LocationListener() {
@@ -1933,42 +1937,48 @@ public class OnExitService extends Service {
             }
         };
 
-        gpsListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                locationChanged(location);
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        };
-
-        currentBestLocation = getLastBestLocation();
-
         try {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
-        } catch (Exception ex) {
-            gpsListener = null;
-        }
-
-        try {
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, netListener);
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, netListener);
+            } else {
+                netListener = null;
+            }
         } catch (Exception ex) {
             netListener = null;
         }
 
+        if (netListener == null) {
+
+            gpsListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    locationChanged(location);
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                }
+
+                @Override
+                public void onProviderEnabled(String provider) {
+
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+
+                }
+            };
+
+            try {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
+            } catch (Exception ex) {
+                gpsListener = null;
+            }
+        }
+
+        currentBestLocation = getLastBestLocation();
         showApps();
     }
 
@@ -1993,13 +2003,7 @@ public class OnExitService extends Service {
                 JsonValue res = JsonValue.readFrom(reader);
                 reader.close();
                 reader = null;
-                JsonObject result;
-                if (res.isObject()) {
-                    result = res.asObject();
-                } else {
-                    result = new JsonObject();
-                    result.set("data", res);
-                }
+                JsonObject result = res.asObject();
                 if (status != HttpStatus.SC_OK)
                     return null;
                 JsonValue level = result.get("lvl");
@@ -2076,9 +2080,13 @@ public class OnExitService extends Service {
                 }
                 if (fetcher_time < new Date().getTime()) {
                     yandex_error = false;
-                    fetcher_time = new Date().getTime() + 180000;
+                    fetcher_time = new Date().getTime() + 60000;
                     HttpTask fetcher = new HttpTask();
-                    fetcher.execute(TRAFFIC_URL, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                        fetcher.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, TRAFFIC_URL, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
+                    } else {
+                        fetcher.execute(TRAFFIC_URL, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
+                    }
                 }
             } else {
                 if (networkReciever == null) {
@@ -2279,29 +2287,49 @@ public class OnExitService extends Service {
             double finish_lat = 0;
             double finish_lon = 0;
             try {
-                File poi = Environment.getExternalStorageDirectory();
-                poi = new File(poi, "CityGuide/routes.dat");
-                BufferedReader reader = new BufferedReader(new FileReader(poi));
-                reader.readLine();
-                boolean current = false;
-                while (true) {
-                    String line = reader.readLine();
-                    if (line == null)
-                        break;
-                    String[] parts = line.split("\\|");
-                    if (parts.length == 0)
-                        continue;
-                    String name = parts[0];
-                    if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
-                        current = name.equals("#[CURRENT]");
-                        continue;
+                File poi = State.CG_Folder(context);
+                if (State.cg_app) {
+                    poi = new File(poi, "routes.dat");
+                    BufferedReader reader = new BufferedReader(new FileReader(poi));
+                    reader.readLine();
+                    boolean current = false;
+                    while (true) {
+                        String line = reader.readLine();
+                        if (line == null)
+                            break;
+                        String[] parts = line.split("\\|");
+                        if (parts.length == 0)
+                            continue;
+                        String name = parts[0];
+                        if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
+                            current = name.equals("#[CURRENT]");
+                            continue;
+                        }
+                        if (current && name.equals("Finish")) {
+                            finish_lat = Double.parseDouble(parts[1]);
+                            finish_lon = Double.parseDouble(parts[2]);
+                        }
                     }
-                    if (current && name.equals("Finish")) {
-                        finish_lat = Double.parseDouble(parts[1]);
-                        finish_lon = Double.parseDouble(parts[2]);
+                    reader.close();
+                } else {
+                    poi = new File(poi, "Routes/Route.curr");
+                    BufferedReader reader = new BufferedReader(new FileReader(poi));
+                    reader.readLine();
+                    while (true) {
+                        String line = reader.readLine();
+                        if (line == null)
+                            break;
+                        String[] parts = line.split("\\|");
+                        if (parts.length < 4)
+                            continue;
+                        String name = parts[0];
+                        if (name.equals("3")) {
+                            finish_lat = Double.parseDouble(parts[2]);
+                            finish_lon = Double.parseDouble(parts[3]);
+                        }
                     }
+                    reader.close();
                 }
-                reader.close();
             } catch (Exception ex) {
                 // ignore
             }

@@ -2,7 +2,6 @@ package ru.shutoff.cgstarter;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -32,7 +31,15 @@ public class CGActivity extends Activity {
         findViewById(R.id.voice).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(CGActivity.this, VoiceSearch.class);
+                Intent i = new Intent(CGActivity.this, SearchActivity.class);
+                startActivityForResult(i, 1);
+            }
+        });
+        findViewById(R.id.search).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(CGActivity.this, SearchActivity.class);
+                i.putExtra("TextSearch", "text");
                 startActivityForResult(i, 1);
             }
         });
@@ -46,7 +53,7 @@ public class CGActivity extends Activity {
                 finish();
             }
         });
-        if ((Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO) || !VoiceSearch.isAvailable(this))
+        if (!SearchActivity.isVoiceSearch(this))
             findViewById(R.id.voice).setVisibility(View.GONE);
         if (!State.hasTelephony(this))
             findViewById(R.id.from_sms).setVisibility(View.GONE);

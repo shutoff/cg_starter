@@ -62,7 +62,7 @@
 
         <ImageView
             android:id="@+id/sms"
-            android:src="@drawable/sms"
+            android:src="@drawable/sms_icon"
             android:layout_width="70dp"
             android:layout_height="50dp"
             android:paddingLeft="10dp"

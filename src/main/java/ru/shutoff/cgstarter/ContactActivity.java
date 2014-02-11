@@ -45,7 +45,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         Contact contact = contacts.get(i);
-        SearchRequest request = new SearchRequest() {
+        SearchActivity.LocationRequest request = new SearchActivity.LocationRequest() {
             @Override
             Location getLocation() {
                 return currentBestLocation;
@@ -57,11 +57,11 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
             }
 
             @Override
-            void result(Vector<Address> result) {
+            void result(Vector<SearchActivity.Address> result) {
                 searchResult(result);
             }
         };
-        request.search(contact.address);
+        request.execute(contact.address);
     }
 
     public void locationChanged(Location location) {
@@ -76,14 +76,14 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
         toast.show();
     }
 
-    void searchResult(final Vector<SearchRequest.Address> res) {
+    void searchResult(final Vector<SearchActivity.Address> res) {
         if (res.size() == 0) {
             error(getString(R.string.no_address));
             return;
         }
         if (res.size() == 1) {
             try {
-                SearchRequest.Address addr = res.get(0);
+                SearchActivity.Address addr = res.get(0);
                 if (OnExitService.isRunCG(ContactActivity.this))
                     CarMonitor.killCG(ContactActivity.this);
                 CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null);
@@ -137,7 +137,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
             lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    SearchRequest.Address addr = res.get(position);
+                    SearchActivity.Address addr = res.get(position);
                     if (OnExitService.isRunCG(ContactActivity.this))
                         CarMonitor.killCG(ContactActivity.this);
                     CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null);
@@ -248,12 +248,12 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                 }
 
                 @Override
-                public void afterTextChanged(Editable s) {
-                    final String pat = s.toString();
+                public void afterTextChanged(final Editable s) {
+                    final String pat = s.toString().toLowerCase();
                     AsyncTask<String, Void, Vector<Contact>> searcher = new AsyncTask<String, Void, Vector<Contact>>() {
                         @Override
                         protected Vector<Contact> doInBackground(String... params) {
-                            String p = params[0].toLowerCase();
+                            String p = params[0];
                             Vector<Contact> res = new Vector<Contact>();
                             for (Contact contact : contacts) {
                                 if (contact.match(p))

@@ -3,6 +3,7 @@ package ru.shutoff.cgstarter;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
@@ -10,7 +11,6 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.AttributeSet;
 import android.util.Xml;
 import android.view.LayoutInflater;
@@ -54,8 +54,73 @@ public class StartFragment extends PreferencesFragment {
         setCheckBox(v, R.id.strelka, State.STRELKA);
         setCheckBox(v, R.id.remove_rta, State.RTA_LOGS);
 
-        File rta_ini = Environment.getExternalStorageDirectory();
-        rta_ini = new File(rta_ini, "CityGuide/rtlog.ini");
+        State.CG_Package(getActivity());
+        if (!State.is_cg || !State.is_cn) {
+            v.findViewById(R.id.cg_run).setVisibility(View.GONE);
+            v.findViewById(R.id.cg_app).setVisibility(View.GONE);
+        } else {
+            Spinner spinner = (Spinner) v.findViewById(R.id.cg_app);
+            final String[] names = new String[2];
+            try {
+                PackageManager pm = getActivity().getPackageManager();
+                PackageInfo pi = pm.getPackageInfo(State.cg, 0);
+                names[0] = pi.packageName;
+                ApplicationInfo appInfo = pm.getApplicationInfo(pi.packageName, 0);
+                names[0] = pm.getApplicationLabel(appInfo).toString();
+                pi = pm.getPackageInfo(State.cn, 0);
+                names[1] = pi.packageName;
+                appInfo = pm.getApplicationInfo(pi.packageName, 0);
+                names[1] = pm.getApplicationLabel(appInfo).toString();
+            } catch (Exception ex) {
+                // ignore
+            }
+            spinner.setAdapter(new BaseAdapter() {
+                @Override
+                public int getCount() {
+                    return 2;
+                }
+
+                @Override
+                public Object getItem(int position) {
+                    return names[position];
+                }
+
+                @Override
+                public long getItemId(int position) {
+                    return position;
+                }
+
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    View v = convertView;
+                    if (v == null) {
+                        LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+                        v = inflater.inflate(R.layout.item, null);
+                    }
+                    TextView tv = (TextView) v.findViewById(R.id.name);
+                    tv.setText(names[position]);
+                    return v;
+                }
+            });
+            spinner.setSelection(preferences.getString("cg_app", "").equals(State.cn) ? 1 : 0);
+            spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    SharedPreferences.Editor ed = preferences.edit();
+                    ed.putString("cg_app", (position == 1) ? State.cn : State.cg);
+                    ed.commit();
+                    State.cg_package = null;
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+
+                }
+            });
+        }
+
+        File rta_ini = State.CG_Folder(getActivity());
+        rta_ini = new File(rta_ini, "rtlog.ini");
         if (!rta_ini.exists())
             v.findViewById(R.id.rta).setVisibility(View.GONE);
 
@@ -105,7 +170,7 @@ public class StartFragment extends PreferencesFragment {
         });
         tvVert = (TextView) v.findViewById(R.id.sensor_vertical);
 
-        final Bookmarks.Point[] points = Bookmarks.get();
+        final Bookmarks.Point[] points = Bookmarks.get(getActivity());
         Spinner start_point = (Spinner) v.findViewById(R.id.start_point);
         start_point.setAdapter(new BaseAdapter() {
             @Override
@@ -157,6 +222,7 @@ public class StartFragment extends PreferencesFragment {
 
             }
         });
+
         return v;
     }
 

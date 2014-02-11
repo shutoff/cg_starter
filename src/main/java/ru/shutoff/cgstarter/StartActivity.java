@@ -22,19 +22,20 @@ public class StartActivity extends GpsActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Uri uri = getIntent().getData();
-        if (uri == null)
-            finish();
-        State.appendLog(uri.getQuery());
-        String[] parts = uri.getQuery().split("&");
         String q = null;
-        for (String part : parts) {
-            if (part.length() < 2)
-                continue;
-            if (!part.substring(0, 2).equals("q="))
-                continue;
-            q = Uri.decode(part.substring(2));
-            break;
+        try {
+            Uri uri = getIntent().getData();
+            String[] parts = uri.getQuery().split("&");
+            for (String part : parts) {
+                if (part.length() < 2)
+                    continue;
+                if (!part.substring(0, 2).equals("q="))
+                    continue;
+                q = Uri.decode(part.substring(2));
+                break;
+            }
+        } catch (Exception ex) {
+            // ignore
         }
         if (q == null) {
             finish();
@@ -66,7 +67,7 @@ public class StartActivity extends GpsActivity {
 
             @Override
             public void onFinish() {
-                SearchRequest req = new SearchRequest() {
+                SearchActivity.LocationRequest req = new SearchActivity.LocationRequest() {
                     @Override
                     Location getLocation() {
                         return currentBestLocation;
@@ -78,14 +79,14 @@ public class StartActivity extends GpsActivity {
                     }
 
                     @Override
-                    void result(Vector<Address> result) {
+                    void result(Vector<SearchActivity.Address> result) {
                         if (result.size() == 0) {
                             error(getString(R.string.no_address));
                             return;
                         }
                         if (result.size() == 1) {
                             try {
-                                SearchRequest.Address addr = result.get(0);
+                                SearchActivity.Address addr = result.get(0);
                                 if (OnExitService.isRunCG(StartActivity.this))
                                     CarMonitor.killCG(StartActivity.this);
                                 CarMonitor.startCG(StartActivity.this, addr.lat + "|" + addr.lon, null);
@@ -100,13 +101,13 @@ public class StartActivity extends GpsActivity {
                         showResult(result);
                     }
                 };
-                req.search(query);
+                req.execute(query);
             }
         };
         timer.start();
     }
 
-    void showResult(final Vector<SearchRequest.Address> res) {
+    void showResult(final Vector<SearchActivity.Address> res) {
         findViewById(R.id.progress).setVisibility(View.GONE);
         ListView lv = (ListView) findViewById(R.id.list);
         lv.setVisibility(View.VISIBLE);
@@ -141,7 +142,7 @@ public class StartActivity extends GpsActivity {
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                SearchRequest.Address addr = res.get(position);
+                SearchActivity.Address addr = res.get(position);
                 if (OnExitService.isRunCG(StartActivity.this))
                     CarMonitor.killCG(StartActivity.this);
                 CarMonitor.startCG(StartActivity.this, addr.lat + "|" + addr.lon, null);

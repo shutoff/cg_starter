@@ -9,21 +9,16 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.widget.Toast;
 
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Calendar;
-import java.util.Date;
 
 public class State {
-
-    static final String CG_PACKAGE = "cityguide.probki.net";
 
     static final String AUTO_PAUSE = "auto_pause";
     static final String INACTIVE_PAUSE = "inactive_pause";
@@ -106,7 +101,8 @@ public class State {
 
     static Point[] points;
 
-    static Point[] get(SharedPreferences preferences) {
+    static Point[] get(Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (points == null) {
             points = new Point[8];
             boolean is_init = false;
@@ -133,7 +129,7 @@ public class State {
                 points[i] = p;
             }
             if (!is_init) {
-                Bookmarks.Point[] from = Bookmarks.get();
+                Bookmarks.Point[] from = Bookmarks.get(context);
                 for (int i = 0; i < 8; i++) {
                     if (i >= from.length)
                         break;
@@ -300,6 +296,7 @@ public class State {
         return false;
     }
 
+/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -320,7 +317,6 @@ public class State {
         }
     }
 
-/*
     static public void print(Throwable ex) {
         appendLog("Error: " + ex.toString());
         StringWriter sw = new StringWriter();
@@ -329,5 +325,67 @@ public class State {
         appendLog(s);
     }
 */
+
+    static String cg_package = null;
+    static String cg_path = null;
+    static boolean cg_app = true;
+
+    static boolean is_cg = false;
+    static boolean is_cn = false;
+
+    static String cg = "cityguide.probki.net";
+    static String cn = "net.probki.citynet";
+    static File cg_folder = null;
+
+    static void init_package(Context context) {
+        cg_app = true;
+        cg_folder = Environment.getExternalStorageDirectory();
+        PackageManager pm = context.getPackageManager();
+        try {
+            pm.getPackageInfo(cg, 0);
+            is_cg = true;
+        } catch (Exception ex) {
+            // ignore
+        }
+        try {
+            pm.getPackageInfo(cn, 0);
+            is_cn = true;
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (!is_cn) {
+            cg_package = cg;
+            cg_folder = new File(cg_folder, "CityGuide");
+            return;
+        }
+        if (!is_cg) {
+            cg_package = cn;
+            cg_folder = new File(cg_folder, "CityNet");
+            cg_app = false;
+            return;
+        }
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (preferences.getString("cg_app", "").equals(cn)) {
+            cg_package = cn;
+            cg_folder = new File(cg_folder, "CityNet");
+            cg_app = false;
+            return;
+        }
+        cg_package = cg;
+        cg_folder = new File(cg_folder, "CityGuide");
+    }
+
+    static File CG_Folder(Context context) {
+        if (cg_package == null)
+            init_package(context);
+        String folder = cg_folder.getAbsolutePath();
+        return cg_folder;
+    }
+
+    static String CG_Package(Context context) {
+        if (cg_package == null)
+            init_package(context);
+        return cg_package;
+    }
 
 }

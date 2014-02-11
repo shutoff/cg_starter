@@ -1,6 +1,6 @@
 package ru.shutoff.cgstarter;
 
-import android.os.Environment;
+import android.content.Context;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,13 +19,13 @@ public class Bookmarks {
         int count;
     }
 
-    static Point[] get() {
+    static Point[] get(Context context) {
         Vector<Point> points = new Vector<Point>();
         try {
-            File sd = Environment.getExternalStorageDirectory();
-            File poi = new File(sd, "CityGuide/CGMaps/poi.bkm");
+            File poi = State.CG_Folder(context);
+            poi = new File(poi, "CGMaps/poi.bkm");
             if (!poi.exists())
-                poi = new File(sd, "CityGuide/CGMaps/Poi.bkm");
+                poi = new File(poi, "CGMaps/Poi.bkm");
             BufferedReader reader = new BufferedReader(new FileReader(poi));
             while (true) {
                 String line = reader.readLine();
@@ -56,8 +56,8 @@ public class Bookmarks {
             // ignore
         }
         try {
-            File poi = Environment.getExternalStorageDirectory();
-            poi = new File(poi, "CityGuide/routes.dat");
+            File poi = State.CG_Folder(context);
+            poi = new File(poi, "routes.dat");
             BufferedReader reader = new BufferedReader(new FileReader(poi));
             reader.readLine();
             Point p = null;
