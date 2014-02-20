@@ -168,7 +168,7 @@ public class SMSActivity extends Activity {
                     SMS sms = smsList.get(i);
                     if (OnExitService.isRunCG(SMSActivity.this))
                         CarMonitor.killCG(SMSActivity.this);
-                    CarMonitor.startCG(SMSActivity.this, sms.lat + "|" + sms.lon, null);
+                    CarMonitor.startCG(SMSActivity.this, sms.lat + "|" + sms.lon, null, null);
                     setResult(RESULT_OK);
                     finish();
                 }

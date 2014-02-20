@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
     android:versionCode="25"
-    android:versionName="1.6.3 test3">
+    android:versionName="1.6.3 test4">
 
     <uses-sdk
         android:minSdkVersion="7"
@@ -125,15 +125,21 @@
         </activity>
 
         <activity
-            android:name=".SearchActivity"
+            android:name=".VoiceSearch"
             android:launchMode="singleTop"
             android:label="@string/voice_search"
             android:icon="@drawable/voice_search"
-            android:theme="@style/Theme.AppCompat">
+            android:theme="@style/Theme.Transparent">
         <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SearchActivity"
+            android:launchMode="singleTop"
+            android:label="@string/search"
+            android:theme="@style/Theme.AppCompat" />
 
         <activity
             android:name=".Preferences"
@@ -281,6 +287,18 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
                 <action android:name="ru.shutoff.cgstarter.START" />
                 <action android:name="com.twofortyfouram.locale.intent.action.FIRE_SETTING" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="AdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/admin" />
+
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
 

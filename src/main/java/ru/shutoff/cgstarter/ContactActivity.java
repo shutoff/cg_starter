@@ -86,7 +86,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                 SearchActivity.Address addr = res.get(0);
                 if (OnExitService.isRunCG(ContactActivity.this))
                     CarMonitor.killCG(ContactActivity.this);
-                CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null);
+                CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null, addr);
                 setResult(RESULT_OK);
                 finish();
                 return;
@@ -140,7 +140,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                     SearchActivity.Address addr = res.get(position);
                     if (OnExitService.isRunCG(ContactActivity.this))
                         CarMonitor.killCG(ContactActivity.this);
-                    CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null);
+                    CarMonitor.startCG(ContactActivity.this, addr.lat + "|" + addr.lon, null, addr);
                     setResult(RESULT_OK);
                     finish();
                 }

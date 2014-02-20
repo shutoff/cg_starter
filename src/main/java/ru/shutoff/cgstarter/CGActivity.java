@@ -31,14 +31,14 @@ public class CGActivity extends Activity {
         findViewById(R.id.voice).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(CGActivity.this, SearchActivity.class);
+                Intent i = new Intent(CGActivity.this, VoiceSearch.class);
                 startActivityForResult(i, 1);
             }
         });
         findViewById(R.id.search).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(CGActivity.this, SearchActivity.class);
+                Intent i = new Intent(CGActivity.this, VoiceSearch.class);
                 i.putExtra("TextSearch", "text");
                 startActivityForResult(i, 1);
             }
@@ -48,12 +48,12 @@ public class CGActivity extends Activity {
             public void onClick(View v) {
                 if (OnExitService.isRunCG(CGActivity.this))
                     CarMonitor.killCG(CGActivity.this);
-                CarMonitor.startCG(CGActivity.this, "-", null);
+                CarMonitor.startCG(CGActivity.this, "-", null, null);
                 setResult(RESULT_OK);
                 finish();
             }
         });
-        if (!SearchActivity.isVoiceSearch(this))
+        if (!VoiceSearch.isVoiceSearch(this))
             findViewById(R.id.voice).setVisibility(View.GONE);
         if (!State.hasTelephony(this))
             findViewById(R.id.from_sms).setVisibility(View.GONE);

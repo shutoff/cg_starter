@@ -2,6 +2,7 @@ package ru.shutoff.cgstarter;
 
 import android.app.ActivityManager;
 import android.app.UiModeManager;
+import android.app.admin.DevicePolicyManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -182,6 +183,7 @@ public class CarMonitor extends BroadcastReceiver {
                         power_kill_timer = null;
                         OnExitService.force_exit = true;
                         killCG(context);
+                        lockDevice(context);
                     }
                 };
                 power_kill_timer.start();
@@ -222,7 +224,7 @@ public class CarMonitor extends BroadcastReceiver {
             try {
                 String route = data.get(State.ROUTE).toString();
                 String points = data.get(State.POINTS).toString();
-                startCG(context, route, points);
+                startCG(context, route, points, null);
             } catch (Exception ex) {
                 // ignore
             }
@@ -249,15 +251,15 @@ public class CarMonitor extends BroadcastReceiver {
                 MainActivity.removeRoute(context);
                 route = "";
             }
-            startCG(context, route, route_points);
+            startCG(context, route, route_points, null);
         }
     }
 
-    static void startCG(Context context, String route, String route_points) {
+    static void startCG(Context context, String route, String route_points, SearchActivity.Address addr) {
         if (route.equals("-")) {
             MainActivity.removeRoute(context);
         } else if (!route.equals("")) {
-            MainActivity.createRoute(context, route, route_points);
+            MainActivity.createRoute(context, route, route_points, addr);
         }
         if (!MainActivity.setState(context, new State.OnBadGPS() {
             @Override
@@ -311,6 +313,7 @@ public class CarMonitor extends BroadcastReceiver {
                             dock_kill_timer = null;
                             OnExitService.force_exit = true;
                             killCG(context);
+                            lockDevice(context);
                         }
                     };
                     dock_kill_timer.start();
@@ -330,6 +333,13 @@ public class CarMonitor extends BroadcastReceiver {
             if (proc.processName.equals(State.CG_Package(context))) {
                 State.doRoot(context, "kill " + proc.pid);
             }
+        }
+    }
+
+    static void lockDevice(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
+            DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+            dpm.lockNow();
         }
     }
 }

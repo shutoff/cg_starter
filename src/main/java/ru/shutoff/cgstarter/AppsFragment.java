@@ -275,7 +275,7 @@ public class AppsFragment extends Fragment {
                             String name = info.activityInfo.name.substring(21);
                             if (name.equals("TrafficActivity") || name.equals("ContactActivity"))
                                 apps.add(info);
-                            if (name.equals("VoiceSearch") && SearchActivity.isVoiceSearch(getActivity()))
+                            if (name.equals("VoiceSearch") && VoiceSearch.isVoiceSearch(getActivity()))
                                 apps.add(info);
                             if (State.hasTelephony(getActivity())) {
                                 if (name.equals("SMSActivity") || name.equals("SendLocationActivity") || name.equals("CallContactActivity") || name.equals("LastCallActivity"))

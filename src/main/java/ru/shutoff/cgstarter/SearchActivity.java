@@ -1,8 +1,6 @@
 package ru.shutoff.cgstarter;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -10,20 +8,16 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.Fragment;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -51,8 +45,6 @@ import java.util.Vector;
 
 public class SearchActivity extends GpsActivity {
 
-    static final int REQUEST_CODE_VOICE_SEARCH = 1;
-
     PlaceholderFragment fragment;
 
     @Override
@@ -74,18 +66,12 @@ public class SearchActivity extends GpsActivity {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode != RESULT_OK) {
-            finish();
-            return;
-        }
-        fragment.voiceSearchResult(data);
-    }
-
-    @Override
     public void locationChanged() {
-        if (fragment != null)
+        if (fragment != null) {
             fragment.location = getLastBestLocation();
+            if (fragment.location != null)
+                fragment.startSearch();
+        }
     }
 
     public static class PlaceholderFragment extends Fragment {
@@ -99,6 +85,7 @@ public class SearchActivity extends GpsActivity {
         int prev_size;
 
         Location location;
+        boolean started;
 
         @Override
         public View onCreateView(final LayoutInflater inflater, ViewGroup container,
@@ -113,67 +100,34 @@ public class SearchActivity extends GpsActivity {
             phrases = new Vector<Phrase>();
             addr_list = new Vector<Address>();
 
-            Intent i = getActivity().getIntent();
-            if (i.getStringExtra("TextSearch") != null) {
-                final AlertDialog dialog = new AlertDialog.Builder(getActivity())
-                        .setTitle(getString(R.string.search))
-                        .setView(inflater.inflate(R.layout.text_search, null, false))
-                        .setNegativeButton(R.string.cancel, null)
-                        .setPositiveButton(R.string.search, null)
-                        .create();
-                dialog.getWindow().setSoftInputMode(
-                        WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-                dialog.show();
-                dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface dialog) {
-                        if (phrases.size() == 0)
-                            getActivity().finish();
-                    }
-                });
-                final Button btn = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                btn.setEnabled(false);
-                final EditText ed = (EditText) dialog.findViewById(R.id.text);
-                ed.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            if (location != null)
+                startSearch();
 
-                    }
+            CountDownTimer timer = new CountDownTimer(2000, 2000) {
+                @Override
+                public void onTick(long millisUntilFinished) {
 
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                }
 
-                    }
+                @Override
+                public void onFinish() {
+                    startSearch();
+                }
+            };
+            timer.start();
 
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        btn.setEnabled(!s.toString().isEmpty());
-                    }
-                });
-                ed.requestFocus();
-                btn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Phrase p = new Phrase();
-                        p.phrase = ed.getText().toString();
-                        p.scope = 1;
-                        phrases.add(p);
-                        dialog.dismiss();
-                        progress.setVisibility(View.VISIBLE);
-                        new Request();
-                    }
-                });
-            } else {
-                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                startActivityForResult(intent, REQUEST_CODE_VOICE_SEARCH);
-            }
             return rootView;
         }
 
-        void voiceSearchResult(Intent data) {
+        void startSearch() {
 
+            if (started)
+                return;
+
+            started = true;
             progress.setVisibility(View.VISIBLE);
+
+            Intent data = getActivity().getIntent();
 
             ArrayList<String> res = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
             float[] scopes = data.getFloatArrayExtra(RecognizerIntent.EXTRA_CONFIDENCE_SCORES);
@@ -295,7 +249,7 @@ public class SearchActivity extends GpsActivity {
                     Address addr = addr_list.get(i);
                     if (OnExitService.isRunCG(getActivity()))
                         CarMonitor.killCG(getActivity());
-                    CarMonitor.startCG(getActivity(), addr.lat + "|" + addr.lon, null);
+                    CarMonitor.startCG(getActivity(), addr.lat + "|" + addr.lon, null, addr);
                     getActivity().setResult(RESULT_OK);
                     getActivity().finish();
                 }

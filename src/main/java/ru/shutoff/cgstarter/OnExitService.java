@@ -1033,6 +1033,8 @@ public class OnExitService extends Service {
                         SharedPreferences.Editor ed = preferences.edit();
                         ed.remove(State.FULL_TIME);
                         ed.commit();
+                        hideApps();
+                        showApps();
                         App app = apps.get((Integer) v.getTag());
                         String[] component = app.name.split("/");
                         if (component[0].equals("tel")) {

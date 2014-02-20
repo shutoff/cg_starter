@@ -43,7 +43,7 @@ public class SmsDialog extends Activity {
                     public void onClick(DialogInterface dialog, int which) {
                         if (OnExitService.isRunCG(SmsDialog.this))
                             CarMonitor.killCG(SmsDialog.this);
-                        CarMonitor.startCG(SmsDialog.this, lat + "|" + lon, null);
+                        CarMonitor.startCG(SmsDialog.this, lat + "|" + lon, null, null);
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)

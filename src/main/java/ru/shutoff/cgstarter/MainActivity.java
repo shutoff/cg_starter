@@ -2,6 +2,8 @@ package ru.shutoff.cgstarter;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,6 +15,7 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
@@ -36,6 +39,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Vector;
 
 public class MainActivity
         extends Activity
@@ -54,10 +58,12 @@ public class MainActivity
     double start;
 
     SharedPreferences preferences;
+    DevicePolicyManager dpm;
 
     static final int SETUP_BUTTON = 3000;
     static final int RUN_CG = 3001;
     static final int RUN_DIALOG = 3002;
+    static final int ADMIN_INTENT = 3003;
 
     static int[][] holidays = {
             {1, 1},
@@ -251,6 +257,18 @@ public class MainActivity
                 builder.create().show();
             }
         }
+
+        if (preferences.getBoolean(State.KILL_CAR, false) && preferences.getBoolean(State.KILL_POWER, false)
+                && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO)) {
+            dpm = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
+            ComponentName componentName = new ComponentName(this, AdminReceiver.class);
+            if (!dpm.isAdminActive(componentName)) {
+                Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName);
+                intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "");
+                startActivityForResult(intent, ADMIN_INTENT);
+            }
+        }
     }
 
     @Override
@@ -402,7 +420,9 @@ public class MainActivity
         State.Point p = points[i];
         if (p.name.equals(""))
             return;
-        createRoute(this, p.lat + "|" + p.lng, p.points);
+        SearchActivity.Address addr = new SearchActivity.Address();
+        addr.name = p.name;
+        createRoute(this, p.lat + "|" + p.lng, p.points, addr);
         launch();
     }
 
@@ -440,7 +460,7 @@ public class MainActivity
         return "";
     }
 
-    static void createRoute(Context context, String route, String points_str) {
+    static void createRoute(Context context, String route, String points_str, SearchActivity.Address addr) {
         try {
             File routes_dat = State.CG_Folder(context);
             if (State.cg_app) {
@@ -476,7 +496,9 @@ public class MainActivity
                 String start = preferences.getString(State.START_POINT, "0|0");
                 BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
                 writer.append("2|AuxObjects|65001|\n");
-                writer.append("3||");
+                writer.append("4|Финиш|");
+                writer.append(route);
+                writer.append("\n3||");
                 writer.append(route);
                 writer.append("|1750|0|\n");
                 if ((points_str != null) && !points_str.equals("")) {
@@ -490,6 +512,53 @@ public class MainActivity
                 writer.append("1||");
                 writer.append(start);
                 writer.append("|1750|0|\n");
+                writer.close();
+            }
+            String name = null;
+            if (addr != null) {
+                name = addr.name;
+                if (name == null)
+                    name = addr.address;
+            }
+            if (name != null) {
+                File history = State.CG_Folder(context);
+                history = new File(history, "CGMaps/History.bkm");
+                Vector<String> lines = new Vector<String>();
+                BufferedReader reader = new BufferedReader(new FileReader(history));
+                int next = 0;
+                while (true) {
+                    String line = reader.readLine();
+                    if (line == null)
+                        break;
+                    String[] parts = line.split("\\|");
+                    if (parts.length < 6) {
+                        lines.add(line);
+                        continue;
+                    }
+                    try {
+                        int count = Integer.parseInt(parts[5]);
+                        if (count > next)
+                            next = count;
+                    } catch (Exception ex) {
+                        // ignore
+                    }
+                    if (name.equals(parts[1]) && route.equals(parts[2] + "|" + parts[3]))
+                        continue;
+                    lines.add(line);
+                }
+                reader.close();
+                BufferedWriter writer = new BufferedWriter(new FileWriter(history));
+                for (String line : lines) {
+                    writer.write(line);
+                    writer.write("\n");
+                }
+                writer.write("18888|");
+                writer.write(name);
+                writer.write("|");
+                writer.write(route);
+                writer.write("|30000|");
+                writer.write((next + 1) + "");
+                writer.write("|\n");
                 writer.close();
             }
         } catch (IOException e) {

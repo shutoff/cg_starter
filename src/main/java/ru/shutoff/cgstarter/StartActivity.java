@@ -49,7 +49,7 @@ public class StartActivity extends GpsActivity {
                 double lon = Double.parseDouble(matcher.group(2));
                 if (OnExitService.isRunCG(StartActivity.this))
                     CarMonitor.killCG(StartActivity.this);
-                CarMonitor.startCG(StartActivity.this, lat + "|" + lon, null);
+                CarMonitor.startCG(StartActivity.this, lat + "|" + lon, null, null);
                 setResult(RESULT_OK);
                 finish();
                 return;
@@ -89,7 +89,7 @@ public class StartActivity extends GpsActivity {
                                 SearchActivity.Address addr = result.get(0);
                                 if (OnExitService.isRunCG(StartActivity.this))
                                     CarMonitor.killCG(StartActivity.this);
-                                CarMonitor.startCG(StartActivity.this, addr.lat + "|" + addr.lon, null);
+                                CarMonitor.startCG(StartActivity.this, addr.lat + "|" + addr.lon, null, addr);
                                 setResult(RESULT_OK);
                                 finish();
                                 return;
@@ -145,7 +145,7 @@ public class StartActivity extends GpsActivity {
                 SearchActivity.Address addr = res.get(position);
                 if (OnExitService.isRunCG(StartActivity.this))
                     CarMonitor.killCG(StartActivity.this);
-                CarMonitor.startCG(StartActivity.this, addr.lat + "|" + addr.lon, null);
+                CarMonitor.startCG(StartActivity.this, addr.lat + "|" + addr.lon, null, addr);
                 setResult(RESULT_OK);
                 finish();
             }
