@@ -39,6 +39,7 @@ public class State {
     static final String ID = "ID";
     static final String ORIENTATION = "orientation";
     static final String SAVE_ROTATE = "save_rotate";
+    static final String CALL_VOLUME = "save_call_volume";
     static final String SAVE_ORIENTATION = "save_orientation";
     static final String SAVE_CHANNEL = "channel";
     static final String SAVE_LEVEL = "save_level";
@@ -327,7 +328,6 @@ public class State {
 */
 
     static String cg_package = null;
-    static String cg_path = null;
     static boolean cg_app = true;
 
     static boolean is_cg = false;

@@ -170,6 +170,11 @@ public class SearchActivity extends GpsActivity {
             }
             updateResults();
             phrase = 0;
+            if (phrases.size() == 0) {
+                if (getActivity() != null)
+                    getActivity().finish();
+                return;
+            }
             new Request();
         }
 
@@ -303,7 +308,19 @@ public class SearchActivity extends GpsActivity {
                     updateResults();
                 }
                 if (++phrase >= phrases.size()) {
-                    if (addr_list.size() == 0) {
+                    int near_count = 0;
+                    Location location = getLocation();
+                    if (location != null) {
+                        for (Address addr : addr_list) {
+                            if (addr.distance == 0)
+                                addr.distance = OnExitService.calc_distance(addr.lat, addr.lon, location.getLatitude(), location.getLongitude());
+                            if (addr.distance < 10000)
+                                near_count++;
+                        }
+                    } else {
+                        near_count = addr_list.size();
+                    }
+                    if (near_count == 0) {
                         phrase = 0;
                         new NearRequest();
                         return;
@@ -344,7 +361,19 @@ public class SearchActivity extends GpsActivity {
                     updateResults();
                 }
                 if (++phrase >= phrases.size()) {
-                    if (addr_list.size() == 0) {
+                    int near_count = 0;
+                    Location location = getLocation();
+                    if (location != null) {
+                        for (Address addr : addr_list) {
+                            if (addr.distance == 0)
+                                addr.distance = OnExitService.calc_distance(addr.lat, addr.lon, location.getLatitude(), location.getLongitude());
+                            if (addr.distance < 10000)
+                                near_count++;
+                        }
+                    } else {
+                        near_count = addr_list.size();
+                    }
+                    if (near_count == 0) {
                         phrase = 0;
                         new LongRequest();
                         return;

@@ -159,7 +159,7 @@ public class OnExitService extends Service {
     PingTask pingTask;
     BroadcastReceiver phoneReceiver;
 
-    LocationManager locationManager;
+    static LocationManager locationManager;
     LocationListener netListener;
     LocationListener gpsListener;
 
@@ -171,6 +171,8 @@ public class OnExitService extends Service {
     static Location currentBestLocation;
     View.OnClickListener iconListener;
 
+    static int speacker_volume;
+
     PackageManager pm;
 
     static double yandex_finish_lat;
@@ -179,6 +181,8 @@ public class OnExitService extends Service {
     final static long UPD_INTERVAL = 3 * 60 * 1000;
     final static long VALID_INTEVAL = 15 * 60 * 1000;
     final static String TRAFFIC_URL = "https://api.shutoff.ru/level?lat=$1&lng=$2";
+
+    final static double K_C = 100000.;
 
     final static String YAN = "ru.yandex.yandexnavi";
 
@@ -402,8 +406,8 @@ public class OnExitService extends Service {
                     force_exit = false;
                     alarmMgr.cancel(pi);
                     SharedPreferences.Editor ed = preferences.edit();
-                    int rotate = preferences.getInt(State.SAVE_ROTATE, 0);
-                    if (rotate > 0) {
+                    int rotate = preferences.getInt(State.SAVE_ROTATE, -1);
+                    if (rotate >= 0) {
                         try {
                             Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, rotate);
                         } catch (Exception ex) {
@@ -414,7 +418,7 @@ public class OnExitService extends Service {
                     rotate = preferences.getInt(State.SAVE_ORIENTATION, -1);
                     if (rotate >= 0) {
                         try {
-                            Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, Surface.ROTATION_0);
+                            Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, rotate);
                         } catch (Exception ex) {
                             // ignore
                         }
@@ -611,7 +615,11 @@ public class OnExitService extends Service {
         if (pingTask != null)
             return;
         pingTask = new PingTask();
-        pingTask.execute();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            pingTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            pingTask.execute();
+        }
     }
 
     void setAirplaneMode(boolean mode) {
@@ -1609,7 +1617,7 @@ public class OnExitService extends Service {
     void setPhoneListener() {
         if (phoneListener != null)
             return;
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         phone = preferences.getBoolean(State.PHONE, false);
         speaker = preferences.getBoolean(State.SPEAKER, false);
         try {
@@ -1659,8 +1667,13 @@ public class OnExitService extends Service {
                             }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn())
+                                if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn()) {
                                     audio.setSpeakerphoneOn(true);
+                                    speacker_volume = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL) + 1;
+                                    int volume = preferences.getInt(State.CALL_VOLUME, -1);
+                                    if (volume > 0)
+                                        audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, volume - 1, 0);
+                                }
                             }
                             break;
                         case TelephonyManager.CALL_STATE_RINGING:
@@ -1691,6 +1704,16 @@ public class OnExitService extends Service {
                             stopAutoAnswer();
                             hideOverlays(OnExitService.this);
                             call_number = null;
+                            if (speacker_volume > 0) {
+                                AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                int volume = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL) + 1;
+                                if (volume != speacker_volume) {
+                                    SharedPreferences.Editor ed = preferences.edit();
+                                    ed.putInt(State.CALL_VOLUME, volume);
+                                    ed.commit();
+                                }
+                            }
+
                             show_overlay = false;
                             if (foreground)
                                 stopForeground(true);
@@ -1760,6 +1783,21 @@ public class OnExitService extends Service {
             long last_modified = bmp_file.lastModified();
             Bitmap bmp = BitmapFactory.decodeFile(bmp_name);
             String png_name = bmp_name.substring(0, bmp_name.length() - 4);
+            if (locationManager != null) {
+                Location locationGPS = null;
+                try {
+                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                        locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                } catch (Exception ex) {
+                    // ignore
+                }
+                if (locationGPS != null) {
+                    png_name += "_";
+                    png_name += Math.round(locationGPS.getLatitude() * K_C) / K_C;
+                    png_name += "_";
+                    png_name += Math.round(locationGPS.getLongitude() * K_C) / K_C;
+                }
+            }
             png_name += ".png";
             FileOutputStream out = new FileOutputStream(png_name);
             boolean res = bmp.compress(Bitmap.CompressFormat.PNG, 1, out);
@@ -1784,7 +1822,11 @@ public class OnExitService extends Service {
                 return null;
             }
         };
-        task.execute(path);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, path);
+        } else {
+            task.execute(path);
+        }
     }
 
     static void convertFiles(final Context context) {
@@ -1809,7 +1851,11 @@ public class OnExitService extends Service {
                 return null;
             }
         };
-        task.execute();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            task.execute();
+        }
     }
 
     static boolean removeOldFile(File f) {
@@ -1849,7 +1895,11 @@ public class OnExitService extends Service {
                 return null;
             }
         };
-        task.execute();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            task.execute();
+        }
     }
 
     class PingTask extends AsyncTask<Void, Void, Void> {

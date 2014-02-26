@@ -521,44 +521,79 @@ public class MainActivity
                     name = addr.address;
             }
             if (name != null) {
+                String[] r = route.split("\\|");
+                double lat = Double.parseDouble(r[0]);
+                double lng = Double.parseDouble(r[1]);
                 File history = State.CG_Folder(context);
-                history = new File(history, "CGMaps/History.bkm");
                 Vector<String> lines = new Vector<String>();
-                BufferedReader reader = new BufferedReader(new FileReader(history));
-                int next = 0;
-                while (true) {
-                    String line = reader.readLine();
-                    if (line == null)
-                        break;
-                    String[] parts = line.split("\\|");
-                    if (parts.length < 6) {
+                if (State.cg_app) {
+                    history = new File(history, "history.dat");
+                    BufferedReader reader = new BufferedReader(new FileReader(history));
+                    boolean first = true;
+                    while (true) {
+                        String line = reader.readLine();
+                        if (line == null)
+                            break;
+                        String[] parts = line.split("\\|");
+                        if (parts.length < 4) {
+                            lines.add(line);
+                            continue;
+                        }
+                        if (first) {
+                            first = false;
+                            lines.add(name + "|Адрес|" + route);
+                        }
+                        if (name.equals(parts[0])) {
+                            try {
+                                if (OnExitService.calc_distance(lat, lng, Double.parseDouble(parts[2]), Double.parseDouble(parts[3])) < 100)
+                                    continue;
+                                ;
+                            } catch (Exception ex) {
+                                // ignore
+                            }
+                        }
                         lines.add(line);
-                        continue;
                     }
-                    try {
-                        int count = Integer.parseInt(parts[5]);
-                        if (count > next)
-                            next = count;
-                    } catch (Exception ex) {
-                        // ignore
+                    reader.close();
+                } else {
+                    history = new File(history, "CGMaps/History.bkm");
+                    BufferedReader reader = new BufferedReader(new FileReader(history));
+                    int next = 0;
+                    while (true) {
+                        String line = reader.readLine();
+                        if (line == null)
+                            break;
+                        String[] parts = line.split("\\|");
+                        if (parts.length < 6) {
+                            lines.add(line);
+                            continue;
+                        }
+                        try {
+                            int count = Integer.parseInt(parts[5]);
+                            if (count > next)
+                                next = count;
+                        } catch (Exception ex) {
+                            // ignore
+                        }
+                        if (name.equals(parts[1])) {
+                            try {
+                                if (OnExitService.calc_distance(lat, lng, Double.parseDouble(parts[2]), Double.parseDouble(parts[3])) < 100)
+                                    continue;
+                                ;
+                            } catch (Exception ex) {
+                                // ignore
+                            }
+                        }
+                        lines.add(line);
                     }
-                    if (name.equals(parts[1]) && route.equals(parts[2] + "|" + parts[3]))
-                        continue;
-                    lines.add(line);
+                    reader.close();
+                    lines.add("18888|" + name + "|" + route + "|30000|" + (next + 1));
                 }
-                reader.close();
                 BufferedWriter writer = new BufferedWriter(new FileWriter(history));
                 for (String line : lines) {
                     writer.write(line);
                     writer.write("\n");
                 }
-                writer.write("18888|");
-                writer.write(name);
-                writer.write("|");
-                writer.write(route);
-                writer.write("|30000|");
-                writer.write((next + 1) + "");
-                writer.write("|\n");
                 writer.close();
             }
         } catch (IOException e) {

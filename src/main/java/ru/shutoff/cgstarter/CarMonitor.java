@@ -76,18 +76,22 @@ public class CarMonitor extends BroadcastReceiver {
             for (SmsMessage m : messages) {
                 bodyText.append(m.getMessageBody());
             }
-            final String body = bodyText.toString();
-            Pattern pattern = Pattern.compile("([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
-            Matcher matcher = pattern.matcher(body);
-            if (!matcher.find())
-                return;
-            Intent i = new Intent(context, SmsDialog.class);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            i.putExtra(State.LATITUDE, matcher.group(1));
-            i.putExtra(State.LONGITUDE, matcher.group(2));
-            i.putExtra(State.INFO, sms_from);
-            i.putExtra(State.TEXT, body);
-            context.startActivity(i);
+            try {
+                final String body = bodyText.toString();
+                Pattern pattern = Pattern.compile("([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
+                Matcher matcher = pattern.matcher(body);
+                if (!matcher.find())
+                    return;
+                Intent i = new Intent(context, SmsDialog.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.putExtra(State.LATITUDE, matcher.group(1));
+                i.putExtra(State.LONGITUDE, matcher.group(2));
+                i.putExtra(State.INFO, sms_from);
+                i.putExtra(State.TEXT, body);
+                context.startActivity(i);
+            } catch (Exception ex) {
+                // ignore
+            }
         }
         if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -337,9 +341,13 @@ public class CarMonitor extends BroadcastReceiver {
     }
 
     static void lockDevice(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
-            DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
-            dpm.lockNow();
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
+                DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+                dpm.lockNow();
+            }
+        } catch (Exception ex) {
+            // ignore
         }
     }
 }

@@ -70,37 +70,40 @@ public class SMSActivity extends Activity {
             if (c.moveToFirst()) {
                 for (int i = 0; i < totalSMS; i++) {
                     String body = c.getString(c.getColumnIndexOrThrow("body"));
-                    Matcher matcher = pattern.matcher(body);
-                    if (matcher.find()) {
+                    if (body != null) {
+                        Matcher matcher = pattern.matcher(body);
                         try {
-                            SMS sms = new SMS();
-                            sms.body = body;
-                            sms.date = c.getLong(c.getColumnIndexOrThrow("date"));
-                            sms.to = c.getString(c.getColumnIndex("address"));
-                            sms.lat = Double.parseDouble(matcher.group(1));
-                            sms.lon = Double.parseDouble(matcher.group(2));
 
-                            Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(sms.to));
-                            ContentResolver contentResolver = getContentResolver();
-                            Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
-                                    ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+                            if (matcher.find()) {
+                                SMS sms = new SMS();
+                                sms.body = body;
+                                sms.date = c.getLong(c.getColumnIndexOrThrow("date"));
+                                sms.to = c.getString(c.getColumnIndex("address"));
+                                sms.lat = Double.parseDouble(matcher.group(1));
+                                sms.lon = Double.parseDouble(matcher.group(2));
 
-                            try {
-                                if (contactLookup != null && contactLookup.getCount() > 0) {
-                                    contactLookup.moveToNext();
-                                    sms.to = contactLookup.getString(contactLookup.getColumnIndex(ContactsContract.Data.DISPLAY_NAME));
-                                    long id = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
-                                    Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
-                                    InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, photo_uri);
-                                    if (input != null)
-                                        sms.photo = BitmapFactory.decodeStream(input);
+                                Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(sms.to));
+                                ContentResolver contentResolver = getContentResolver();
+                                Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
+                                        ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+
+                                try {
+                                    if (contactLookup != null && contactLookup.getCount() > 0) {
+                                        contactLookup.moveToNext();
+                                        sms.to = contactLookup.getString(contactLookup.getColumnIndex(ContactsContract.Data.DISPLAY_NAME));
+                                        long id = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
+                                        Uri photo_uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
+                                        InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, photo_uri);
+                                        if (input != null)
+                                            sms.photo = BitmapFactory.decodeStream(input);
+                                    }
+                                } finally {
+                                    if (contactLookup != null) {
+                                        contactLookup.close();
+                                    }
                                 }
-                            } finally {
-                                if (contactLookup != null) {
-                                    contactLookup.close();
-                                }
+                                smsList.add(sms);
                             }
-                            smsList.add(sms);
                         } catch (Exception ex) {
                             // ignore
                         }
@@ -190,7 +193,7 @@ public class SMSActivity extends Activity {
 
         @Override
         protected void onPostExecute(String s) {
-            if (s != null){
+            if (s != null) {
                 smsList.get(addr_pos).address = s;
                 adapter.notifyDataSetChanged();
             }
