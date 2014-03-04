@@ -257,9 +257,9 @@ public class AppsFragment extends Fragment {
                                 continue;
                             if (info.activityInfo.packageName.equals("ru.yandex.yandexnavi"))
                                 continue;
-                            if (info.activityInfo.packageName.equals("cityguide.probki.net"))
+                            if (info.activityInfo.packageName.equals(State.cg))
                                 continue;
-                            if (info.activityInfo.packageName.equals("citynet.probki.net"))
+                            if (info.activityInfo.packageName.equals(State.cn))
                                 continue;
                             if (info.activityInfo.packageName.equals("ru.shutoff.cgstarter"))
                                 continue;

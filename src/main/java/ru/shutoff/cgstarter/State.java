@@ -334,7 +334,7 @@ public class State {
     static boolean is_cn = false;
 
     static String cg = "cityguide.probki.net";
-    static String cn = "net.probki.citynet";
+    static String cn = "net.probki.geonet";
     static File cg_folder = null;
 
     static void init_package(Context context) {
@@ -360,14 +360,14 @@ public class State {
         }
         if (!is_cg) {
             cg_package = cn;
-            cg_folder = new File(cg_folder, "CityNet");
+            cg_folder = new File(cg_folder, "GeoNet");
             cg_app = false;
             return;
         }
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (preferences.getString("cg_app", "").equals(cn)) {
             cg_package = cn;
-            cg_folder = new File(cg_folder, "CityNet");
+            cg_folder = new File(cg_folder, "GeoNet");
             cg_app = false;
             return;
         }
