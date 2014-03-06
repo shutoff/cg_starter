@@ -94,7 +94,7 @@ public class CarMonitor extends BroadcastReceiver {
             }
         }
         if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String interval = preferences.getString(State.POWER_TIME, "");
             if (State.inInterval(interval)) {
                 orientation = null;
@@ -134,32 +134,46 @@ public class CarMonitor extends BroadcastReceiver {
                         }
                     }
                 }
-                power_timer = new CountDownTimer(2000, 2000) {
+                power_timer = new CountDownTimer(10000, 2000) {
                     @Override
                     public void onTick(long millisUntilFinished) {
-
-                    }
-
-                    @Override
-                    public void onFinish() {
-                        power_timer = null;
-                        if (sensorEventListener != null) {
-                            sensorManager.unregisterListener(sensorEventListener);
-                            sensorEventListener = null;
-                        }
-                        if (orientation != null) {
+                        if (preferences.getBoolean(State.VERTICAL, true)) {
+                            if (orientation == null)
+                                return;
                             if ((Math.abs(orientation[1]) + Math.abs(orientation[2])) < 1) {
+                                if (sensorEventListener != null) {
+                                    sensorManager.unregisterListener(sensorEventListener);
+                                    sensorEventListener = null;
+                                }
                                 orientation = null;
+                                if (power_timer != null)
+                                    power_timer.cancel();
+                                power_timer = null;
                                 return;
                             }
                             orientation = null;
                         }
+                        if (sensorEventListener != null) {
+                            sensorManager.unregisterListener(sensorEventListener);
+                            sensorEventListener = null;
+                        }
+                        if (power_timer != null)
+                            power_timer.cancel();
+                        power_timer = null;
                         if (!OnExitService.isRunCG(context)) {
                             Intent run = new Intent(context, MainActivity.class);
                             run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             context.startActivity(run);
                         }
-                        power_timer = null;
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        if (sensorEventListener != null) {
+                            sensorManager.unregisterListener(sensorEventListener);
+                            sensorEventListener = null;
+                        }
+                        orientation = null;
                     }
                 };
                 power_timer.start();
