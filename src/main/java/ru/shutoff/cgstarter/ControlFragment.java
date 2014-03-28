@@ -1,5 +1,7 @@
 package ru.shutoff.cgstarter;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -22,6 +24,25 @@ public class ControlFragment extends PreferencesFragment {
         setCheckBox(v, R.id.bt, State.BT);
         setCheckBox(v, R.id.data, State.DATA);
         setCheckBox(v, R.id.ping, State.PING);
+        View.OnClickListener listener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                        .setTitle(R.string.refresh)
+                        .setMessage(R.string.refresh_msg)
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .create();
+                dialog.show();
+            }
+        };
+        v.findViewById(R.id.refresh).setOnClickListener(listener);
+        v.findViewById(R.id.refresh_msg).setOnClickListener(listener);
         return v;
     }
 }

@@ -10,4 +10,6 @@
 
     <style name="spinnerItemStyle" parent="android:Widget.Holo" />
 
+    <style name="spinnerDropDownItemStyle" parent="android:Widget.Holo" />
+
 </resources>

@@ -64,7 +64,7 @@ public class PreferencesFragment extends Fragment {
                         .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                if (State.doRoot(getActivity(), "")) {
+                                if (State.doRoot(getActivity(), "", true)) {
                                     checkBox.setChecked(true);
                                     SharedPreferences.Editor ed = preferences.edit();
                                     ed.putBoolean(key, true);
@@ -189,6 +189,17 @@ public class PreferencesFragment extends Fragment {
                 return v;
             }
 
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View v = convertView;
+                if (v == null) {
+                    LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+                    v = inflater.inflate(R.layout.dropdown_item, null);
+                }
+                TextView tv = (TextView) v.findViewById(R.id.name);
+                tv.setText(values[position]);
+                return v;
+            }
         });
         String value = preferences.getString(key, defValue);
         for (int i = 0; i < entries.length; i++) {

@@ -65,17 +65,6 @@ public class State {
     static final String STRELKA = "strelka";
     static final String TRAFFIC = "traffic";
     static final String UPD_TIME = "upd_time";
-
-    static class Point {
-        String name;
-        String original;
-        String lat;
-        String lng;
-        String interval;
-        String points;
-        int days;
-    }
-
     static final String NAME = "Name";
     static final String ORIGINAL = "Original";
     static final String LATITUDE = "Latitude";
@@ -83,11 +72,9 @@ public class State {
     static final String INTERVAL = "Interval";
     static final String DAYS = "Days";
     static final String POINTS = "Points";
-
     static final int WORKDAYS = 1;
     static final int HOLIDAYS = 2;
     static final int ALLDAYS = 3;
-
     static final String TITLE = "title";
     static final String INFO = "info";
     static final String TEXT = "text";
@@ -99,8 +86,15 @@ public class State {
     static final String FULL_TIME = "full_time";
     static final String QUICK_ALPHA = "quick_alpha";
     static final String QUICK_SIZE = "quick_size";
-
     static Point[] points;
+    static int telephony_state = 0;
+    static String cg_package = null;
+    static boolean cg_app = true;
+    static boolean is_cg = false;
+    static boolean is_cn = false;
+    static String cg = "cityguide.probki.net";
+    static String cn = "net.probki.geonet";
+    static File cg_folder = null;
 
     static Point[] get(Context context) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -217,9 +211,35 @@ public class State {
         }
     }
 
-    interface OnBadGPS {
-        abstract void gps_message(Context context);
+/*
+    static public void appendLog(String text) {
+        File logFile = Environment.getExternalStorageDirectory();
+        logFile = new File(logFile, "cg.log");
+        if (text == null)
+            text = " (null)";
+        try {
+            if (!logFile.exists())
+                logFile.createNewFile();
+            //BufferedWriter for performance, true to set append to file flag
+            BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
+            Date d = new Date();
+            buf.append(d.toLocaleString());
+            buf.append(" ");
+            buf.append(text);
+            buf.newLine();
+            buf.close();
+        } catch (IOException e) {
+        }
     }
+
+    static public void print(Throwable ex) {
+        appendLog("Error: " + ex.toString());
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        String s = sw.toString();
+        appendLog(s);
+    }
+*/
 
     static boolean inInterval(String interval) {
         if (interval.equals(""))
@@ -252,8 +272,6 @@ public class State {
         return false;
     }
 
-    static int telephony_state = 0;
-
     static boolean isDebug() {
         return Build.FINGERPRINT.startsWith("generic");
     }
@@ -277,7 +295,7 @@ public class State {
         return telephony_state > 0;
     }
 
-    static boolean doRoot(Context context, String command) {
+    static boolean doRoot(Context context, String command, boolean show_error) {
         try {
             Process p = Runtime.getRuntime().exec("su");
             DataOutputStream os = new DataOutputStream(p.getOutputStream());
@@ -289,53 +307,15 @@ public class State {
             if (ev == 0)
                 return true;
         } catch (Exception ex) {
-            Toast toast = Toast.makeText(context, ex.toString(), Toast.LENGTH_LONG);
-            toast.show();
+            if (show_error) {
+                Toast toast = Toast.makeText(context, ex.toString(), Toast.LENGTH_LONG);
+                toast.show();
+            }
             // State.appendLog("su error " + command + " - " + ex.toString());
             // ignore
         }
         return false;
     }
-
-/*
-    static public void appendLog(String text) {
-        File logFile = Environment.getExternalStorageDirectory();
-        logFile = new File(logFile, "cg.log");
-        if (text == null)
-            text = " (null)";
-        try {
-            if (!logFile.exists())
-                logFile.createNewFile();
-            //BufferedWriter for performance, true to set append to file flag
-            BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
-            Date d = new Date();
-            buf.append(d.toLocaleString());
-            buf.append(" ");
-            buf.append(text);
-            buf.newLine();
-            buf.close();
-        } catch (IOException e) {
-        }
-    }
-
-    static public void print(Throwable ex) {
-        appendLog("Error: " + ex.toString());
-        StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw));
-        String s = sw.toString();
-        appendLog(s);
-    }
-*/
-
-    static String cg_package = null;
-    static boolean cg_app = true;
-
-    static boolean is_cg = false;
-    static boolean is_cn = false;
-
-    static String cg = "cityguide.probki.net";
-    static String cn = "net.probki.geonet";
-    static File cg_folder = null;
 
     static void init_package(Context context) {
         cg_app = true;
@@ -386,6 +366,20 @@ public class State {
         if (cg_package == null)
             init_package(context);
         return cg_package;
+    }
+
+    interface OnBadGPS {
+        abstract void gps_message(Context context);
+    }
+
+    static class Point {
+        String name;
+        String original;
+        String lat;
+        String lng;
+        String interval;
+        String points;
+        int days;
     }
 
 }

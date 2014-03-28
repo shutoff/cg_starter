@@ -27,11 +27,6 @@ public class CarMonitor extends BroadcastReceiver {
 
     static private final String START = "ru.shutoff.cgstarter.START";
     static private final String FIRE = "com.twofortyfouram.locale.intent.action.FIRE_SETTING";
-
-    private CountDownTimer power_timer;
-    private CountDownTimer power_kill_timer;
-    private CountDownTimer dock_kill_timer;
-
     SensorManager sensorManager;
     Sensor sensorAccelerometer;
     Sensor sensorMagnetic;
@@ -39,6 +34,61 @@ public class CarMonitor extends BroadcastReceiver {
     float[] gravity;
     float[] magnetic;
     float[] orientation;
+    private CountDownTimer power_timer;
+    private CountDownTimer power_kill_timer;
+    private CountDownTimer dock_kill_timer;
+
+    static void startCG(Context context, String route, String route_points, SearchActivity.Address addr) {
+        if (route.equals("-")) {
+            MainActivity.removeRoute(context);
+        } else if (!route.equals("")) {
+            MainActivity.createRoute(context, route, route_points, addr);
+        }
+        if (!MainActivity.setState(context, new State.OnBadGPS() {
+            @Override
+            public void gps_message(Context context) {
+                Toast toast = Toast.makeText(context, context.getString(R.string.no_gps_title), Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        })) {
+            MainActivity.setState(context, null);
+        }
+        Intent run = context.getPackageManager().getLaunchIntentForPackage(State.CG_Package(context));
+        if (run == null) {
+            Toast toast = Toast.makeText(context, context.getString(R.string.no_cg), Toast.LENGTH_SHORT);
+            toast.show();
+            return;
+        }
+        context.startActivity(run);
+        Intent service = new Intent(context, OnExitService.class);
+        service.setAction(OnExitService.START);
+        context.startService(service);
+    }
+
+    static void killCG(Context context) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
+        if (procInfos == null)
+            return;
+        int i;
+        for (i = 0; i < procInfos.size(); i++) {
+            ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
+            if (proc.processName.equals(State.CG_Package(context))) {
+                State.doRoot(context, "kill " + proc.pid, true);
+            }
+        }
+    }
+
+    static void lockDevice(Context context) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
+                DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+                dpm.lockNow();
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+    }
 
     @Override
     public void onReceive(final Context context, Intent intent) {
@@ -273,33 +323,6 @@ public class CarMonitor extends BroadcastReceiver {
         }
     }
 
-    static void startCG(Context context, String route, String route_points, SearchActivity.Address addr) {
-        if (route.equals("-")) {
-            MainActivity.removeRoute(context);
-        } else if (!route.equals("")) {
-            MainActivity.createRoute(context, route, route_points, addr);
-        }
-        if (!MainActivity.setState(context, new State.OnBadGPS() {
-            @Override
-            public void gps_message(Context context) {
-                Toast toast = Toast.makeText(context, context.getString(R.string.no_gps_title), Toast.LENGTH_SHORT);
-                toast.show();
-            }
-        })) {
-            MainActivity.setState(context, null);
-        }
-        Intent run = context.getPackageManager().getLaunchIntentForPackage(State.CG_Package(context));
-        if (run == null) {
-            Toast toast = Toast.makeText(context, context.getString(R.string.no_cg), Toast.LENGTH_SHORT);
-            toast.show();
-            return;
-        }
-        context.startActivity(run);
-        Intent service = new Intent(context, OnExitService.class);
-        service.setAction(OnExitService.START);
-        context.startService(service);
-    }
-
     void setCarMode(final Context context, boolean newMode) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         boolean curMode = preferences.getBoolean(State.CAR_STATE, false);
@@ -337,31 +360,6 @@ public class CarMonitor extends BroadcastReceiver {
                     dock_kill_timer.start();
                 }
             }
-        }
-    }
-
-    static void killCG(Context context) {
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
-        if (procInfos == null)
-            return;
-        int i;
-        for (i = 0; i < procInfos.size(); i++) {
-            ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(State.CG_Package(context))) {
-                State.doRoot(context, "kill " + proc.pid);
-            }
-        }
-    }
-
-    static void lockDevice(Context context) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
-                DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
-                dpm.lockNow();
-            }
-        } catch (Exception ex) {
-            // ignore
         }
     }
 }

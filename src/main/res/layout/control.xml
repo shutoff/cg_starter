@@ -5,18 +5,18 @@
     android:layout_height="match_parent">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="vertical"
         android:padding="5dp">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingTop="10dp"
             android:text="@string/rotate"
-            android:textStyle="bold"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:paddingTop="10dp" />
+            android:textStyle="bold" />
 
         <Spinner
             android:id="@+id/orientation"
@@ -28,80 +28,97 @@
             android:id="@+id/volume"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/level"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/level"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <SeekBar
             android:id="@+id/level"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="100"
-            android:layout_margin="8dp" />
+            android:layout_margin="8dp"
+            android:max="100" />
 
         <CheckBox
             android:id="@+id/bt"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/bt"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/bt"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/bt_sum"
             android:paddingLeft="10dp"
+            android:text="@string/bt_sum"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <CheckBox
             android:id="@+id/data"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/data"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/data"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/data_sum"
             android:paddingLeft="10dp"
+            android:text="@string/data_sum"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <CheckBox
             android:id="@+id/ping"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/ping"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/ping"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/ping_sum"
             android:paddingLeft="10dp"
+            android:text="@string/ping_sum"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <CheckBox
             android:id="@+id/gps"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/gps"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/gps"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/gps_sum"
             android:paddingLeft="10dp"
+            android:text="@string/gps_sum"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <TextView
+            android:id="@+id/refresh"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="5dp"
+            android:text="@string/refresh"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/refresh_msg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="10dp"
+            android:text="@string/refresh_msg"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
     </LinearLayout>

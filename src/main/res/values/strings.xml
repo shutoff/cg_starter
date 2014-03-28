@@ -210,4 +210,6 @@
     <string name="phone_mobile">mobile</string>
     <string name="last_call">Call last number</string>
     <string name="cg_run">Run:</string>
+    <string name="refresh">Обновить закладки</string>
+    <string name="refresh_msg">Обновить конечные точки на стартовом экране из закладок</string>
 </resources>

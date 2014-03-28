@@ -101,6 +101,18 @@ public class StartFragment extends PreferencesFragment {
                     tv.setText(names[position]);
                     return v;
                 }
+
+                @Override
+                public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                    View v = convertView;
+                    if (v == null) {
+                        LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+                        v = inflater.inflate(R.layout.dropdown_item, null);
+                    }
+                    TextView tv = (TextView) v.findViewById(R.id.name);
+                    tv.setText(names[position]);
+                    return v;
+                }
             });
             spinner.setSelection(preferences.getString("cg_app", "").equals(State.cn) ? 1 : 0);
             spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
