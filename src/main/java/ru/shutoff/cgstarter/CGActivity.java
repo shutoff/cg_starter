@@ -1,7 +1,10 @@
 package ru.shutoff.cgstarter;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -68,5 +71,12 @@ public class CGActivity extends Activity {
         }
     }
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
+        if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting())
+            OnExitService.enableMobileData(this, true);
+    }
 }

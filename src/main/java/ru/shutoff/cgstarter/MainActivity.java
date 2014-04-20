@@ -3,10 +3,12 @@ package ru.shutoff.cgstarter;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.admin.DevicePolicyManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -53,6 +55,7 @@ public class MainActivity
     static final int RUN_CG = 3001;
     static final int RUN_DIALOG = 3002;
     static final int ADMIN_INTENT = 3003;
+    static final String CHANGE_APP = "ru.shutoff.cg_starter.CHANGE_APP";
     static int[][] holidays = {
             {1, 1},
             {2, 1},
@@ -79,6 +82,8 @@ public class MainActivity
     double start;
     SharedPreferences preferences;
     DevicePolicyManager dpm;
+    BroadcastReceiver br;
+    ImageView cg_icon;
 
     static String routes(Context context) {
         try {
@@ -117,7 +122,7 @@ public class MainActivity
     static void createRoute(Context context, String route, String points_str, SearchActivity.Address addr) {
         try {
             File routes_dat = State.CG_Folder(context);
-            if (State.cg_app) {
+            if (State.cg_files) {
                 String tail = routes(context);
                 routes_dat = new File(routes_dat, "routes.dat");
                 if (!routes_dat.exists())
@@ -180,7 +185,7 @@ public class MainActivity
                 double lng = Double.parseDouble(r[1]);
                 File history = State.CG_Folder(context);
                 Vector<String> lines = new Vector<String>();
-                if (State.cg_app) {
+                if (State.cg_files) {
                     history = new File(history, "history.dat");
                     BufferedReader reader = new BufferedReader(new FileReader(history));
                     boolean first = true;
@@ -259,7 +264,7 @@ public class MainActivity
     static void removeRoute(Context context) {
         try {
             File routes_dat = State.CG_Folder(context);
-            if (State.cg_app) {
+            if (State.cg_files) {
                 String tail = routes(context);
                 routes_dat = new File(routes_dat, "routes.dat");
                 if (!routes_dat.exists())
@@ -390,13 +395,6 @@ public class MainActivity
         }
         OnExitService.turnOnBT(context);
         if (preferences.getBoolean(State.DATA, false)) {
-            try {
-                context.sendBroadcast(new Intent("com.latedroid.juicedefender.action.ENABLE_APN")
-                        .putExtra("tag", "cg_starter")
-                        .putExtra("reply", true));
-            } catch (Exception ex) {
-                // ignore
-            }
 
             try {
                 WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
@@ -532,7 +530,7 @@ public class MainActivity
             launch_pause = 10;
         launch_pause = launch_pause * 1000;
 
-        points = State.get(this);
+        points = State.get(this, false);
 
         Calendar calendar = Calendar.getInstance();
         int now_day = calendar.get(Calendar.DAY_OF_MONTH);
@@ -625,7 +623,7 @@ public class MainActivity
         run.setOnTouchListener(this);
 
         LinearLayout cg = (LinearLayout) findViewById(R.id.cg);
-        ImageView cg_icon = (ImageView) findViewById(R.id.cg_icon);
+        cg_icon = (ImageView) findViewById(R.id.cg_icon);
         try {
             PackageManager manager = getPackageManager();
             cg_icon.setImageDrawable(manager.getApplicationIcon(State.CG_Package(this)));
@@ -677,6 +675,33 @@ public class MainActivity
             }
         }
 
+        br = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                try {
+                    PackageManager manager = getPackageManager();
+                    cg_icon.setImageDrawable(manager.getApplicationIcon(State.CG_Package(context)));
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+        };
+        registerReceiver(br, new IntentFilter(CHANGE_APP));
+    }
+
+    @Override
+    protected void onDestroy() {
+        unregisterReceiver(br);
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        points = State.get(this, false);
+        for (int i = 0; i < 8; i++) {
+            buttons[i].setText(points[i].name);
+        }
     }
 
     @Override

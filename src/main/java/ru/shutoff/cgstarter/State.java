@@ -1,5 +1,6 @@
 package ru.shutoff.cgstarter;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,11 +15,17 @@ import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Calendar;
+import java.util.Date;
 
-public class State {
+public class State extends BroadcastReceiver {
 
     static final String AUTO_PAUSE = "auto_pause";
     static final String INACTIVE_PAUSE = "inactive_pause";
@@ -89,40 +96,46 @@ public class State {
     static Point[] points;
     static int telephony_state = 0;
     static String cg_package = null;
-    static boolean cg_app = true;
+
+    static boolean cg_files = true;
     static boolean is_cg = false;
     static boolean is_cn = false;
+
     static String cg = "cityguide.probki.net";
     static String cn = "net.probki.geonet";
     static File cg_folder = null;
 
-    static Point[] get(Context context) {
+    static Point[] get(Context context, boolean force) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (force)
+            points = null;
         if (points == null) {
             points = new Point[8];
             boolean is_init = false;
             for (int i = 0; i < 8; i++) {
                 Point p = new Point();
-                p.name = preferences.getString(NAME + i, "");
-                p.original = preferences.getString(ORIGINAL + i, "");
-                p.lat = preferences.getString(LATITUDE + i, "");
-                p.lng = preferences.getString(LONGITUDE + i, "");
-                p.interval = preferences.getString(INTERVAL + i, "");
-                p.days = preferences.getInt(DAYS + i, 0);
-                p.points = preferences.getString(POINTS + i, "");
-                if (p.lat.equals("") || p.lng.equals("")) {
-                    p.name = "";
-                    p.original = "";
-                    p.lat = "";
-                    p.lng = "";
-                    p.interval = "";
-                    p.days = 0;
-                    p.points = "";
+                if (!force) {
+                    p.name = preferences.getString(NAME + i, "");
+                    p.original = preferences.getString(ORIGINAL + i, "");
+                    p.lat = preferences.getString(LATITUDE + i, "");
+                    p.lng = preferences.getString(LONGITUDE + i, "");
+                    p.interval = preferences.getString(INTERVAL + i, "");
+                    p.days = preferences.getInt(DAYS + i, 0);
+                    p.points = preferences.getString(POINTS + i, "");
+                    if (p.lat.equals("") || p.lng.equals("")) {
+                        p.name = "";
+                        p.original = "";
+                        p.lat = "";
+                        p.lng = "";
+                        p.interval = "";
+                        p.days = 0;
+                        p.points = "";
+                    }
+                    if (!p.name.equals(""))
+                        is_init = true;
                 }
-                if (!p.name.equals(""))
-                    is_init = true;
                 points[i] = p;
-            }
+                }
             if (!is_init) {
                 Bookmarks.Point[] from = Bookmarks.get(context);
                 for (int i = 0; i < 8; i++) {
@@ -211,7 +224,6 @@ public class State {
         }
     }
 
-/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -239,7 +251,6 @@ public class State {
         String s = sw.toString();
         appendLog(s);
     }
-*/
 
     static boolean inInterval(String interval) {
         if (interval.equals(""))
@@ -318,41 +329,50 @@ public class State {
     }
 
     static void init_package(Context context) {
-        cg_app = true;
+        cg_files = true;
         cg_folder = Environment.getExternalStorageDirectory();
         PackageManager pm = context.getPackageManager();
         try {
-            pm.getPackageInfo(cg, 0);
+            PackageInfo info = pm.getPackageInfo(cg, 0);
             is_cg = true;
+            String[] ver = info.versionName.split("\\.");
+            if (Integer.parseInt(ver[0]) > 7)
+                cg_files = false;
+            State.appendLog("Found " + cg);
         } catch (Exception ex) {
             // ignore
         }
         try {
             pm.getPackageInfo(cn, 0);
             is_cn = true;
+            State.appendLog("Found " + cn);
         } catch (Exception ex) {
             // ignore
         }
         if (!is_cn) {
             cg_package = cg;
             cg_folder = new File(cg_folder, "CityGuide");
+            context.sendBroadcast(new Intent(MainActivity.CHANGE_APP));
             return;
         }
         if (!is_cg) {
             cg_package = cn;
             cg_folder = new File(cg_folder, "GeoNet");
-            cg_app = false;
+            cg_files = false;
+            context.sendBroadcast(new Intent(MainActivity.CHANGE_APP));
             return;
         }
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (preferences.getString("cg_app", "").equals(cn)) {
             cg_package = cn;
             cg_folder = new File(cg_folder, "GeoNet");
-            cg_app = false;
+            cg_files = false;
+            context.sendBroadcast(new Intent(MainActivity.CHANGE_APP));
             return;
         }
         cg_package = cg;
         cg_folder = new File(cg_folder, "CityGuide");
+        context.sendBroadcast(new Intent(MainActivity.CHANGE_APP));
     }
 
     static File CG_Folder(Context context) {
@@ -366,6 +386,11 @@ public class State {
         if (cg_package == null)
             init_package(context);
         return cg_package;
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        init_package(context);
     }
 
     interface OnBadGPS {

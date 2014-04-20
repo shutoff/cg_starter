@@ -109,83 +109,11 @@ public class OnExitService extends Service {
 
     static final String NOTIFICATION = "ru.shutoff.cg_starter.NOTIFICATION";
     static final String SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
-
-    AlarmManager alarmMgr;
-    PendingIntent pi;
-    PendingIntent piAnswer;
-    PendingIntent piRinging;
-    PendingIntent piAfterCall;
-
-    PhoneStateListener phoneListener;
-
-    static int background_count;
-
-    WindowManager.LayoutParams layoutParams;
-
-    BroadcastReceiver networkReciever;
-    TelephonyManager tm;
-
-    boolean phone;
-    boolean speaker;
-    boolean ringing;
-    boolean landscape;
-
-    static String call_number;
-
-    int autoanswer;
-    int autoswitch;
-
-    float button_x;
-    float button_y;
-    Bitmap contactPhoto;
-
-    boolean show_overlay;
-    boolean foreground;
-    boolean inactive_run;
-
-    View hudActive;
-    View hudInactive;
-    View hudNotification;
-    View hudApps;
-
-    CountDownTimer setupTimer;
-    CountDownTimer notificationTimer;
-
-    boolean setup_button;
-
-    FileObserver observer;
-    String screenshots_path;
-
-    PingTask pingTask;
-    BroadcastReceiver phoneReceiver;
-
-    static LocationManager locationManager;
-    LocationListener netListener;
-    LocationListener gpsListener;
-
-    long fetcher_time;
-    long last_run;
-    boolean cg_running;
-
-    static boolean force_exit;
-    static Location currentBestLocation;
-    View.OnClickListener iconListener;
-
-    static int speacker_volume;
-
-    PackageManager pm;
-
-    static double yandex_finish_lat;
-    static double yandex_finish_lon;
-
     final static long UPD_INTERVAL = 3 * 60 * 1000;
     final static long VALID_INTEVAL = 15 * 60 * 1000;
     final static String TRAFFIC_URL = "https://api.shutoff.ru/level?lat=$1&lng=$2";
-
     final static double K_C = 100000.;
-
     final static String YAN = "ru.yandex.yandexnavi";
-
     final static int res[] = {
             R.drawable.gray,
             R.drawable.p0,
@@ -200,13 +128,442 @@ public class OnExitService extends Service {
             R.drawable.p9,
             R.drawable.p10,
     };
+    static final int TWO_MINUTES = 1000 * 60 * 2;
+    static final double D2R = 0.017453; // Константа для преобразования градусов в радианы
+    static final double a = 6378137.0; // Основные полуоси
+    static final double e2 = 0.006739496742337; // Квадрат эксцентричности эллипсоида
+    static int background_count;
+    static String call_number;
+    static LocationManager locationManager;
+    static boolean force_exit;
+    static Location currentBestLocation;
+    static int speacker_volume;
+    static double yandex_finish_lat;
+    static double yandex_finish_lon;
+    static float size = 0;
+    static int prev_state;
+    static boolean cg_run;
+    static ActivityManager mActivityManager;
+    AlarmManager alarmMgr;
+    PendingIntent pi;
+    PendingIntent piAnswer;
+    PendingIntent piRinging;
+    PendingIntent piAfterCall;
+    PhoneStateListener phoneListener;
+    WindowManager.LayoutParams layoutParams;
+    BroadcastReceiver networkReciever;
+    TelephonyManager tm;
+    boolean phone;
+    boolean speaker;
+    boolean ringing;
+    boolean landscape;
+    int autoanswer;
+    int autoswitch;
+    float button_x;
+    float button_y;
+    Bitmap contactPhoto;
+    boolean show_overlay;
+    boolean foreground;
+    boolean inactive_run;
+    View hudActive;
+    View hudInactive;
+    View hudNotification;
+    View hudApps;
+    CountDownTimer setupTimer;
+    CountDownTimer notificationTimer;
+    boolean setup_button;
+    FileObserver observer;
+    String screenshots_path;
+    PingTask pingTask;
+    BroadcastReceiver phoneReceiver;
+    LocationListener netListener;
+    LocationListener gpsListener;
+    long fetcher_time;
+    long last_run;
+    boolean cg_running;
 
-    static class App {
-        String name;
-        Drawable icon;
+/*
+    double getNoise() {
+        try {
+            int sampleRate = 8000;
+            int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT);
+            AudioRecord audio = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+            audio.startRecording();
+            short[] buffer = new short[bufferSize];
+            int bufferReadResult = audio.read(buffer, 0, bufferSize);
+            if (bufferReadResult > 0){
+                double sumLevel = 0;
+                for (int i = 0; i < bufferReadResult; i++) {
+                    sumLevel += Math.abs(buffer[i]);
+                }
+                return sumLevel / bufferReadResult;
+            }
+        } catch (Exception e) {
+            State.print(e);
+        }
+        return 0;
+    }
+*/
+View.OnClickListener iconListener;
+    PackageManager pm;
+    Vector<App> apps;
+    boolean yandex_error;
+
+    static void turnOnBT(Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (preferences.getBoolean(State.BT, false)) {
+            try {
+                BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
+                if ((bt != null) && !bt.isEnabled()) {
+                    bt.enable();
+                    SharedPreferences.Editor ed = preferences.edit();
+                    ed.putString(State.BT_DEVICES, "-");
+                    ed.commit();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
-    Vector<App> apps;
+    static void turnOffBT(Context context, String device) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        String devices_str = preferences.getString(State.BT_DEVICES, "");
+        if (devices_str.equals(""))
+            return;
+        String[] devices = devices_str.split(";");
+        String d = null;
+        for (String dev : devices) {
+            if (dev.equals(device))
+                continue;
+            if (d == null) {
+                d = dev;
+            } else {
+                d += ";" + dev;
+            }
+        }
+        if (d != null) {
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.putString(State.BT_DEVICES, d);
+            ed.commit();
+            return;
+        }
+        BluetoothAdapter btAdapter;
+        try {
+            btAdapter = BluetoothAdapter.getDefaultAdapter();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return;
+        }
+        if (btAdapter == null)
+            return;
+        btAdapter.disable();
+        SharedPreferences.Editor ed = preferences.edit();
+        ed.remove(State.BT_DEVICES);
+        ed.commit();
+    }
+
+    static boolean isRun(Context context, String pkg_name) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
+        if (procInfos == null)
+            return false;
+        int i;
+        for (i = 0; i < procInfos.size(); i++) {
+            ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
+            if (proc.processName.equals(pkg_name))
+                return true;
+        }
+        return false;
+    }
+
+    static boolean isRunCG(Context context) {
+        return isRun(context, State.CG_Package(context));
+    }
+
+    static boolean isActiveCG(Context context) {
+        if (mActivityManager == null)
+            mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        try {
+            List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
+            return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_Package(context));
+        } catch (Exception ex) {
+            // ignore
+        }
+        return false;
+    }
+
+    static void convertFile(String bmp_name) {
+        try {
+            File bmp_file = new File(bmp_name);
+            long last_modified = bmp_file.lastModified();
+            Bitmap bmp = BitmapFactory.decodeFile(bmp_name);
+            String png_name = bmp_name.substring(0, bmp_name.length() - 4);
+            if (locationManager != null) {
+                Location locationGPS = null;
+                try {
+                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                        locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                } catch (Exception ex) {
+                    // ignore
+                }
+                if (locationGPS != null) {
+                    png_name += "_";
+                    png_name += Math.round(locationGPS.getLatitude() * K_C) / K_C;
+                    png_name += "_";
+                    png_name += Math.round(locationGPS.getLongitude() * K_C) / K_C;
+                }
+            }
+            png_name += ".png";
+            FileOutputStream out = new FileOutputStream(png_name);
+            boolean res = bmp.compress(Bitmap.CompressFormat.PNG, 1, out);
+            out.flush();
+            out.close();
+            File file = new File(res ? bmp_name : png_name);
+            file.delete();
+            if (res) {
+                File png_file = new File(png_name);
+                png_file.setLastModified(last_modified);
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+    }
+
+    static void convertToPng(String path) {
+        AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
+            @Override
+            protected Void doInBackground(String... params) {
+                convertFile(params[0]);
+                return null;
+            }
+        };
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, path);
+        } else {
+            task.execute(path);
+        }
+    }
+
+    static void convertFiles(final Context context) {
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    File screenshots = State.CG_Folder(context);
+                    screenshots = new File(screenshots, "screenshots");
+                    String[] bmp_files = screenshots.list(new FilenameFilter() {
+                        @Override
+                        public boolean accept(File dir, String filename) {
+                            return filename.substring(filename.length() - 4).equals(".bmp");
+                        }
+                    });
+                    for (String bmp_file : bmp_files) {
+                        convertFile(screenshots.getAbsolutePath() + "/" + bmp_file);
+                    }
+                } catch (Exception ex) {
+                    // ignore
+                }
+                return null;
+            }
+        };
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            task.execute();
+        }
+    }
+
+    static boolean removeOldFile(File f) {
+        if (f.isDirectory()) {
+            boolean no_remove = false;
+            String[] files = f.list();
+            for (String file : files) {
+                no_remove |= removeOldFile(new File(f, file));
+            }
+            if (no_remove)
+                return true;
+            f.delete();
+            return false;
+        }
+        Date now = new Date();
+        if (f.lastModified() < now.getTime() - 7 * 24 * 60 * 60 * 1000) {
+            f.delete();
+            return false;
+        }
+        return true;
+    }
+
+    static void removeRTA(final Context context) {
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    File rta = State.CG_Folder(context);
+                    rta = new File(rta, "RtaLog");
+                    String[] files = rta.list();
+                    for (String file : files) {
+                        removeOldFile(new File(rta, file));
+                    }
+                } catch (Exception ex) {
+                    // ignore
+                }
+                return null;
+            }
+        };
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            task.execute();
+        }
+    }
+
+    static double calc_distance(double lat1, double lon1, double lat2, double lon2) {
+
+        if ((lat1 == lat2) && (lon1 == lon2))
+            return 0;
+
+        double fdLambda = (lon1 - lon2) * D2R;
+        double fdPhi = (lat1 - lat2) * D2R;
+        double fPhimean = ((lat1 + lat2) / 2.0) * D2R;
+
+        double fTemp = 1 - e2 * (Math.pow(Math.sin(fPhimean), 2));
+        double fRho = (a * (1 - e2)) / Math.pow(fTemp, 1.5);
+        double fNu = a / (Math.sqrt(1 - e2 * (Math.sin(fPhimean) * Math.sin(fPhimean))));
+
+        double fz = Math.sqrt(Math.pow(Math.sin(fdPhi / 2.0), 2) +
+                Math.cos(lat2 * D2R) * Math.cos(lat1 * D2R) * Math.pow(Math.sin(fdLambda / 2.0), 2));
+        fz = 2 * Math.asin(fz);
+
+        double fAlpha = Math.cos(lat1 * D2R) * Math.sin(fdLambda) * 1 / Math.sin(fz);
+        fAlpha = Math.asin(fAlpha);
+
+        double fR = (fRho * fNu) / ((fRho * Math.pow(Math.sin(fAlpha), 2)) + (fNu * Math.pow(Math.cos(fAlpha), 2)));
+
+        return fz * fR;
+    }
+
+    static void enableMobileData(Context context, boolean enable) {
+        try {
+            if (enable) {
+                try {
+                    context.sendBroadcast(new Intent("com.latedroid.juicedefender.action.ENABLE_APN")
+                            .putExtra("tag", "cg_starter")
+                            .putExtra("reply", true));
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
+            ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            Class conmanClass = Class.forName(conman.getClass().getName());
+            final Method[] methods = conmanClass.getDeclaredMethods();
+            for (final Method method : methods) {
+                if (method.getName().equals("setMobileDataEnabled")) {
+                    method.invoke(conman, enable);
+                    return;
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    static boolean getMobileDataEnabled(Context context) {
+        try {
+            ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            Class conmanClass = Class.forName(conman.getClass().getName());
+            final Method[] methods = conmanClass.getDeclaredMethods();
+            for (final Method method : methods) {
+                if (method.getName().equals("getMobileDataEnabled"))
+                    return (Boolean) method.invoke(conman);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
+    static void startYan(Context context) {
+        Intent intent = new Intent("ru.yandex.yandexnavi.action.BUILD_ROUTE_ON_MAP");
+        intent.setPackage("ru.yandex.yandexnavi");
+        PackageManager pm = context.getPackageManager();
+        List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
+        if ((infos != null) && (infos.size() > 0)) {
+            double finish_lat = 0;
+            double finish_lon = 0;
+            try {
+                File poi = State.CG_Folder(context);
+                if (State.cg_files) {
+                    poi = new File(poi, "routes.dat");
+                    BufferedReader reader = new BufferedReader(new FileReader(poi));
+                    reader.readLine();
+                    boolean current = false;
+                    while (true) {
+                        String line = reader.readLine();
+                        if (line == null)
+                            break;
+                        String[] parts = line.split("\\|");
+                        if (parts.length == 0)
+                            continue;
+                        String name = parts[0];
+                        if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
+                            current = name.equals("#[CURRENT]");
+                            continue;
+                        }
+                        if (current && name.equals("Finish")) {
+                            finish_lat = Double.parseDouble(parts[1]);
+                            finish_lon = Double.parseDouble(parts[2]);
+                        }
+                    }
+                    reader.close();
+                } else {
+                    poi = new File(poi, "Routes/Route.curr");
+                    BufferedReader reader = new BufferedReader(new FileReader(poi));
+                    reader.readLine();
+                    while (true) {
+                        String line = reader.readLine();
+                        if (line == null)
+                            break;
+                        String[] parts = line.split("\\|");
+                        if (parts.length < 4)
+                            continue;
+                        String name = parts[0];
+                        if (name.equals("3")) {
+                            finish_lat = Double.parseDouble(parts[2]);
+                            finish_lon = Double.parseDouble(parts[3]);
+                        }
+                    }
+                    reader.close();
+                }
+            } catch (Exception ex) {
+                // ignore
+            }
+
+            if ((finish_lat == yandex_finish_lat) && (finish_lon == yandex_finish_lon)) {
+                try {
+                    intent = pm.getLaunchIntentForPackage("ru.yandex.yandexnavi");
+                } catch (Exception ex) {
+                    // ignore
+                }
+            } else {
+                if (currentBestLocation != null) {
+                    intent.putExtra("lat_from", currentBestLocation.getLatitude());
+                    intent.putExtra("lon_from", currentBestLocation.getLongitude());
+                }
+                intent.putExtra("lat_to", finish_lat);
+                intent.putExtra("lon_to", finish_lon);
+                yandex_finish_lat = finish_lat;
+                yandex_finish_lon = finish_lon;
+            }
+            if (intent == null)
+                return;
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        }
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -254,7 +611,8 @@ public class OnExitService extends Service {
                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                         WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT);
+                PixelFormat.TRANSLUCENT
+        );
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -585,32 +943,6 @@ public class OnExitService extends Service {
         return START_STICKY;
     }
 
-/*
-    double getNoise() {
-        try {
-            int sampleRate = 8000;
-            int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT);
-            AudioRecord audio = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate,
-                    AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-            audio.startRecording();
-            short[] buffer = new short[bufferSize];
-            int bufferReadResult = audio.read(buffer, 0, bufferSize);
-            if (bufferReadResult > 0){
-                double sumLevel = 0;
-                for (int i = 0; i < bufferReadResult; i++) {
-                    sumLevel += Math.abs(buffer[i]);
-                }
-                return sumLevel / bufferReadResult;
-            }
-        } catch (Exception e) {
-            State.print(e);
-        }
-        return 0;
-    }
-*/
-
     void ping() {
         if (pingTask != null)
             return;
@@ -634,7 +966,6 @@ public class OnExitService extends Service {
         intent.putExtra("state", mode);
         sendBroadcast(intent);
     }
-
 
     void callAnswer() {
         TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
@@ -717,53 +1048,6 @@ public class OnExitService extends Service {
             // ignore
         }
         showInactiveOverlay();
-    }
-
-    abstract class OverlayTouchListener implements View.OnTouchListener {
-
-        abstract void click();
-
-        void setup() {
-            setupPhoneButton();
-        }
-
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    setupTimer = new CountDownTimer(1000, 1000) {
-                        @Override
-                        public void onTick(long millisUntilFinished) {
-                        }
-
-                        @Override
-                        public void onFinish() {
-                            setup();
-                        }
-                    };
-                    setupTimer.start();
-                    button_x = event.getX();
-                    button_y = event.getY();
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    if (setup_button)
-                        moveButton((int) (event.getRawX() - button_x), (int) (event.getRawY() - button_y));
-                    break;
-
-                case MotionEvent.ACTION_UP:
-                    if (setup_button) {
-                        cancelSetup();
-                        break;
-                    }
-                    cancelSetup();
-                    click();
-                    break;
-                case MotionEvent.ACTION_CANCEL:
-                    cancelSetup();
-                    break;
-            }
-            return false;
-        }
     }
 
     boolean isLandscape() {
@@ -983,8 +1267,6 @@ public class OnExitService extends Service {
         notificationTimer.start();
     }
 
-    static float size = 0;
-
     boolean isBig() {
         if (size == 0) {
             WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -997,8 +1279,6 @@ public class OnExitService extends Service {
         }
         return (size > 1500);
     }
-
-    boolean yandex_error;
 
     void showApps() {
         if ((hudActive != null) || (hudNotification != null) || (hudInactive != null) || (hudApps != null))
@@ -1124,7 +1404,8 @@ public class OnExitService extends Service {
                     WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
                     WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
                             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                    PixelFormat.TRANSLUCENT);
+                    PixelFormat.TRANSLUCENT
+            );
             lp.gravity = Gravity.TOP | Gravity.LEFT;
             lp.x = layoutParams.x;
             lp.y = layoutParams.y;
@@ -1539,63 +1820,6 @@ public class OnExitService extends Service {
         }
     }
 
-    static void turnOnBT(Context context) {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (preferences.getBoolean(State.BT, false)) {
-            try {
-                BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
-                if ((bt != null) && !bt.isEnabled()) {
-                    bt.enable();
-                    SharedPreferences.Editor ed = preferences.edit();
-                    ed.putString(State.BT_DEVICES, "-");
-                    ed.commit();
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-
-    static void turnOffBT(Context context, String device) {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        String devices_str = preferences.getString(State.BT_DEVICES, "");
-        if (devices_str.equals(""))
-            return;
-        String[] devices = devices_str.split(";");
-        String d = null;
-        for (String dev : devices) {
-            if (dev.equals(device))
-                continue;
-            if (d == null) {
-                d = dev;
-            } else {
-                d += ";" + dev;
-            }
-        }
-        if (d != null) {
-            SharedPreferences.Editor ed = preferences.edit();
-            ed.putString(State.BT_DEVICES, d);
-            ed.commit();
-            return;
-        }
-        BluetoothAdapter btAdapter;
-        try {
-            btAdapter = BluetoothAdapter.getDefaultAdapter();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return;
-        }
-        if (btAdapter == null)
-            return;
-        btAdapter.disable();
-        SharedPreferences.Editor ed = preferences.edit();
-        ed.remove(State.BT_DEVICES);
-        ed.commit();
-    }
-
-    static int prev_state;
-    static boolean cg_run;
-
     void stopAutoAnswer() {
         if (piAnswer != null) {
             alarmMgr.cancel(piAnswer);
@@ -1745,224 +1969,6 @@ public class OnExitService extends Service {
         return PendingIntent.getService(this, 0, intent, 0);
     }
 
-    static boolean isRun(Context context, String pkg_name) {
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
-        if (procInfos == null)
-            return false;
-        int i;
-        for (i = 0; i < procInfos.size(); i++) {
-            ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(pkg_name))
-                return true;
-        }
-        return false;
-    }
-
-    static boolean isRunCG(Context context) {
-        return isRun(context, State.CG_Package(context));
-    }
-
-    static ActivityManager mActivityManager;
-
-    static boolean isActiveCG(Context context) {
-        if (mActivityManager == null)
-            mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        try {
-            List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
-            return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_Package(context));
-        } catch (Exception ex) {
-            // ignore
-        }
-        return false;
-    }
-
-    static void convertFile(String bmp_name) {
-        try {
-            File bmp_file = new File(bmp_name);
-            long last_modified = bmp_file.lastModified();
-            Bitmap bmp = BitmapFactory.decodeFile(bmp_name);
-            String png_name = bmp_name.substring(0, bmp_name.length() - 4);
-            if (locationManager != null) {
-                Location locationGPS = null;
-                try {
-                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-                        locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                } catch (Exception ex) {
-                    // ignore
-                }
-                if (locationGPS != null) {
-                    png_name += "_";
-                    png_name += Math.round(locationGPS.getLatitude() * K_C) / K_C;
-                    png_name += "_";
-                    png_name += Math.round(locationGPS.getLongitude() * K_C) / K_C;
-                }
-            }
-            png_name += ".png";
-            FileOutputStream out = new FileOutputStream(png_name);
-            boolean res = bmp.compress(Bitmap.CompressFormat.PNG, 1, out);
-            out.flush();
-            out.close();
-            File file = new File(res ? bmp_name : png_name);
-            file.delete();
-            if (res) {
-                File png_file = new File(png_name);
-                png_file.setLastModified(last_modified);
-            }
-        } catch (Exception ex) {
-            // ignore
-        }
-    }
-
-    static void convertToPng(String path) {
-        AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
-            @Override
-            protected Void doInBackground(String... params) {
-                convertFile(params[0]);
-                return null;
-            }
-        };
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, path);
-        } else {
-            task.execute(path);
-        }
-    }
-
-    static void convertFiles(final Context context) {
-        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    File screenshots = State.CG_Folder(context);
-                    screenshots = new File(screenshots, "screenshots");
-                    String[] bmp_files = screenshots.list(new FilenameFilter() {
-                        @Override
-                        public boolean accept(File dir, String filename) {
-                            return filename.substring(filename.length() - 4).equals(".bmp");
-                        }
-                    });
-                    for (String bmp_file : bmp_files) {
-                        convertFile(screenshots.getAbsolutePath() + "/" + bmp_file);
-                    }
-                } catch (Exception ex) {
-                    // ignore
-                }
-                return null;
-            }
-        };
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        } else {
-            task.execute();
-        }
-    }
-
-    static boolean removeOldFile(File f) {
-        if (f.isDirectory()) {
-            boolean no_remove = false;
-            String[] files = f.list();
-            for (String file : files) {
-                no_remove |= removeOldFile(new File(f, file));
-            }
-            if (no_remove)
-                return true;
-            f.delete();
-            return false;
-        }
-        Date now = new Date();
-        if (f.lastModified() < now.getTime() - 7 * 24 * 60 * 60 * 1000) {
-            f.delete();
-            return false;
-        }
-        return true;
-    }
-
-    static void removeRTA(final Context context) {
-        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    File rta = State.CG_Folder(context);
-                    rta = new File(rta, "RtaLog");
-                    String[] files = rta.list();
-                    for (String file : files) {
-                        removeOldFile(new File(rta, file));
-                    }
-                } catch (Exception ex) {
-                    // ignore
-                }
-                return null;
-            }
-        };
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        } else {
-            task.execute();
-        }
-    }
-
-    class PingTask extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            try {
-                if (show_overlay)
-                    return null;
-                ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
-                if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting()) {
-                    Class conmanClass = Class.forName(conman.getClass().getName());
-                    Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
-                    iConnectivityManagerField.setAccessible(true);
-                    Object iConnectivityManager = iConnectivityManagerField.get(conman);
-                    Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
-
-                    Method getMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("getMobileDataEnabled");
-                    getMobileDataEnabledMethod.setAccessible(true); // Make the method callable
-
-                    if (!(Boolean) getMobileDataEnabledMethod.invoke(iConnectivityManager)) {
-                        Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
-                        setMobileDataEnabledMethod.setAccessible(true);
-                        setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
-                        Thread.sleep(5000);
-                    }
-                    return null;
-                }
-                Runtime runtime = Runtime.getRuntime();
-                for (int i = 0; i < 6; i++) {
-                    Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
-                    int exitValue = mIpAddrProcess.waitFor();
-                    if (exitValue == 0)
-                        return null;
-                    Thread.sleep(2000);
-                }
-                Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
-                int exitValue = mIpAddrProcess.waitFor();
-                if (exitValue == 0)
-                    return null;
-                activeNetwork = conman.getActiveNetworkInfo();
-                if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting())
-                    return null;
-                TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-                if ((tel.getNetworkOperator() != null) && !tel.getNetworkOperator().equals("")) {
-                    setAirplaneMode(true);
-                    setAirplaneMode(false);
-                    Thread.sleep(20000);
-                }
-            } catch (Exception ex) {
-                // ignore
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            pingTask = null;
-        }
-    }
-
     public void initLocation() {
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -2034,77 +2040,6 @@ public class OnExitService extends Service {
         showApps();
     }
 
-    class HttpTask extends AsyncTask<Object, Void, Integer> {
-
-        BroadcastReceiver br;
-
-        @Override
-        protected Integer doInBackground(Object... params) {
-            String url = params[0].toString();
-            Reader reader = null;
-            HttpURLConnection connection = null;
-            try {
-                for (int i = 1; i < params.length; i++) {
-                    url = url.replace("$" + i, URLEncoder.encode(params[i].toString(), "UTF-8"));
-                }
-                URL u = new URL(url);
-                connection = (HttpURLConnection) u.openConnection();
-                InputStream in = new BufferedInputStream(connection.getInputStream());
-                int status = connection.getResponseCode();
-                reader = new InputStreamReader(in);
-                JsonValue res = JsonValue.readFrom(reader);
-                reader.close();
-                reader = null;
-                JsonObject result = res.asObject();
-                if (status != HttpStatus.SC_OK)
-                    return null;
-                JsonValue level = result.get("lvl");
-                if (level != null)
-                    return level.asInt() + 1;
-                return 0;
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            } finally {
-                if (connection != null)
-                    connection.disconnect();
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Integer lvl) {
-            if (lvl != null) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
-                long now = new Date().getTime();
-                boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));
-                if (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)
-                    changed = true;
-                if (yandex_error) {
-                    yandex_error = false;
-                    changed = true;
-                }
-                SharedPreferences.Editor ed = preferences.edit();
-                ed.putInt(State.TRAFFIC, lvl);
-                ed.putLong(State.UPD_TIME, now);
-                ed.commit();
-                if (!setup_button && changed) {
-                    hideApps();
-                    if (isActiveCG(OnExitService.this))
-                        showApps();
-                }
-            } else {
-                setYandexError(true);
-            }
-        }
-    }
-
     void setYandexError(boolean error) {
         if (error == yandex_error)
             return;
@@ -2162,8 +2097,6 @@ public class OnExitService extends Service {
             return -1;
         return preferences.getInt(State.TRAFFIC, 0);
     }
-
-    static final int TWO_MINUTES = 1000 * 60 * 2;
 
     Location getLastBestLocation() {
         Location locationGPS = null;
@@ -2244,66 +2177,6 @@ public class OnExitService extends Service {
         return provider1.equals(provider2);
     }
 
-    static final double D2R = 0.017453; // Константа для преобразования градусов в радианы
-    static final double a = 6378137.0; // Основные полуоси
-    static final double e2 = 0.006739496742337; // Квадрат эксцентричности эллипсоида
-
-    static double calc_distance(double lat1, double lon1, double lat2, double lon2) {
-
-        if ((lat1 == lat2) && (lon1 == lon2))
-            return 0;
-
-        double fdLambda = (lon1 - lon2) * D2R;
-        double fdPhi = (lat1 - lat2) * D2R;
-        double fPhimean = ((lat1 + lat2) / 2.0) * D2R;
-
-        double fTemp = 1 - e2 * (Math.pow(Math.sin(fPhimean), 2));
-        double fRho = (a * (1 - e2)) / Math.pow(fTemp, 1.5);
-        double fNu = a / (Math.sqrt(1 - e2 * (Math.sin(fPhimean) * Math.sin(fPhimean))));
-
-        double fz = Math.sqrt(Math.pow(Math.sin(fdPhi / 2.0), 2) +
-                Math.cos(lat2 * D2R) * Math.cos(lat1 * D2R) * Math.pow(Math.sin(fdLambda / 2.0), 2));
-        fz = 2 * Math.asin(fz);
-
-        double fAlpha = Math.cos(lat1 * D2R) * Math.sin(fdLambda) * 1 / Math.sin(fz);
-        fAlpha = Math.asin(fAlpha);
-
-        double fR = (fRho * fNu) / ((fRho * Math.pow(Math.sin(fAlpha), 2)) + (fNu * Math.pow(Math.cos(fAlpha), 2)));
-
-        return fz * fR;
-    }
-
-    static void enableMobileData(Context context, boolean enable) {
-        try {
-            ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            Class conmanClass = Class.forName(conman.getClass().getName());
-            final Method[] methods = conmanClass.getDeclaredMethods();
-            for (final Method method : methods) {
-                if (method.getName().equals("setMobileDataEnabled")) {
-                    method.invoke(conman, enable);
-                    return;
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    static boolean getMobileDataEnabled(Context context) {
-        try {
-            ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            Class conmanClass = Class.forName(conman.getClass().getName());
-            final Method[] methods = conmanClass.getDeclaredMethods();
-            for (final Method method : methods) {
-                if (method.getName().equals("getMobileDataEnabled"))
-                    return (Boolean) method.invoke(conman);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return false;
-    }
-
     void startApp() {
         App app = apps.get(0);
         if (app.icon != null) {
@@ -2330,82 +2203,187 @@ public class OnExitService extends Service {
         startYan(this);
     }
 
-    static void startYan(Context context) {
-        Intent intent = new Intent("ru.yandex.yandexnavi.action.BUILD_ROUTE_ON_MAP");
-        intent.setPackage("ru.yandex.yandexnavi");
-        PackageManager pm = context.getPackageManager();
-        List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
-        if ((infos != null) && (infos.size() > 0)) {
-            double finish_lat = 0;
-            double finish_lon = 0;
+    static class App {
+        String name;
+        Drawable icon;
+    }
+
+    abstract class OverlayTouchListener implements View.OnTouchListener {
+
+        abstract void click();
+
+        void setup() {
+            setupPhoneButton();
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    setupTimer = new CountDownTimer(1000, 1000) {
+                        @Override
+                        public void onTick(long millisUntilFinished) {
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            setup();
+                        }
+                    };
+                    setupTimer.start();
+                    button_x = event.getX();
+                    button_y = event.getY();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (setup_button)
+                        moveButton((int) (event.getRawX() - button_x), (int) (event.getRawY() - button_y));
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    if (setup_button) {
+                        cancelSetup();
+                        break;
+                    }
+                    cancelSetup();
+                    click();
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    cancelSetup();
+                    break;
+            }
+            return false;
+        }
+    }
+
+    class PingTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... params) {
             try {
-                File poi = State.CG_Folder(context);
-                if (State.cg_app) {
-                    poi = new File(poi, "routes.dat");
-                    BufferedReader reader = new BufferedReader(new FileReader(poi));
-                    reader.readLine();
-                    boolean current = false;
-                    while (true) {
-                        String line = reader.readLine();
-                        if (line == null)
-                            break;
-                        String[] parts = line.split("\\|");
-                        if (parts.length == 0)
-                            continue;
-                        String name = parts[0];
-                        if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
-                            current = name.equals("#[CURRENT]");
-                            continue;
-                        }
-                        if (current && name.equals("Finish")) {
-                            finish_lat = Double.parseDouble(parts[1]);
-                            finish_lon = Double.parseDouble(parts[2]);
-                        }
+                if (show_overlay)
+                    return null;
+                ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
+                if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting()) {
+                    Class conmanClass = Class.forName(conman.getClass().getName());
+                    Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
+                    iConnectivityManagerField.setAccessible(true);
+                    Object iConnectivityManager = iConnectivityManagerField.get(conman);
+                    Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
+
+                    Method getMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("getMobileDataEnabled");
+                    getMobileDataEnabledMethod.setAccessible(true); // Make the method callable
+
+                    if (!(Boolean) getMobileDataEnabledMethod.invoke(iConnectivityManager)) {
+                        Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
+                        setMobileDataEnabledMethod.setAccessible(true);
+                        setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+                        Thread.sleep(5000);
                     }
-                    reader.close();
-                } else {
-                    poi = new File(poi, "Routes/Route.curr");
-                    BufferedReader reader = new BufferedReader(new FileReader(poi));
-                    reader.readLine();
-                    while (true) {
-                        String line = reader.readLine();
-                        if (line == null)
-                            break;
-                        String[] parts = line.split("\\|");
-                        if (parts.length < 4)
-                            continue;
-                        String name = parts[0];
-                        if (name.equals("3")) {
-                            finish_lat = Double.parseDouble(parts[2]);
-                            finish_lon = Double.parseDouble(parts[3]);
-                        }
-                    }
-                    reader.close();
+                    return null;
+                }
+                Runtime runtime = Runtime.getRuntime();
+                for (int i = 0; i < 6; i++) {
+                    Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+                    int exitValue = mIpAddrProcess.waitFor();
+                    if (exitValue == 0)
+                        return null;
+                    Thread.sleep(2000);
+                }
+                Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+                int exitValue = mIpAddrProcess.waitFor();
+                if (exitValue == 0)
+                    return null;
+                activeNetwork = conman.getActiveNetworkInfo();
+                if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting())
+                    return null;
+                TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                if ((tel.getNetworkOperator() != null) && !tel.getNetworkOperator().equals("")) {
+                    setAirplaneMode(true);
+                    setAirplaneMode(false);
+                    Thread.sleep(20000);
                 }
             } catch (Exception ex) {
                 // ignore
             }
 
-            if ((finish_lat == yandex_finish_lat) && (finish_lon == yandex_finish_lon)) {
-                try {
-                    intent = pm.getLaunchIntentForPackage("ru.yandex.yandexnavi");
-                } catch (Exception ex) {
-                    // ignore
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            pingTask = null;
+        }
+    }
+
+    class HttpTask extends AsyncTask<Object, Void, Integer> {
+
+        BroadcastReceiver br;
+
+        @Override
+        protected Integer doInBackground(Object... params) {
+            String url = params[0].toString();
+            Reader reader = null;
+            HttpURLConnection connection = null;
+            try {
+                for (int i = 1; i < params.length; i++) {
+                    url = url.replace("$" + i, URLEncoder.encode(params[i].toString(), "UTF-8"));
+                }
+                URL u = new URL(url);
+                connection = (HttpURLConnection) u.openConnection();
+                InputStream in = new BufferedInputStream(connection.getInputStream());
+                int status = connection.getResponseCode();
+                reader = new InputStreamReader(in);
+                JsonValue res = JsonValue.readFrom(reader);
+                reader.close();
+                reader = null;
+                JsonObject result = res.asObject();
+                if (status != HttpStatus.SC_OK)
+                    return null;
+                JsonValue level = result.get("lvl");
+                if (level != null)
+                    return level.asInt() + 1;
+                return 0;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } finally {
+                if (connection != null)
+                    connection.disconnect();
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Integer lvl) {
+            if (lvl != null) {
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
+                long now = new Date().getTime();
+                boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));
+                if (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)
+                    changed = true;
+                if (yandex_error) {
+                    yandex_error = false;
+                    changed = true;
+                }
+                SharedPreferences.Editor ed = preferences.edit();
+                ed.putInt(State.TRAFFIC, lvl);
+                ed.putLong(State.UPD_TIME, now);
+                ed.commit();
+                if (!setup_button && changed) {
+                    hideApps();
+                    if (isActiveCG(OnExitService.this))
+                        showApps();
                 }
             } else {
-                if (currentBestLocation != null) {
-                    intent.putExtra("lat_from", currentBestLocation.getLatitude());
-                    intent.putExtra("lon_from", currentBestLocation.getLongitude());
-                }
-                intent.putExtra("lat_to", finish_lat);
-                intent.putExtra("lon_to", finish_lon);
-                yandex_finish_lat = finish_lat;
-                yandex_finish_lon = finish_lon;
+                setYandexError(true);
             }
-            if (intent == null)
-                return;
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
         }
     }
 

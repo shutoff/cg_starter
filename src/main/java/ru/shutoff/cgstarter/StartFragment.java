@@ -2,6 +2,7 @@ package ru.shutoff.cgstarter;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -122,6 +123,7 @@ public class StartFragment extends PreferencesFragment {
                     ed.putString("cg_app", (position == 1) ? State.cn : State.cg);
                     ed.commit();
                     State.cg_package = null;
+                    getActivity().sendBroadcast(new Intent(MainActivity.CHANGE_APP));
                 }
 
                 @Override

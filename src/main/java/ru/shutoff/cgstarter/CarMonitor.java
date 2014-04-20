@@ -112,6 +112,7 @@ public class CarMonitor extends BroadcastReceiver {
                 abortBroadcast();
             }
         }
+
         if (action.equals("android.provider.Telephony.SMS_RECEIVED")) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             if (!preferences.getBoolean(State.SHOW_SMS, false))
@@ -307,7 +308,7 @@ public class CarMonitor extends BroadcastReceiver {
                 route_points = "";
             int n_route = intent.getIntExtra("ROUTE", 0);
             if (n_route > 0) {
-                State.Point[] points = State.get(context);
+                State.Point[] points = State.get(context, false);
                 if (n_route > points.length)
                     return;
                 State.Point p = points[n_route - 1];
