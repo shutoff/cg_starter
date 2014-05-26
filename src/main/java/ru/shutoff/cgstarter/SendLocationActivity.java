@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,6 +30,13 @@ public class SendLocationActivity extends GpsActivity {
     double addr_lat;
     double addr_lon;
     String address;
+
+    static String format(double n) {
+        String res = n + "";
+        if (res.length() > 8)
+            res = res.substring(0, 8);
+        return res;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,11 +81,16 @@ public class SendLocationActivity extends GpsActivity {
             @Override
             public void onClick(View v) {
                 if ((finish_lat != 0) && (finish_lon != 0)) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setData(Uri.parse("sms:"));
-                    intent.setType("vnd.android-dir/mms-sms");
-                    intent.putExtra("sms_body", format(finish_lat) + " " + format(finish_lon));
-                    startActivity(intent);
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse("sms:"));
+                        intent.setType("vnd.android-dir/mms-sms");
+                        intent.putExtra("sms_body", format(finish_lat) + " " + format(finish_lon));
+                        startActivity(intent);
+                    } catch (Exception ex) {
+                        Toast toast = Toast.makeText(SendLocationActivity.this, ex.getMessage(), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
                 }
             }
         });
@@ -104,11 +117,16 @@ public class SendLocationActivity extends GpsActivity {
             @Override
             public void onClick(View v) {
                 if (currentBestLocation != null) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setData(Uri.parse("sms:"));
-                    intent.setType("vnd.android-dir/mms-sms");
-                    intent.putExtra("sms_body", format(currentBestLocation.getLatitude()) + " " + format(currentBestLocation.getLongitude()));
-                    startActivity(intent);
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse("sms:"));
+                        intent.setType("vnd.android-dir/mms-sms");
+                        intent.putExtra("sms_body", format(currentBestLocation.getLatitude()) + " " + format(currentBestLocation.getLongitude()));
+                        startActivity(intent);
+                    } catch (Exception ex) {
+                        Toast toast = Toast.makeText(SendLocationActivity.this, ex.getMessage(), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
                 }
             }
         });
@@ -148,13 +166,6 @@ public class SendLocationActivity extends GpsActivity {
             }
         }
         current_info.setText(info);
-    }
-
-    static String format(double n) {
-        String res = n + "";
-        if (res.length() > 8)
-            res = res.substring(0, 8);
-        return res;
     }
 
 }

@@ -28,7 +28,7 @@ public class SetupButton extends PreferenceActivity {
     public void onCreate(Bundle savedInstanceState) {
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        State.Point[] points = State.get(this);
+        State.Point[] points = State.get(this, false);
 
         intent = getIntent();
         if (intent != null)

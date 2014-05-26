@@ -34,7 +34,7 @@ public class ControlFragment extends PreferencesFragment {
                         .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-
+                                State.get(getActivity(), true);
                             }
                         })
                         .create();
