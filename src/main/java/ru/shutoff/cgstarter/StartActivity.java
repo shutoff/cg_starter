@@ -2,6 +2,7 @@ package ru.shutoff.cgstarter;
 
 import android.location.Location;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.LayoutInflater;
@@ -13,18 +14,29 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
+
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StartActivity extends GpsActivity {
 
+    static final String COORDINATES = "coordinates";
+    static final String PLACEMARK = "Placemark";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String q = null;
+        String url = null;
         try {
             Uri uri = getIntent().getData();
+            url = uri.toString();
+            State.appendLog(uri.getQuery());
             String[] parts = uri.getQuery().split("&");
             for (String part : parts) {
                 if (part.length() < 2)
@@ -38,7 +50,54 @@ public class StartActivity extends GpsActivity {
             // ignore
         }
         if (q == null) {
-            finish();
+            if (url == null)
+                return;
+            AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
+                @Override
+                protected Void doInBackground(String... strings) {
+                    try {
+                        URL kml = new URL(strings[0]);
+                        HttpURLConnection connection = (HttpURLConnection) kml.openConnection();
+                        if (connection.getResponseCode() == 200) {
+                            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+                            factory.setNamespaceAware(true);
+                            XmlPullParser xpp = factory.newPullParser();
+                            xpp.setInput(connection.getInputStream(), "utf-8");
+                            int eventType = xpp.getEventType();
+                            StringBuilder buffer = null;
+                            StringBuilder cdata = null;
+                            SearchActivity.Address addr = null;
+                            while (eventType != XmlPullParser.END_DOCUMENT) {
+                                if (eventType == XmlPullParser.START_TAG) {
+                                    if (xpp.getName().equals(PLACEMARK))
+                                        addr = new SearchActivity.Address();
+                                    if (addr != null) {
+                                        if (xpp.getName().equals(COORDINATES))
+                                            buffer = new StringBuilder();
+                                    }
+                                } else if (eventType == XmlPullParser.END_TAG) {
+                                    if ((addr != null) && (buffer != null) && xpp.getName().equals(COORDINATES)) {
+                                        String[] coord = buffer.toString().split(",");
+                                        if (coord.length > 1) {
+                                            addr.lat = Double.parseDouble(coord[0]);
+                                            addr.lon = Double.parseDouble(coord[1]);
+                                        }
+                                    }
+                                    buffer = null;
+                                } else if (eventType == XmlPullParser.TEXT) {
+                                    if (buffer != null)
+                                        buffer.append(xpp.getText());
+                                }
+                                eventType = xpp.next();
+                            }
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    return null;
+                }
+            };
+            task.execute(url + "&output=kml");
             return;
         }
         Pattern pat = Pattern.compile("loc:([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
