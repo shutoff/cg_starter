@@ -49,28 +49,48 @@ public class SendLocationActivity extends GpsActivity {
 
         try {
             File poi = State.CG_Folder(this);
-            poi = new File(poi, "routes.dat");
-            BufferedReader reader = new BufferedReader(new FileReader(poi));
-            reader.readLine();
-            boolean current = false;
-            while (true) {
-                String line = reader.readLine();
-                if (line == null)
-                    break;
-                String[] parts = line.split("\\|");
-                if (parts.length == 0)
-                    continue;
-                String name = parts[0];
-                if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
-                    current = name.equals("#[CURRENT]");
-                    continue;
+            if (State.cg_files) {
+                poi = new File(poi, "routes.dat");
+                BufferedReader reader = new BufferedReader(new FileReader(poi));
+                reader.readLine();
+                boolean current = false;
+                while (true) {
+                    String line = reader.readLine();
+                    if (line == null)
+                        break;
+                    String[] parts = line.split("\\|");
+                    if (parts.length == 0)
+                        continue;
+                    String name = parts[0];
+                    if ((name.length() > 0) && (name.substring(0, 1).equals("#"))) {
+                        current = name.equals("#[CURRENT]");
+                        continue;
+                    }
+                    if (current && name.equals("Finish")) {
+                        finish_lat = Double.parseDouble(parts[1]);
+                        finish_lon = Double.parseDouble(parts[2]);
+                    }
                 }
-                if (current && name.equals("Finish")) {
-                    finish_lat = Double.parseDouble(parts[1]);
-                    finish_lon = Double.parseDouble(parts[2]);
+                reader.close();
+            } else {
+                poi = new File(poi, "Routes/Route.curr");
+                BufferedReader reader = new BufferedReader(new FileReader(poi));
+                reader.readLine();
+                while (true) {
+                    String line = reader.readLine();
+                    if (line == null)
+                        break;
+                    String[] parts = line.split("\\|");
+                    if (parts.length < 4)
+                        continue;
+                    String name = parts[0];
+                    if (name.equals("3")) {
+                        finish_lat = Double.parseDouble(parts[2]);
+                        finish_lon = Double.parseDouble(parts[3]);
+                    }
                 }
+                reader.close();
             }
-            reader.close();
         } catch (Exception ex) {
             // ignore
         }

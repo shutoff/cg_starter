@@ -15,15 +15,9 @@ import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.widget.Toast;
 
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Calendar;
-import java.util.Date;
 
 public class State extends BroadcastReceiver {
 
@@ -37,6 +31,8 @@ public class State extends BroadcastReceiver {
     static final String BT_DEVICES = "bt_devices";
     static final String VOLUME = "volume";
     static final String LEVEL = "level";
+    static final String RING_LEVEL = "ring_level";
+    static final String SAVE_RING_LEVEL = "save_ring_level";
     static final String PHONE = "phone";
     static final String DATA = "data";
     static final String SPEAKER = "speaker";
@@ -48,8 +44,10 @@ public class State extends BroadcastReceiver {
     static final String SAVE_ROTATE = "save_rotate";
     static final String CALL_VOLUME = "save_call_volume";
     static final String SAVE_ORIENTATION = "save_orientation";
+    static final String CUR_CHANNEL = "cur_channel";
     static final String SAVE_CHANNEL = "channel";
     static final String SAVE_LEVEL = "save_level";
+    static final String MUTE_LEVEL = "mute_level";
     static final String GPS = "gps";
     static final String GPS_SAVE = "gps_save";
     static final String SAVE_WIFI = "save_wifi";
@@ -93,6 +91,7 @@ public class State extends BroadcastReceiver {
     static final String FULL_TIME = "full_time";
     static final String QUICK_ALPHA = "quick_alpha";
     static final String QUICK_SIZE = "quick_size";
+    static final String WIFI = "wifi";
     static Point[] points;
     static int telephony_state = 0;
     static String cg_package = null;
@@ -224,6 +223,7 @@ public class State extends BroadcastReceiver {
         }
     }
 
+/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -251,6 +251,7 @@ public class State extends BroadcastReceiver {
         String s = sw.toString();
         appendLog(s);
     }
+*/
 
     static boolean inInterval(String interval) {
         if (interval.equals(""))
@@ -338,14 +339,12 @@ public class State extends BroadcastReceiver {
             String[] ver = info.versionName.split("\\.");
             if (Integer.parseInt(ver[0]) > 7)
                 cg_files = false;
-            State.appendLog("Found " + cg);
         } catch (Exception ex) {
             // ignore
         }
         try {
             pm.getPackageInfo(cn, 0);
             is_cn = true;
-            State.appendLog("Found " + cn);
         } catch (Exception ex) {
             // ignore
         }

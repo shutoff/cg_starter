@@ -32,6 +32,7 @@
     <string name="data">Управление данными</string>
     <string name="data_sum">Включить мобильный интернет</string>
     <string name="level">Управление звуком</string>
+    <string name="ring_level">Громкость во время звонка</string>
     <string name="no_volume">Не изменять</string>
     <string name="set_volume">Установить громкость</string>
     <string name="carmode">Автомобильный режим</string>
@@ -188,4 +189,7 @@
     <string name="phone_mobile">мобильный</string>
     <string name="last_call">Перезвонить на последний номер</string>
     <string name="cg_run">Запускать:</string>
+    <string name="wifi">WiFi</string>
+    <string name="wifi_sum">Отключить WiFi при старте</string>
+    <string name="toggle_volume">Переключить звук</string>
 </resources>

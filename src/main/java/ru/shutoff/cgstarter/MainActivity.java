@@ -17,6 +17,7 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -35,6 +36,7 @@ import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -42,7 +44,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Vector;
@@ -395,17 +402,18 @@ public class MainActivity
         }
         OnExitService.turnOnBT(context);
         if (preferences.getBoolean(State.DATA, false)) {
-
-            try {
-                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                if (wifiManager != null) {
-                    if (wifiManager.isWifiEnabled()) {
-                        wifiManager.setWifiEnabled(false);
-                        ed.putBoolean(State.SAVE_WIFI, true);
+            if (preferences.getBoolean(State.WIFI, true)) {
+                try {
+                    WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                    if (wifiManager != null) {
+                        if (wifiManager.isWifiEnabled()) {
+                            wifiManager.setWifiEnabled(false);
+                            ed.putBoolean(State.SAVE_WIFI, true);
+                        }
                     }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
-            } catch (Exception ex) {
-                ex.printStackTrace();
             }
             try {
                 ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -423,27 +431,34 @@ public class MainActivity
             }
         }
 
+        int channel = 0;
+        try {
+            channel = SettingsIni.getParam(context, "audiostream");
+            switch (channel) {
+                case 0:
+                    channel = AudioManager.STREAM_SYSTEM;
+                    break;
+                case 1:
+                    channel = AudioManager.STREAM_RING;
+                    break;
+                case 2:
+                    channel = AudioManager.STREAM_MUSIC;
+                    break;
+                case 3:
+                    channel = AudioManager.STREAM_ALARM;
+                    break;
+                case 4:
+                    channel = AudioManager.STREAM_NOTIFICATION;
+                    break;
+            }
+            ed.putInt(State.CUR_CHANNEL, channel);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         if (preferences.getBoolean(State.VOLUME, false)) {
             try {
                 int level = preferences.getInt(State.LEVEL, 100);
-                int channel = SettingsIni.getParam(context, "audiostream");
-                switch (channel) {
-                    case 0:
-                        channel = AudioManager.STREAM_SYSTEM;
-                        break;
-                    case 1:
-                        channel = AudioManager.STREAM_RING;
-                        break;
-                    case 2:
-                        channel = AudioManager.STREAM_MUSIC;
-                        break;
-                    case 3:
-                        channel = AudioManager.STREAM_ALARM;
-                        break;
-                    case 4:
-                        channel = AudioManager.STREAM_NOTIFICATION;
-                        break;
-                }
                 if (channel > 0) {
                     ed.putInt(State.SAVE_CHANNEL, channel);
                     AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -488,6 +503,60 @@ public class MainActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                ex.printStackTrace();
+                StringWriter sw = new StringWriter();
+                ex.printStackTrace(new PrintWriter(sw));
+                AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
+                    @Override
+                    protected Void doInBackground(String... urlParameters) {
+                        try {
+                            URL url = new URL("https://car-online.ugona.net/log");
+                            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                            connection.setRequestMethod("POST");
+                            connection.setRequestProperty("Content-Type",
+                                    "application/x-www-form-urlencoded");
+
+                            connection.setRequestProperty("Content-Length", "" +
+                                    Integer.toString(urlParameters[0].getBytes().length));
+                            connection.setRequestProperty("Content-Language", "en-US");
+
+                            connection.setUseCaches(false);
+                            connection.setDoInput(true);
+                            connection.setDoOutput(true);
+
+                            //Send request
+                            DataOutputStream wr = new DataOutputStream(
+                                    connection.getOutputStream());
+                            wr.writeBytes(urlParameters[0]);
+                            wr.flush();
+                            wr.close();
+
+                            //Get Response
+                            InputStream is = connection.getInputStream();
+                            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+                            String line;
+                            StringBuffer response = new StringBuffer();
+                            response.append("CG\n");
+                            while ((line = rd.readLine()) != null) {
+                                response.append(line);
+                                response.append('\r');
+                            }
+                            rd.close();
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        } finally {
+                            System.exit(1);
+                        }
+                        return null;
+                    }
+                };
+                task.execute(sw.toString());
+            }
+        });
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String orientation = preferences.getString(State.ORIENTATION, "");
@@ -853,6 +922,15 @@ public class MainActivity
         State.Point p = points[i];
         if (p.name.equals(""))
             return;
+        double lat = Double.parseDouble(p.lat);
+        double lng = Double.parseDouble(p.lng);
+        if ((lat == -1) && (lng == -1)) {
+            Intent intent = new Intent(this, VoiceSearch.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         SearchActivity.Address addr = new SearchActivity.Address();
         addr.name = p.name;
         createRoute(this, p.lat + "|" + p.lng, p.points, addr);

@@ -27,16 +27,16 @@ public class StartActivity extends GpsActivity {
 
     static final String COORDINATES = "coordinates";
     static final String PLACEMARK = "Placemark";
+    static final String NAME = "name";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String q = null;
-        String url = null;
+        String url = null; // "https://maps.google.ru/maps/ms?ie=UTF8&t=m&oe=UTF8&msa=0&msid=216639410842959437681.0004abf24fb2669aedb1b&dg=feature";
         try {
             Uri uri = getIntent().getData();
             url = uri.toString();
-            State.appendLog(uri.getQuery());
             String[] parts = uri.getQuery().split("&");
             for (String part : parts) {
                 if (part.length() < 2)
@@ -49,12 +49,13 @@ public class StartActivity extends GpsActivity {
         } catch (Exception ex) {
             // ignore
         }
+        setContentView(R.layout.list);
         if (q == null) {
             if (url == null)
                 return;
-            AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
+            AsyncTask<String, Void, Vector<SearchActivity.Address>> task = new AsyncTask<String, Void, Vector<SearchActivity.Address>>() {
                 @Override
-                protected Void doInBackground(String... strings) {
+                protected Vector<SearchActivity.Address> doInBackground(String... strings) {
                     try {
                         URL kml = new URL(strings[0]);
                         HttpURLConnection connection = (HttpURLConnection) kml.openConnection();
@@ -65,8 +66,8 @@ public class StartActivity extends GpsActivity {
                             xpp.setInput(connection.getInputStream(), "utf-8");
                             int eventType = xpp.getEventType();
                             StringBuilder buffer = null;
-                            StringBuilder cdata = null;
                             SearchActivity.Address addr = null;
+                            Vector<SearchActivity.Address> result = new Vector<SearchActivity.Address>();
                             while (eventType != XmlPullParser.END_DOCUMENT) {
                                 if (eventType == XmlPullParser.START_TAG) {
                                     if (xpp.getName().equals(PLACEMARK))
@@ -74,27 +75,52 @@ public class StartActivity extends GpsActivity {
                                     if (addr != null) {
                                         if (xpp.getName().equals(COORDINATES))
                                             buffer = new StringBuilder();
+                                        if (xpp.getName().equals(NAME))
+                                            buffer = new StringBuilder();
                                     }
                                 } else if (eventType == XmlPullParser.END_TAG) {
-                                    if ((addr != null) && (buffer != null) && xpp.getName().equals(COORDINATES)) {
-                                        String[] coord = buffer.toString().split(",");
-                                        if (coord.length > 1) {
-                                            addr.lat = Double.parseDouble(coord[0]);
-                                            addr.lon = Double.parseDouble(coord[1]);
+                                    if (addr != null) {
+                                        if (buffer != null) {
+                                            if (xpp.getName().equals(COORDINATES)) {
+                                                String[] coord = buffer.toString().split(",");
+                                                if (coord.length > 1) {
+                                                    addr.lat = Double.parseDouble(coord[1]);
+                                                    addr.lon = Double.parseDouble(coord[0]);
+                                                }
+                                            }
+                                            if (xpp.getName().equals(NAME)) {
+                                                addr.name = buffer.toString();
+                                                addr.address = buffer.toString();
+                                            }
+                                        }
+                                        buffer = null;
+                                        if ((addr != null) && xpp.getName().equals(PLACEMARK)) {
+                                            if (!addr.name.equals("") && (addr.lat != 0) && (addr.lon != 0))
+                                                result.add(addr);
                                         }
                                     }
-                                    buffer = null;
                                 } else if (eventType == XmlPullParser.TEXT) {
                                     if (buffer != null)
                                         buffer.append(xpp.getText());
                                 }
                                 eventType = xpp.next();
                             }
+                            if (result.size() > 0)
+                                return result;
                         }
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
                     return null;
+                }
+
+                @Override
+                protected void onPostExecute(Vector<SearchActivity.Address> addresses) {
+                    if (addresses == null) {
+                        finish();
+                        return;
+                    }
+                    showResult(addresses);
                 }
             };
             task.execute(url + "&output=kml");
@@ -117,7 +143,6 @@ public class StartActivity extends GpsActivity {
             }
         }
         final String query = q;
-        setContentView(R.layout.list);
         CountDownTimer timer = new CountDownTimer(1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {

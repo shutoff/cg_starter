@@ -87,6 +87,7 @@ import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.InvalidParameterException;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector;
@@ -111,7 +112,7 @@ public class OnExitService extends Service {
     static final String SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
     final static long UPD_INTERVAL = 3 * 60 * 1000;
     final static long VALID_INTEVAL = 15 * 60 * 1000;
-    final static String TRAFFIC_URL = "https://api.shutoff.ru/level?lat=$1&lng=$2";
+    final static String TRAFFIC_URL = "https://car-online.ugona.net/level?lat=$1&lng=$2";
     final static double K_C = 100000.;
     final static String YAN = "ru.yandex.yandexnavi";
     final static int res[] = {
@@ -181,33 +182,7 @@ public class OnExitService extends Service {
     long fetcher_time;
     long last_run;
     boolean cg_running;
-
-/*
-    double getNoise() {
-        try {
-            int sampleRate = 8000;
-            int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT);
-            AudioRecord audio = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate,
-                    AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-            audio.startRecording();
-            short[] buffer = new short[bufferSize];
-            int bufferReadResult = audio.read(buffer, 0, bufferSize);
-            if (bufferReadResult > 0){
-                double sumLevel = 0;
-                for (int i = 0; i < bufferReadResult; i++) {
-                    sumLevel += Math.abs(buffer[i]);
-                }
-                return sumLevel / bufferReadResult;
-            }
-        } catch (Exception e) {
-            State.print(e);
-        }
-        return 0;
-    }
-*/
-View.OnClickListener iconListener;
+    View.OnClickListener iconListener;
     PackageManager pm;
     Vector<App> apps;
     boolean yandex_error;
@@ -618,72 +593,14 @@ View.OnClickListener iconListener;
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         pm = getPackageManager();
         String[] quick_launch = preferences.getString(State.APPS, "").split(":");
-        boolean yandex = false;
         apps = new Vector<App>();
         for (String app : quick_launch) {
-            String[] component = app.split("/");
-            if (component.length != 2)
-                continue;
-            if (component[0].equals("tel")) {
-                App a = new App();
-                a.name = app;
-                a.icon = getResources().getDrawable(R.drawable.call_contact);
-                Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(component[1]));
-                ContentResolver contentResolver = getContentResolver();
-                Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
-                        ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
-                try {
-                    if (contactLookup != null && contactLookup.getCount() > 0) {
-                        contactLookup.moveToNext();
-                        long contactId = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
-                        Uri contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId);
-                        Uri photoUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.CONTENT_DIRECTORY);
-                        Cursor cursor = getContentResolver().query(photoUri, new String[]{ContactsContract.Contacts.Photo.PHOTO}, null, null, null);
-                        if (cursor != null) {
-                            try {
-                                if (cursor.moveToFirst()) {
-                                    byte[] data = cursor.getBlob(0);
-                                    if (data != null) {
-                                        Bitmap photo = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
-                                        a.icon = new BitmapDrawable(photo);
-                                    }
-                                }
-                            } finally {
-                                cursor.close();
-                            }
-                        }
-                    }
-                } finally {
-                    if (contactLookup != null) {
-                        contactLookup.close();
-                    }
-                }
-                apps.add(a);
-                continue;
-            }
-            Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
-            mainIntent.setPackage(component[0]);
-            List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
-            for (ResolveInfo info : infos) {
-                if (info.activityInfo == null)
-                    continue;
-                if (info.activityInfo.name.equals(component[1])) {
-                    App a = new App();
-                    a.name = app;
-                    if (component[0].equals(YAN) || app.equals("ru.shutoff.cgstarter/ru.shutoff.cgstarter.TrafficActivity")) {
-                        yandex = true;
-                    } else {
-                        a.icon = info.loadIcon(pm);
-                        if (a.icon == null)
-                            continue;
-                    }
-                    apps.add(a);
-                    break;
-                }
+            try {
+                apps.add(new App(app));
+            } catch (Exception ex) {
+                // ignore
             }
         }
-        if (yandex)
-            initLocation();
     }
 
     @Override
@@ -791,8 +708,8 @@ View.OnClickListener iconListener;
                         ed.remove(State.GPS_SAVE);
                     }
                     turnOffBT(this, "-");
-                    int channel = preferences.getInt(State.SAVE_CHANNEL, 0);
-                    if (channel > 0) {
+                    int channel = preferences.getInt(State.SAVE_CHANNEL, -1);
+                    if (channel >= 0) {
                         int level = preferences.getInt(State.SAVE_LEVEL, 0);
                         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                         audio.setStreamVolume(channel, level, 0);
@@ -1359,10 +1276,12 @@ View.OnClickListener iconListener;
                 width = wm.getDefaultDisplay().getHeight();
 
             int icon_width = iv.getLayoutParams().width;
-            width -= (layoutParams.x - icon_width) * 2;
+            width -= (layoutParams.x + icon_width) * 2;
+
             int icons = width / icon_width;
             if (icons < 3)
                 icons = 3;
+
             int rows = (apps.size() + icons - 1) / icons;
             icons = (apps.size() + rows - 1) / rows;
 
@@ -1370,18 +1289,7 @@ View.OnClickListener iconListener;
                 iv.getLayoutParams();
                 App app = apps.get(i);
                 ImageView img = new ImageView(this);
-                if (app.icon == null) {
-                    int level = getYandexData();
-                    if (level < 0) {
-                        img.setImageResource(yandex_error ? R.drawable.error_loading : R.drawable.loading);
-                        AnimationDrawable animation = (AnimationDrawable) img.getDrawable();
-                        animation.start();
-                    } else {
-                        img.setImageResource(res[level]);
-                    }
-                } else {
-                    img.setImageDrawable(app.icon);
-                }
+                app.draw(img);
                 img.setTag(i);
                 img.setOnClickListener(iconListener);
                 ViewGroup.LayoutParams layoutParams = iv.getLayoutParams();
@@ -1467,19 +1375,7 @@ View.OnClickListener iconListener;
             }
         });
 
-        Drawable icon = apps.get(0).icon;
-        if (icon == null) {
-            int level = getYandexData();
-            if (level < 0) {
-                iv.setImageResource(yandex_error ? R.drawable.error_loading : R.drawable.loading);
-                AnimationDrawable animation = (AnimationDrawable) iv.getDrawable();
-                animation.start();
-            } else {
-                iv.setImageResource(res[level]);
-            }
-        } else {
-            iv.setImageDrawable(icon);
-        }
+        apps.get(0).draw(iv);
         wm.addView(hudApps, lp);
 
         setForeground();
@@ -1889,6 +1785,18 @@ View.OnClickListener iconListener;
                                 }
                                 showActiveOverlay();
                             }
+                            if (preferences.getBoolean(State.VOLUME, false) && (preferences.getInt(State.SAVE_RING_LEVEL, -1) == -1)) {
+                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                int cur_level = audio.getStreamVolume(channel);
+                                int new_level = audio.getStreamMaxVolume(channel) * preferences.getInt(State.RING_LEVEL, 0) / 100;
+                                if (new_level < cur_level) {
+                                    audio.setStreamVolume(channel, new_level, 0);
+                                    SharedPreferences.Editor ed = preferences.edit();
+                                    ed.putInt(State.SAVE_RING_LEVEL, cur_level);
+                                    ed.commit();
+                                }
+                            }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn()) {
@@ -1900,6 +1808,7 @@ View.OnClickListener iconListener;
                                 }
                             }
                             break;
+
                         case TelephonyManager.CALL_STATE_RINGING:
                             stopAfterCall();
                             hideOverlays(null);
@@ -1907,8 +1816,8 @@ View.OnClickListener iconListener;
                             ringing = true;
                             showInactiveOverlay();
                             cg_run = isRunCG(getApplicationContext());
-                            AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                             if (autoanswer > 0) {
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 if (speaker || audio.isBluetoothScoOn()) {
                                     if (piAnswer == null)
                                         piAnswer = createPendingIntent(ANSWER);
@@ -1923,10 +1832,22 @@ View.OnClickListener iconListener;
                                         System.currentTimeMillis() + autoswitch, autoswitch, piRinging);
                             }
                             break;
+
                         case TelephonyManager.CALL_STATE_IDLE:
                             stopAfterCall();
                             stopAutoAnswer();
                             hideOverlays(OnExitService.this);
+
+                            int save_level = preferences.getInt(State.SAVE_RING_LEVEL, -1);
+                            if (save_level > 0) {
+                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                audio.setStreamVolume(channel, save_level, 0);
+                                SharedPreferences.Editor ed = preferences.edit();
+                                ed.remove(State.SAVE_RING_LEVEL);
+                                ed.commit();
+                            }
+
                             call_number = null;
                             if (speacker_volume > 0) {
                                 AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -2179,7 +2100,7 @@ View.OnClickListener iconListener;
 
     void startApp() {
         App app = apps.get(0);
-        if (app.icon != null) {
+        if (app.picture != null) {
             String[] component = app.name.split("/");
             Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
             mainIntent.setPackage(component[0]);
@@ -2203,9 +2124,90 @@ View.OnClickListener iconListener;
         startYan(this);
     }
 
-    static class App {
+    class App {
+
         String name;
-        Drawable icon;
+        Drawable picture;
+
+        App(String app) {
+            String[] component = app.split("/");
+            if (component.length != 2)
+                throw new InvalidParameterException();
+            name = app;
+            if (component[0].equals("tel")) {
+                picture = getResources().getDrawable(R.drawable.call_contact);
+                Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(component[1]));
+                ContentResolver contentResolver = getContentResolver();
+                Cursor contactLookup = contentResolver.query(uri, new String[]{BaseColumns._ID,
+                        ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+                try {
+                    if (contactLookup != null && contactLookup.getCount() > 0) {
+                        contactLookup.moveToNext();
+                        long contactId = contactLookup.getLong(contactLookup.getColumnIndex(BaseColumns._ID));
+                        Uri contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId);
+                        Uri photoUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.CONTENT_DIRECTORY);
+                        Cursor cursor = getContentResolver().query(photoUri, new String[]{ContactsContract.Contacts.Photo.PHOTO}, null, null, null);
+                        if (cursor != null) {
+                            try {
+                                if (cursor.moveToFirst()) {
+                                    byte[] data = cursor.getBlob(0);
+                                    if (data != null) {
+                                        Bitmap photo = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
+                                        picture = new BitmapDrawable(photo);
+                                    }
+                                }
+                            } finally {
+                                cursor.close();
+                            }
+                        }
+                    }
+                } finally {
+                    if (contactLookup != null) {
+                        contactLookup.close();
+                    }
+                }
+                return;
+            }
+            Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+            mainIntent.setPackage(component[0]);
+            List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
+            for (ResolveInfo info : infos) {
+                if (info.activityInfo == null)
+                    continue;
+                if (info.activityInfo.name.equals(component[1])) {
+                    if (component[0].equals(YAN) || app.equals("ru.shutoff.cgstarter/ru.shutoff.cgstarter.TrafficActivity")) {
+                        initLocation();
+                    } else {
+                        picture = info.loadIcon(pm);
+                        if (picture == null)
+                            throw new InvalidParameterException();
+                    }
+                }
+            }
+        }
+
+        void draw(ImageView img) {
+            if (picture == null) {
+                int level = getYandexData();
+                if (level < 0) {
+                    img.setImageResource(yandex_error ? R.drawable.error_loading : R.drawable.loading);
+                    AnimationDrawable animation = (AnimationDrawable) img.getDrawable();
+                    animation.start();
+                } else {
+                    img.setImageResource(res[level]);
+                }
+                return;
+            }
+            if (name.equals("ru.shutoff.cgstarter/ru.shutoff.cgstarter.VolumeActivity")) {
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
+                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
+                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                int cur_level = audio.getStreamVolume(channel);
+                img.setImageResource((cur_level != 0) ? R.drawable.volume : R.drawable.novolume);
+                return;
+            }
+            img.setImageDrawable(picture);
+        }
     }
 
     abstract class OverlayTouchListener implements View.OnTouchListener {
@@ -2386,43 +2388,5 @@ View.OnClickListener iconListener;
             }
         }
     }
-
-/*
-    static class Kalman1D {
-
-        final double Q;
-        final double R;
-        final double F;
-        final double H;
-
-        double State;
-        double Covariance;
-
-        Kalman1D(double q, double r, double f, double h) {
-            Q = q;
-            R = r;
-            F = f;
-            H = h;
-        }
-
-        public void setState(double state, double covariance) {
-            State = state;
-            Covariance = covariance;
-        }
-
-        public double correct(double data) {
-            //time update - prediction
-            double X0 = F * State;
-            double P0 = F * Covariance * F + Q;
-
-            //measurement update - correction
-            double K = H * P0 / (H * P0 * H + R);
-            State = X0 + K * (data - H * X0);
-            Covariance = (1 - K * H) * P0;
-
-            return State;
-        }
-    }
-*/
 
 }

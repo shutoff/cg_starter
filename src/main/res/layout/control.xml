@@ -40,6 +40,19 @@
             android:layout_margin="8dp"
             android:max="100" />
 
+        <TextView
+            android:id="@+id/ring_level_msg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ring_level" />
+
+        <SeekBar
+            android:id="@+id/ring_level"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:max="100" />
+
         <CheckBox
             android:id="@+id/bt"
             android:layout_width="match_parent"
@@ -70,6 +83,22 @@
             android:layout_height="wrap_content"
             android:paddingLeft="10dp"
             android:text="@string/data_sum"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <CheckBox
+            android:id="@+id/wifi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="5dp"
+            android:text="@string/wifi"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="10dp"
+            android:text="@string/wifi_sum"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <CheckBox

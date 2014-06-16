@@ -31,6 +31,7 @@
     <string name="data">Mobile data control</string>
     <string name="data_sum">Turn ON mobile data</string>
     <string name="level">Volume control</string>
+    <string name="ring_level">Volume on the call</string>
     <string name="no_volume">No change volume</string>
     <string name="set_volume">Set level</string>
     <string name="carmode">Car mode</string>
@@ -212,4 +213,7 @@
     <string name="cg_run">Run:</string>
     <string name="refresh">Обновить закладки</string>
     <string name="refresh_msg">Обновить конечные точки на стартовом экране из закладок</string>
+    <string name="wifi">WiFi</string>
+    <string name="wifi_sum">WiFi off on tirn on mobile data</string>
+    <string name="toggle_volume">Toggle volume</string>
 </resources>
