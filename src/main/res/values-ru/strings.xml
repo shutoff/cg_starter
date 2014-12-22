@@ -192,4 +192,30 @@
     <string name="wifi">WiFi</string>
     <string name="wifi_sum">Отключить WiFi при старте</string>
     <string name="toggle_volume">Переключить звук</string>
+    <string-array name="answer_times">
+        <item>0</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+    </string-array>
+    <string-array name="ring_times_value">
+        <item>-1</item>
+        <item>0</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+    <string-array name="rotate_value">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+    <string-array name="inactive_entries">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+    <string name="refresh">Обновить закладки</string>
+    <string name="refresh_msg">Обновить конечные точки на стартовом экране из закладок</string>
 </resources>

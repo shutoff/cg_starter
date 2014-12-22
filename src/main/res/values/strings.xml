@@ -211,8 +211,8 @@
     <string name="phone_mobile">mobile</string>
     <string name="last_call">Call last number</string>
     <string name="cg_run">Run:</string>
-    <string name="refresh">Обновить закладки</string>
-    <string name="refresh_msg">Обновить конечные точки на стартовом экране из закладок</string>
+    <string name="refresh">Refresh points</string>
+    <string name="refresh_msg">Refresh points on start screen from bookmarks</string>
     <string name="wifi">WiFi</string>
     <string name="wifi_sum">WiFi off on tirn on mobile data</string>
     <string name="toggle_volume">Toggle volume</string>

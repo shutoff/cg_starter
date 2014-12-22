@@ -15,9 +15,15 @@ import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Calendar;
+import java.util.Date;
 
 public class State extends BroadcastReceiver {
 
@@ -223,7 +229,6 @@ public class State extends BroadcastReceiver {
         }
     }
 
-/*
     static public void appendLog(String text) {
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
@@ -251,7 +256,6 @@ public class State extends BroadcastReceiver {
         String s = sw.toString();
         appendLog(s);
     }
-*/
 
     static boolean inInterval(String interval) {
         if (interval.equals(""))
