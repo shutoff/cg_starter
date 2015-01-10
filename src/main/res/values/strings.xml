@@ -216,4 +216,6 @@
     <string name="wifi">WiFi</string>
     <string name="wifi_sum">WiFi off on tirn on mobile data</string>
     <string name="toggle_volume">Toggle volume</string>
+    <string name="okgoogle">Ok, Google</string>
+    <string name="okgoogle_sum">Detect hotword Google search</string>
 </resources>

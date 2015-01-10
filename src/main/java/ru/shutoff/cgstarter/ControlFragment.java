@@ -1,5 +1,6 @@
 package ru.shutoff.cgstarter;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Build;
@@ -7,6 +8,8 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.google.android.hotword.client.HotwordServiceClient;
 
 public class ControlFragment extends PreferencesFragment {
 
@@ -31,6 +34,7 @@ public class ControlFragment extends PreferencesFragment {
         setCheckBox(v, R.id.data, State.DATA);
         setCheckBox(v, R.id.wifi, State.WIFI, true);
         setCheckBox(v, R.id.ping, State.PING);
+        setCheckBox(v, R.id.okgoogle, State.OK_GOOGLE);
         View.OnClickListener listener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -51,5 +55,15 @@ public class ControlFragment extends PreferencesFragment {
         v.findViewById(R.id.refresh).setOnClickListener(listener);
         v.findViewById(R.id.refresh_msg).setOnClickListener(listener);
         return v;
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        HotwordServiceClient client = new HotwordServiceClient(activity);
+        boolean isAvailable = client.isAvailable();
+        View v = getView();
+        v.findViewById(R.id.okgoogle).setVisibility(isAvailable ? View.VISIBLE : View.GONE);
+        v.findViewById(R.id.okgoogle_sum).setVisibility(isAvailable ? View.VISIBLE : View.GONE);
     }
 }

@@ -27,16 +27,16 @@ public class NotificationService extends AccessibilityService {
 
             if (parcelable instanceof Notification) {
 
-                Notification notification = (Notification) parcelable;
-                RemoteViews views = notification.contentView;
-                Class secretClass = views.getClass();
-
-                String msg_title = null;
-                String msg_info = null;
-                String msg_text = null;
-                String msg_app = event.getPackageName().toString();
-
                 try {
+                    Notification notification = (Notification) parcelable;
+                    RemoteViews views = notification.contentView;
+                    Class secretClass = views.getClass();
+
+                    String msg_title = null;
+                    String msg_info = null;
+                    String msg_text = null;
+                    String msg_app = event.getPackageName().toString();
+
                     Field outerFields[] = secretClass.getDeclaredFields();
                     for (Field outerField : outerFields) {
                         if (!outerField.getName().equals("mActions")) continue;
@@ -61,7 +61,7 @@ public class NotificationService extends AccessibilityService {
                                 }
                             }
 
-                            if ((value != null) && ((type == 9) || (type == 10))){
+                            if ((value != null) && ((type == 9) || (type == 10))) {
                                 if ((msg_title == null) && (viewId == 16908310))
                                     msg_title = value.toString();
                                 if ((msg_info == null) && (viewId == 16909082))
@@ -73,28 +73,29 @@ public class NotificationService extends AccessibilityService {
                         }
                     }
 
+
+                    if (msg_text == null) {
+                        List<CharSequence> messages = event.getText();
+                        if (messages.size() > 0)
+                            msg_text = messages.get(0).toString();
+                    }
+                    if (msg_text != null) {
+                        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                        String[] ignored = preferences.getString(State.NOTIFICATION_IGNORE, "").split(":");
+                        for (String app : ignored) {
+                            if (app.equals(msg_app))
+                                return;
+                        }
+                        Intent intent = new Intent(OnExitService.NOTIFICATION);
+                        intent.putExtra(State.TITLE, msg_title);
+                        intent.putExtra(State.INFO, msg_info);
+                        intent.putExtra(State.TEXT, msg_text);
+                        intent.putExtra(State.APP, msg_app);
+                        intent.putExtra(State.ICON, notification.icon);
+                        sendBroadcast(intent);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
-                }
-                if (msg_text == null) {
-                    List<CharSequence> messages = event.getText();
-                    if (messages.size() > 0)
-                        msg_text = messages.get(0).toString();
-                }
-                if (msg_text != null) {
-                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                    String[] ignored = preferences.getString(State.NOTIFICATION_IGNORE, "").split(":");
-                    for (String app : ignored) {
-                        if (app.equals(msg_app))
-                            return;
-                    }
-                    Intent intent = new Intent(OnExitService.NOTIFICATION);
-                    intent.putExtra(State.TITLE, msg_title);
-                    intent.putExtra(State.INFO, msg_info);
-                    intent.putExtra(State.TEXT, msg_text);
-                    intent.putExtra(State.APP, msg_app);
-                    intent.putExtra(State.ICON, notification.icon);
-                    sendBroadcast(intent);
                 }
             }
         }

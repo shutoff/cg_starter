@@ -1,6 +1,5 @@
 package ru.shutoff.cgstarter;
 
-import android.content.Intent;
 import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -37,13 +36,9 @@ public class StartActivity extends GpsActivity {
         String q = null;
         String url = null;
         try {
-            Intent intent = getIntent();
-            State.appendLog(intent.getAction());
-            String data = intent.getData().getSchemeSpecificPart();
-            State.appendLog("data: " + data);
             Uri uri = getIntent().getData();
             url = uri.toString();
-            State.appendLog("url: " + url);
+            State.appendLog("URL: " + url);
             String[] parts = uri.getQuery().split("&");
             for (String part : parts) {
                 if (part.length() < 2)
@@ -58,7 +53,6 @@ public class StartActivity extends GpsActivity {
         }
         setContentView(R.layout.list);
         if (q == null) {
-            url = "http://maps.google.com/maps?daddr=%D0%9C%D0%BE%D1%81%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8%D0%B9+%D0%B2%D0%BE%D0%BA%D0%B7%D0%B0%D0%BB,+Russia&geocode=FUxukgMdJEzPASGkGs4hvcnH4Q&myl=saddr&dirflg=d";
             if (url == null)
                 return;
             AsyncTask<String, Void, Vector<SearchActivity.Address>> task = new AsyncTask<String, Void, Vector<SearchActivity.Address>>() {

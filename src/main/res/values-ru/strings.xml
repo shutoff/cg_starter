@@ -218,4 +218,6 @@
     </string-array>
     <string name="refresh">Обновить закладки</string>
     <string name="refresh_msg">Обновить конечные точки на стартовом экране из закладок</string>
+    <string name="okgoogle">Ok, Google</string>
+    <string name="okgoogle_sum">Обнаружение горячего слова поиска Google</string>
 </resources>

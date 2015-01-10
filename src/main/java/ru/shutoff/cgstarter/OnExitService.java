@@ -68,6 +68,7 @@ import android.widget.TextView;
 
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+import com.google.android.hotword.client.HotwordServiceClient;
 
 import org.apache.http.HttpStatus;
 
@@ -189,6 +190,7 @@ public class OnExitService extends Service {
     PackageManager pm;
     Vector<App> apps;
     boolean yandex_error;
+    HotwordServiceClient mHotwordClient;
 
     static void turnOnBT(Context context) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -591,6 +593,7 @@ public class OnExitService extends Service {
         });
 */
 
+        mHotwordClient = new HotwordServiceClient(this);
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
         try {
@@ -652,6 +655,7 @@ public class OnExitService extends Service {
             locationManager.removeUpdates(gpsListener);
         if (networkReciever != null)
             unregisterReceiver(networkReciever);
+        mHotwordClient.requestHotwordDetection(false);
         super.onDestroy();
     }
 
@@ -834,8 +838,12 @@ public class OnExitService extends Service {
             }
             if (isActiveCG(this)) {
                 background_count = 0;
+                if (preferences.getBoolean(State.OK_GOOGLE, false))
+                    mHotwordClient.requestHotwordDetection(true);
             } else {
                 background_count++;
+                if (preferences.getBoolean(State.OK_GOOGLE, false))
+                    mHotwordClient.requestHotwordDetection(false);
             }
 
             if (show_overlay) {
@@ -2224,20 +2232,20 @@ public class OnExitService extends Service {
                                     if (data != null) {
                                         Bitmap photo = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
                                         picture = new BitmapDrawable(photo);
+                                    }
                                 }
-                            }
                             } finally {
                                 cursor.close();
+                            }
                         }
                     }
-                }
                 } finally {
                     if (contactLookup != null) {
                         contactLookup.close();
+                    }
                 }
-            }
                 return;
-        }
+            }
             Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
             mainIntent.setPackage(component[0]);
             List<ResolveInfo> infos = pm.queryIntentActivities(mainIntent, 0);
@@ -2247,12 +2255,12 @@ public class OnExitService extends Service {
                 if (info.activityInfo.name.equals(component[1])) {
                     if (component[0].equals(YAN) || app.equals("ru.shutoff.cgstarter/ru.shutoff.cgstarter.TrafficActivity")) {
                         initLocation();
-                } else {
+                    } else {
                         picture = info.loadIcon(pm);
                         if (picture == null)
                             throw new InvalidParameterException();
+                    }
                 }
-            }
             }
         }
 
@@ -2265,9 +2273,9 @@ public class OnExitService extends Service {
                     animation.start();
                 } else {
                     img.setImageResource(res[level]);
-            }
+                }
                 return;
-        }
+            }
             if (name.equals("ru.shutoff.cgstarter/ru.shutoff.cgstarter.VolumeActivity")) {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
                 int channel = preferences.getInt(State.CUR_CHANNEL, 0);
@@ -2277,7 +2285,7 @@ public class OnExitService extends Service {
                 return;
             }
             img.setImageDrawable(picture);
-    }
+        }
     }
 
     abstract class OverlayTouchListener implements View.OnTouchListener {
@@ -2300,7 +2308,7 @@ public class OnExitService extends Service {
                         @Override
                         public void onFinish() {
                             setup();
-                    }
+                        }
                     };
                     setupTimer.start();
                     button_x = event.getX();
@@ -2313,8 +2321,8 @@ public class OnExitService extends Service {
 
                 case MotionEvent.ACTION_UP:
                     if (setup_button) {
-                    cancelSetup();
-                    break;
+                        cancelSetup();
+                        break;
                     }
                     cancelSetup();
                     click();
@@ -2322,9 +2330,9 @@ public class OnExitService extends Service {
                 case MotionEvent.ACTION_CANCEL:
                     cancelSetup();
                     break;
-        }
+            }
             return false;
-    }
+        }
     }
 
     class PingTask extends AsyncTask<Void, Void, Void> {
@@ -2351,17 +2359,17 @@ public class OnExitService extends Service {
                         setMobileDataEnabledMethod.setAccessible(true);
                         setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
                         Thread.sleep(5000);
-                }
+                    }
                     return null;
                 }
                 Runtime runtime = Runtime.getRuntime();
                 for (int i = 0; i < 6; i++) {
-                Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
-                int exitValue = mIpAddrProcess.waitFor();
-                if (exitValue == 0)
-                    return null;
+                    Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+                    int exitValue = mIpAddrProcess.waitFor();
+                    if (exitValue == 0)
+                        return null;
                     Thread.sleep(2000);
-            }
+                }
                 Process mIpAddrProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
                 int exitValue = mIpAddrProcess.waitFor();
                 if (exitValue == 0)
@@ -2377,10 +2385,10 @@ public class OnExitService extends Service {
                 }
             } catch (Exception ex) {
                 // ignore
-        }
+            }
 
             return null;
-    }
+        }
 
         @Override
         protected void onPostExecute(Void aVoid) {
@@ -2426,9 +2434,9 @@ public class OnExitService extends Service {
                         reader.close();
                     } catch (Exception e) {
                         // ignore
+                    }
                 }
             }
-        }
             return null;
         }
 
@@ -2443,7 +2451,7 @@ public class OnExitService extends Service {
                 if (yandex_error) {
                     yandex_error = false;
                     changed = true;
-            }
+                }
                 SharedPreferences.Editor ed = preferences.edit();
                 ed.putInt(State.TRAFFIC, lvl);
                 ed.putLong(State.UPD_TIME, now);
@@ -2455,8 +2463,8 @@ public class OnExitService extends Service {
                 }
             } else {
                 setYandexError(true);
+            }
         }
-    }
     }
 
 }

@@ -17,7 +17,6 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -36,7 +35,6 @@ import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -44,12 +42,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Vector;
@@ -504,59 +497,15 @@ public class MainActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
+        /*
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable ex) {
                 ex.printStackTrace();
-                StringWriter sw = new StringWriter();
-                ex.printStackTrace(new PrintWriter(sw));
-                AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(String... urlParameters) {
-                        try {
-                            URL url = new URL("https://car-online.ugona.net/log");
-                            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                            connection.setRequestMethod("POST");
-                            connection.setRequestProperty("Content-Type",
-                                    "application/x-www-form-urlencoded");
-
-                            connection.setRequestProperty("Content-Length", "" +
-                                    Integer.toString(urlParameters[0].getBytes().length));
-                            connection.setRequestProperty("Content-Language", "en-US");
-
-                            connection.setUseCaches(false);
-                            connection.setDoInput(true);
-                            connection.setDoOutput(true);
-
-                            //Send request
-                            DataOutputStream wr = new DataOutputStream(
-                                    connection.getOutputStream());
-                            wr.writeBytes(urlParameters[0]);
-                            wr.flush();
-                            wr.close();
-
-                            //Get Response
-                            InputStream is = connection.getInputStream();
-                            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-                            String line;
-                            StringBuffer response = new StringBuffer();
-                            response.append("CG\n");
-                            while ((line = rd.readLine()) != null) {
-                                response.append(line);
-                                response.append('\r');
-                            }
-                            rd.close();
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        } finally {
-                            System.exit(1);
-                        }
-                        return null;
-                    }
-                };
-                task.execute(sw.toString());
+                State.print(ex);
             }
         });
+        */
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String orientation = preferences.getString(State.ORIENTATION, "");

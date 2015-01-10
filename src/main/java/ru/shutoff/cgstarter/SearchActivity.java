@@ -47,11 +47,16 @@ public class SearchActivity extends GpsActivity {
 
     PlaceholderFragment fragment;
 
+    static boolean isVoiceSearch(Context context) {
+        PackageManager pm = context.getPackageManager();
+        List<ResolveInfo> activities = pm.queryIntentActivities(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
+        return activities.size() > 0;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
         if (savedInstanceState == null) {
@@ -443,13 +448,13 @@ public class SearchActivity extends GpsActivity {
 
     static abstract class PlaceRequest extends AsyncTask<String, Void, JsonArray> {
 
+        String error;
+
         abstract Location getLocation();
 
         abstract void showError(String error);
 
         abstract void result(Vector<Address> result);
-
-        String error;
 
         @Override
         protected JsonArray doInBackground(String... strings) {
@@ -466,8 +471,8 @@ public class SearchActivity extends GpsActivity {
                     double lon = location.getLongitude();
                     url += "&location=" + lat + "," + lon + "&radius=" + strings[1];
                 }
-                url += "&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0";
-                // url += "&key=AIzaSyBljQKazFWpl9nyGHp-lu8ati7QjMbwzsU";
+                // url += "&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0";
+                url += "&key=AIzaSyBljQKazFWpl9nyGHp-lu8ati7QjMbwzsU";
                 url += "&language=" + Locale.getDefault().getLanguage();
                 Log.v("url", url);
                 HttpResponse response = httpclient.execute(new HttpGet(url));
@@ -583,12 +588,6 @@ public class SearchActivity extends GpsActivity {
             result(r);
         }
 
-    }
-
-    static boolean isVoiceSearch(Context context) {
-        PackageManager pm = context.getPackageManager();
-        List<ResolveInfo> activities = pm.queryIntentActivities(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
-        return activities.size() > 0;
     }
 
 }

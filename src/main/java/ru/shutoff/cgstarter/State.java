@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.BufferedWriter;
@@ -98,6 +99,9 @@ public class State extends BroadcastReceiver {
     static final String QUICK_ALPHA = "quick_alpha";
     static final String QUICK_SIZE = "quick_size";
     static final String WIFI = "wifi";
+    static final String OK_GOOGLE = "ok_google";
+    static final String LAST_LAT = "last_lat";
+    static final String LAST_LNG = "last_lng";
     static Point[] points;
     static int telephony_state = 0;
     static String cg_package = null;
@@ -230,6 +234,7 @@ public class State extends BroadcastReceiver {
     }
 
     static public void appendLog(String text) {
+        Log.v("CG starter", text);
         File logFile = Environment.getExternalStorageDirectory();
         logFile = new File(logFile, "cg.log");
         if (text == null)
