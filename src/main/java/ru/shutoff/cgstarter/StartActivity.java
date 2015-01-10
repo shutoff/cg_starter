@@ -38,7 +38,6 @@ public class StartActivity extends GpsActivity {
         try {
             Uri uri = getIntent().getData();
             url = uri.toString();
-            State.appendLog("URL: " + url);
             String[] parts = uri.getQuery().split("&");
             for (String part : parts) {
                 if (part.length() < 2)

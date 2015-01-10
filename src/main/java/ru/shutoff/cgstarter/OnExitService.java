@@ -636,6 +636,8 @@ public class OnExitService extends Service {
                 // ignore
             }
         }
+        if (preferences.getString(State.START_POINT, "").equals("-"))
+            initLocation();
     }
 
     @Override
@@ -656,6 +658,14 @@ public class OnExitService extends Service {
         if (networkReciever != null)
             unregisterReceiver(networkReciever);
         mHotwordClient.requestHotwordDetection(false);
+        if (currentBestLocation != null) {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.putString(State.LAST_LAT, currentBestLocation.getLatitude() + "");
+            ed.putString(State.LAST_LNG, currentBestLocation.getLongitude() + "");
+            ed.commit();
+
+        }
         super.onDestroy();
     }
 

@@ -189,12 +189,14 @@ public class StartFragment extends PreferencesFragment {
         start_point.setAdapter(new BaseAdapter() {
             @Override
             public int getCount() {
-                return points.length;
+                return points.length + 1;
             }
 
             @Override
             public Object getItem(int position) {
-                return points[position];
+                if (position > 0)
+                    return points[position];
+                return null;
             }
 
             @Override
@@ -210,7 +212,11 @@ public class StartFragment extends PreferencesFragment {
                     v = inflater.inflate(R.layout.item, null);
                 }
                 TextView tv = (TextView) v.findViewById(R.id.name);
-                tv.setText(points[position].name);
+                if (position > 0) {
+                    tv.setText(points[position - 1].name);
+                } else {
+                    tv.setText(R.string.last_position);
+                }
                 return v;
             }
         });
@@ -226,8 +232,12 @@ public class StartFragment extends PreferencesFragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 SharedPreferences.Editor ed = preferences.edit();
-                Bookmarks.Point p = points[position];
-                ed.putString(State.START_POINT, p.lat + "|" + p.lng);
+                if (position > 0) {
+                    Bookmarks.Point p = points[position - 1];
+                    ed.putString(State.START_POINT, p.lat + "|" + p.lng);
+                } else {
+                    ed.putString(State.START_POINT, "-");
+                }
                 ed.commit();
             }
 

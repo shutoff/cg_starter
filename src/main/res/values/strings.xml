@@ -218,4 +218,5 @@
     <string name="toggle_volume">Toggle volume</string>
     <string name="okgoogle">Ok, Google</string>
     <string name="okgoogle_sum">Detect hotword Google search</string>
+    <string name="last_position">Last position</string>
 </resources>

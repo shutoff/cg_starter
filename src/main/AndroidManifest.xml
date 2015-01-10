@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
     android:versionCode="35"
-    android:versionName="1.6.10">
+    android:versionName="1.6.11 RC1">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
@@ -28,6 +28,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="com.mohammadag.googlesearchapi.permission.ACCESS_GGOGLE_SEARCH_API" />
 
     <uses-feature
         android:name="android.hardware.bluetooth"
@@ -311,6 +312,12 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
                 <action android:name="ru.shutoff.cgstarter.START" />
                 <action android:name="com.twofortyfouram.locale.intent.action.FIRE_SETTING" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".GoogleSearchReceiver">
+            <intent-filter>
+                <action android:name="com.mohammadag.googlesearchapi.NEW_SEARCH" />
             </intent-filter>
         </receiver>
 

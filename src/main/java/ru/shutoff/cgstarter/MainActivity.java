@@ -129,6 +129,8 @@ public class MainActivity
                     routes_dat.createNewFile();
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
                 String start = preferences.getString(State.START_POINT, "0|0");
+                if (start.equals("-"))
+                    start = preferences.getString(State.LAST_LAT, "0") + "|" + preferences.getString(State.LAST_LNG, "0");
                 BufferedWriter writer = new BufferedWriter(new FileWriter(routes_dat));
                 writer.append("1|router|65001\n");
                 writer.append("#[CURRENT]|1|1\n");
