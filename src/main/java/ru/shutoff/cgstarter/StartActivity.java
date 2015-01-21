@@ -54,69 +54,74 @@ public class StartActivity extends GpsActivity {
         if (q == null) {
             if (url == null)
                 return;
-            AsyncTask<String, Void, Vector<SearchActivity.Address>> task = new AsyncTask<String, Void, Vector<SearchActivity.Address>>() {
-                @Override
-                protected Vector<SearchActivity.Address> doInBackground(String... strings) {
-                    try {
-                        URL kml = new URL(strings[0]);
-                        HttpURLConnection connection = (HttpURLConnection) kml.openConnection();
-                        int code = connection.getResponseCode();
-                        if (code == 302) {
-                            String location = connection.getHeaderField("Location");
-                            kml = new URL(location);
-                            connection = (HttpURLConnection) kml.openConnection();
-                            code = connection.getResponseCode();
-                        }
+            Pattern pat = Pattern.compile("\\@([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
+            Matcher matcher = pat.matcher(url);
+            if (!matcher.find()) {
+                AsyncTask<String, Void, Vector<SearchActivity.Address>> task = new AsyncTask<String, Void, Vector<SearchActivity.Address>>() {
+                    @Override
+                    protected Vector<SearchActivity.Address> doInBackground(String... strings) {
+                        try {
+                            URL kml = new URL(strings[0]);
+                            HttpURLConnection connection = (HttpURLConnection) kml.openConnection();
+                            int code = connection.getResponseCode();
+                            if (code == 302) {
+                                String location = connection.getHeaderField("Location");
+                                kml = new URL(location);
+                                connection = (HttpURLConnection) kml.openConnection();
+                                code = connection.getResponseCode();
+                            }
 
-                        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                        StringBuilder sb = new StringBuilder();
-                        String line;
-                        while ((line = br.readLine()) != null) {
-                            sb.append(line + "\n");
+                            BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = br.readLine()) != null) {
+                                sb.append(line + "\n");
+                            }
+                            br.close();
+                            String data = sb.toString();
+                            SearchActivity.Address addr = new SearchActivity.Address();
+                            Vector<SearchActivity.Address> result = new Vector<SearchActivity.Address>();
+                            int start = data.indexOf("title:\"");
+                            if (start >= 0) {
+                                start += 7;
+                                int end = data.indexOf("\"", start);
+                                addr.name = StringEscapeUtils.unescapeHtml4(data.substring(start, end));
+                                addr.address = addr.name;
+                                result.add(addr);
+                            }
+                            start = data.indexOf("lat:");
+                            if (start >= 0) {
+                                start += 4;
+                                int end = data.indexOf(",", start);
+                                addr.lat = Double.parseDouble(data.substring(start, end));
+                            }
+                            start = data.indexOf("lng:");
+                            if (start >= 0) {
+                                start += 4;
+                                int end = data.indexOf("}", start);
+                                addr.lon = Double.parseDouble(data.substring(start, end));
+                            }
+                            if (result.size() > 0)
+                                return result;
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
                         }
-                        br.close();
-                        String data = sb.toString();
-                        SearchActivity.Address addr = new SearchActivity.Address();
-                        Vector<SearchActivity.Address> result = new Vector<SearchActivity.Address>();
-                        int start = data.indexOf("title:\"");
-                        if (start >= 0) {
-                            start += 7;
-                            int end = data.indexOf("\"", start);
-                            addr.name = StringEscapeUtils.unescapeHtml4(data.substring(start, end));
-                            addr.address = addr.name;
-                            result.add(addr);
-                        }
-                        start = data.indexOf("lat:");
-                        if (start >= 0) {
-                            start += 4;
-                            int end = data.indexOf(",", start);
-                            addr.lat = Double.parseDouble(data.substring(start, end));
-                        }
-                        start = data.indexOf("lng:");
-                        if (start >= 0) {
-                            start += 4;
-                            int end = data.indexOf("}", start);
-                            addr.lon = Double.parseDouble(data.substring(start, end));
-                        }
-                        if (result.size() > 0)
-                            return result;
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
+                        return null;
                     }
-                    return null;
-                }
 
-                @Override
-                protected void onPostExecute(Vector<SearchActivity.Address> addresses) {
-                    if (addresses == null) {
-                        finish();
-                        return;
+                    @Override
+                    protected void onPostExecute(Vector<SearchActivity.Address> addresses) {
+                        if (addresses == null) {
+                            finish();
+                            return;
+                        }
+                        showResult(addresses);
                     }
-                    showResult(addresses);
-                }
-            };
-            task.execute(url + "&output=json");
-            return;
+                };
+                task.execute(url + "&output=json");
+                return;
+            }
+            q = url;
         }
         Pattern pat = Pattern.compile("([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
         Matcher matcher = pat.matcher(q);
