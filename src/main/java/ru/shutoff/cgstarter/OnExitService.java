@@ -245,6 +245,11 @@ public class OnExitService extends Service {
         SharedPreferences.Editor ed = preferences.edit();
         ed.remove(State.BT_DEVICES);
         ed.commit();
+        if (preferences.getBoolean(State.KILL_POWER, false)) {
+            force_exit = true;
+            CarMonitor.killCG(context);
+            CarMonitor.lockDevice(context);
+        }
     }
 
     static boolean isRun(Context context, String pkg_name) {
@@ -962,9 +967,11 @@ public class OnExitService extends Service {
             Method serviceMethod = telephonyStubClass.getMethod("asInterface", IBinder.class);
             telephonyObject = serviceMethod.invoke(null, retbinder);
             Method telephonySilenceRinger = telephonyClass.getMethod("silenceRinger");
+            telephonySilenceRinger.setAccessible(true);
             telephonySilenceRinger.invoke(telephonyObject);
-            Method telephonyAnswerRingingCall = telephonyClass.getMethod("answerRingingCall");
-            telephonyAnswerRingingCall.invoke(telephonyObject);
+            Method telephonySendRequestAsync = telephonyClass.getMethod("sendRequestAsync");
+            telephonySendRequestAsync.setAccessible(true);
+            telephonySendRequestAsync.invoke(telephonyObject, 4);
             return;
         } catch (Exception e) {
             // ignore
@@ -1009,6 +1016,7 @@ public class OnExitService extends Service {
             Method serviceMethod = telephonyStubClass.getMethod("asInterface", IBinder.class);
             telephonyObject = serviceMethod.invoke(null, retbinder);
             telephonyEndCall = telephonyClass.getMethod("endCall");
+            telephonyEndCall.setAccessible(true);
             telephonyEndCall.invoke(telephonyObject);
         } catch (Exception e) {
         }
