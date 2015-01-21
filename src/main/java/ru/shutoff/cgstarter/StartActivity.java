@@ -14,10 +14,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Vector;
@@ -34,7 +33,7 @@ public class StartActivity extends GpsActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String q = null;
-        String url = null;
+        String url = null; // "https://maps.google.ru/maps/ms?ie=UTF8&t=m&oe=UTF8&msa=0&msid=216639410842959437681.0004abf24fb2669aedb1b&dg=feature";
         try {
             Uri uri = getIntent().getData();
             url = uri.toString();
@@ -60,46 +59,55 @@ public class StartActivity extends GpsActivity {
                     try {
                         URL kml = new URL(strings[0]);
                         HttpURLConnection connection = (HttpURLConnection) kml.openConnection();
-                        int code = connection.getResponseCode();
-                        if (code == 302) {
-                            String location = connection.getHeaderField("Location");
-                            kml = new URL(location);
-                            connection = (HttpURLConnection) kml.openConnection();
-                            code = connection.getResponseCode();
+                        if (connection.getResponseCode() == 200) {
+                            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+                            factory.setNamespaceAware(true);
+                            XmlPullParser xpp = factory.newPullParser();
+                            xpp.setInput(connection.getInputStream(), "utf-8");
+                            int eventType = xpp.getEventType();
+                            StringBuilder buffer = null;
+                            SearchActivity.Address addr = null;
+                            Vector<SearchActivity.Address> result = new Vector<SearchActivity.Address>();
+                            while (eventType != XmlPullParser.END_DOCUMENT) {
+                                if (eventType == XmlPullParser.START_TAG) {
+                                    if (xpp.getName().equals(PLACEMARK))
+                                        addr = new SearchActivity.Address();
+                                    if (addr != null) {
+                                        if (xpp.getName().equals(COORDINATES))
+                                            buffer = new StringBuilder();
+                                        if (xpp.getName().equals(NAME))
+                                            buffer = new StringBuilder();
+                                    }
+                                } else if (eventType == XmlPullParser.END_TAG) {
+                                    if (addr != null) {
+                                        if (buffer != null) {
+                                            if (xpp.getName().equals(COORDINATES)) {
+                                                String[] coord = buffer.toString().split(",");
+                                                if (coord.length > 1) {
+                                                    addr.lat = Double.parseDouble(coord[1]);
+                                                    addr.lon = Double.parseDouble(coord[0]);
+                                                }
+                                            }
+                                            if (xpp.getName().equals(NAME)) {
+                                                addr.name = buffer.toString();
+                                                addr.address = buffer.toString();
+                                            }
+                                        }
+                                        buffer = null;
+                                        if ((addr != null) && xpp.getName().equals(PLACEMARK)) {
+                                            if (!addr.name.equals("") && (addr.lat != 0) && (addr.lon != 0))
+                                                result.add(addr);
+                                        }
+                                    }
+                                } else if (eventType == XmlPullParser.TEXT) {
+                                    if (buffer != null)
+                                        buffer.append(xpp.getText());
+                                }
+                                eventType = xpp.next();
+                            }
+                            if (result.size() > 0)
+                                return result;
                         }
-
-                        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                        StringBuilder sb = new StringBuilder();
-                        String line;
-                        while ((line = br.readLine()) != null) {
-                            sb.append(line + "\n");
-                        }
-                        br.close();
-                        String data = sb.toString();
-                        SearchActivity.Address addr = new SearchActivity.Address();
-                        Vector<SearchActivity.Address> result = new Vector<SearchActivity.Address>();
-                        int start = data.indexOf("title:\"");
-                        if (start >= 0) {
-                            start += 7;
-                            int end = data.indexOf("\"", start);
-                            addr.name = StringEscapeUtils.unescapeHtml4(data.substring(start, end));
-                            addr.address = addr.name;
-                            result.add(addr);
-                        }
-                        start = data.indexOf("lat:");
-                        if (start >= 0) {
-                            start += 4;
-                            int end = data.indexOf(",", start);
-                            addr.lat = Double.parseDouble(data.substring(start, end));
-                        }
-                        start = data.indexOf("lng:");
-                        if (start >= 0) {
-                            start += 4;
-                            int end = data.indexOf("}", start);
-                            addr.lon = Double.parseDouble(data.substring(start, end));
-                        }
-                        if (result.size() > 0)
-                            return result;
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -115,7 +123,7 @@ public class StartActivity extends GpsActivity {
                     showResult(addresses);
                 }
             };
-            task.execute(url + "&output=json");
+            task.execute(url + "&output=kml");
             return;
         }
         Pattern pat = Pattern.compile("([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
