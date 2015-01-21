@@ -25,5 +25,6 @@ android {
 dependencies {
     compile 'com.android.support:support-v4:21.+'
     compile 'com.android.support:appcompat-v7:21.+'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
     compile fileTree(dir: 'libs', include: '*.jar')
 }

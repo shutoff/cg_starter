@@ -26,6 +26,7 @@
     <string name="inactive_pause">If not any buttons pressed %1 sec</string>
     <string name="sec">sec</string>
     <string name="rotate">Screen rotate</string>
+    <string name="rotate_sum">Disable screen rotate</string>
     <string name="bt">Bluetooth control</string>
     <string name="bt_sum">Turn ON bluetooth</string>
     <string name="data">Mobile data control</string>
