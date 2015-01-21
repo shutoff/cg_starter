@@ -65,7 +65,7 @@ public class CarMonitor extends BroadcastReceiver {
         context.startService(service);
     }
 
-    static void killCG(Context context) {
+    public static void killCG(Context context) {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
         if (procInfos == null)
@@ -79,7 +79,7 @@ public class CarMonitor extends BroadcastReceiver {
         }
     }
 
-    static void lockDevice(Context context) {
+    public static void lockDevice(Context context) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
                 DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
@@ -240,7 +240,7 @@ public class CarMonitor extends BroadcastReceiver {
                 power_timer = null;
             }
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-            if (preferences.getBoolean(State.KILL_POWER, false)) {
+            if (preferences.getBoolean(State.KILL_POWER, false) && preferences.getString(State.BT_DEVICES, "").equals("")) {
                 power_kill_timer = new CountDownTimer(2000, 2000) {
                     @Override
                     public void onTick(long millisUntilFinished) {
@@ -257,7 +257,6 @@ public class CarMonitor extends BroadcastReceiver {
                 };
                 power_kill_timer.start();
             }
-
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);

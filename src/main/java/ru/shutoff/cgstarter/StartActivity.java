@@ -118,7 +118,7 @@ public class StartActivity extends GpsActivity {
             task.execute(url + "&output=json");
             return;
         }
-        Pattern pat = Pattern.compile("loc:([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
+        Pattern pat = Pattern.compile("([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
         Matcher matcher = pat.matcher(q);
         if (matcher.find()) {
             try {
