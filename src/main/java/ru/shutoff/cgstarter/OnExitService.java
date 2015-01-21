@@ -148,6 +148,7 @@ public class OnExitService extends Service {
     static float size = 0;
     static int prev_state;
     static boolean cg_run;
+    static boolean is_run;
     static ActivityManager mActivityManager;
     AlarmManager alarmMgr;
     PendingIntent pi;
@@ -593,6 +594,7 @@ public class OnExitService extends Service {
         });
 */
 
+        is_run = true;
         mHotwordClient = new HotwordServiceClient(this);
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
@@ -666,6 +668,7 @@ public class OnExitService extends Service {
             ed.commit();
 
         }
+        is_run = false;
         super.onDestroy();
     }
 

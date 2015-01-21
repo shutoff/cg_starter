@@ -145,93 +145,97 @@ public class CarMonitor extends BroadcastReceiver {
             }
         }
         if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-            String interval = preferences.getString(State.POWER_TIME, "");
-            if (State.inInterval(interval)) {
-                orientation = null;
-                if (preferences.getBoolean(State.VERTICAL, true)) {
-                    if (sensorEventListener == null) {
-                        sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-                        if (sensorAccelerometer == null)
-                            sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-                        if (sensorMagnetic == null)
-                            sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            State.appendLog("connected");
+            if (power_kill_timer != null) {
+                State.appendLog("cancel timer");
+                power_kill_timer.cancel();
+                power_kill_timer = null;
+            }
+            if (!OnExitService.is_run && (power_timer == null)) {
+                final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                String interval = preferences.getString(State.POWER_TIME, "");
+                if (State.inInterval(interval)) {
+                    orientation = null;
+                    if (preferences.getBoolean(State.VERTICAL, true)) {
                         if (sensorEventListener == null) {
-                            sensorEventListener = new SensorEventListener() {
-                                @Override
-                                public void onSensorChanged(SensorEvent event) {
-                                    if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-                                        magnetic = event.values;
-                                    if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-                                        gravity = event.values;
-                                    if ((gravity == null) || (magnetic == null))
-                                        return;
-                                    float[] R = new float[9];
-                                    float[] I = new float[9];
-                                    if (!SensorManager.getRotationMatrix(R, I, gravity, magnetic))
-                                        return;
-                                    if (orientation == null)
-                                        orientation = new float[3];
-                                    SensorManager.getOrientation(R, orientation);
-                                }
+                            sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+                            if (sensorAccelerometer == null)
+                                sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                            if (sensorMagnetic == null)
+                                sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+                            if (sensorEventListener == null) {
+                                sensorEventListener = new SensorEventListener() {
+                                    @Override
+                                    public void onSensorChanged(SensorEvent event) {
+                                        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+                                            magnetic = event.values;
+                                        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+                                            gravity = event.values;
+                                        if ((gravity == null) || (magnetic == null))
+                                            return;
+                                        float[] R = new float[9];
+                                        float[] I = new float[9];
+                                        if (!SensorManager.getRotationMatrix(R, I, gravity, magnetic))
+                                            return;
+                                        if (orientation == null)
+                                            orientation = new float[3];
+                                        SensorManager.getOrientation(R, orientation);
+                                    }
 
-                                @Override
-                                public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                                    @Override
+                                    public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
-                                }
-                            };
-                            sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-                            sensorManager.registerListener(sensorEventListener, sensorMagnetic, SensorManager.SENSOR_DELAY_NORMAL);
+                                    }
+                                };
+                                sensorManager.registerListener(sensorEventListener, sensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                                sensorManager.registerListener(sensorEventListener, sensorMagnetic, SensorManager.SENSOR_DELAY_NORMAL);
+                            }
                         }
                     }
-                }
-                power_timer = new CountDownTimer(10000, 2000) {
-                    @Override
-                    public void onTick(long millisUntilFinished) {
-                        if (preferences.getBoolean(State.VERTICAL, true)) {
-                            if (orientation == null)
-                                return;
-                            if ((Math.abs(orientation[1]) + Math.abs(orientation[2])) < 1) {
-                                if (sensorEventListener != null) {
-                                    sensorManager.unregisterListener(sensorEventListener);
-                                    sensorEventListener = null;
+                    power_timer = new CountDownTimer(10000, 2000) {
+                        @Override
+                        public void onTick(long millisUntilFinished) {
+                            if (preferences.getBoolean(State.VERTICAL, true)) {
+                                if (orientation == null)
+                                    return;
+                                if ((Math.abs(orientation[1]) + Math.abs(orientation[2])) < 1) {
+                                    if (sensorEventListener != null) {
+                                        sensorManager.unregisterListener(sensorEventListener);
+                                        sensorEventListener = null;
+                                    }
+                                    orientation = null;
+                                    if (power_timer != null)
+                                        power_timer.cancel();
+                                    power_timer = null;
+                                    return;
                                 }
                                 orientation = null;
-                                if (power_timer != null)
-                                    power_timer.cancel();
-                                power_timer = null;
-                                return;
+                            }
+                            if (sensorEventListener != null) {
+                                sensorManager.unregisterListener(sensorEventListener);
+                                sensorEventListener = null;
+                            }
+                            if (power_timer != null)
+                                power_timer.cancel();
+                            power_timer = null;
+                            if (!OnExitService.isRunCG(context)) {
+                                Intent run = new Intent(context, MainActivity.class);
+                                run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                context.startActivity(run);
+                            }
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            if (sensorEventListener != null) {
+                                sensorManager.unregisterListener(sensorEventListener);
+                                sensorEventListener = null;
                             }
                             orientation = null;
                         }
-                        if (sensorEventListener != null) {
-                            sensorManager.unregisterListener(sensorEventListener);
-                            sensorEventListener = null;
-                        }
-                        if (power_timer != null)
-                            power_timer.cancel();
-                        power_timer = null;
-                        if (!OnExitService.isRunCG(context)) {
-                            Intent run = new Intent(context, MainActivity.class);
-                            run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(run);
-                        }
-                    }
-
-                    @Override
-                    public void onFinish() {
-                        if (sensorEventListener != null) {
-                            sensorManager.unregisterListener(sensorEventListener);
-                            sensorEventListener = null;
-                        }
-                        orientation = null;
-                    }
-                };
-                power_timer.start();
-            }
-            if (power_kill_timer != null) {
-                power_kill_timer.cancel();
-                power_kill_timer = null;
+                    };
+                    power_timer.start();
+                }
             }
         }
         if (action.equals(Intent.ACTION_POWER_DISCONNECTED)) {
@@ -239,25 +243,32 @@ public class CarMonitor extends BroadcastReceiver {
                 power_timer.cancel();
                 power_timer = null;
             }
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-            if (preferences.getBoolean(State.KILL_POWER, false)) {
-                power_kill_timer = new CountDownTimer(2000, 2000) {
-                    @Override
-                    public void onTick(long millisUntilFinished) {
-
-                    }
-
-                    @Override
-                    public void onFinish() {
-                        power_kill_timer = null;
-                        OnExitService.force_exit = true;
-                        killCG(context);
-                        lockDevice(context);
-                    }
-                };
-                power_kill_timer.start();
+            if (power_kill_timer != null) {
+                power_kill_timer.cancel();
+                power_kill_timer = null;
             }
+            if (OnExitService.is_run) {
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                State.appendLog("Disconnected start timer");
+                if (preferences.getBoolean(State.KILL_POWER, false)) {
+                    power_kill_timer = new CountDownTimer(8000, 8000) {
+                        @Override
+                        public void onTick(long millisUntilFinished) {
 
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            State.appendLog("Disconnected timer");
+                            power_kill_timer = null;
+                            OnExitService.force_exit = true;
+                            killCG(context);
+                            lockDevice(context);
+                        }
+                    };
+                    power_kill_timer.start();
+                }
+            }
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -299,7 +310,6 @@ public class CarMonitor extends BroadcastReceiver {
             }
         }
         if (action.equals(START)) {
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String route = intent.getStringExtra("ROUTE");
             String route_points = intent.getStringExtra("POINTS");
             if (route == null)
