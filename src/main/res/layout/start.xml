@@ -5,18 +5,18 @@
     android:layout_height="match_parent">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="vertical"
         android:padding="5dp">
 
         <TextView
             android:id="@+id/cg_run"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
             android:text="@string/cg_run"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <Spinner
             android:id="@+id/cg_app"
@@ -28,29 +28,29 @@
             android:id="@+id/auto_pause_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <SeekBar
             android:id="@+id/auto_pause"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="18"
-            android:layout_margin="8dp" />
+            android:layout_margin="8dp"
+            android:max="18" />
 
         <TextView
             android:id="@+id/inactive_pause_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <SeekBar
             android:id="@+id/inactive_pause"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="175"
-            android:layout_margin="8dp" />
+            android:layout_margin="8dp"
+            android:max="175" />
 
         <Spinner
             android:id="@+id/inactive_mode"
@@ -62,32 +62,32 @@
             android:id="@+id/carmode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/carmode"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/carmode"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/carmode_sum"
             android:paddingLeft="10dp"
+            android:text="@string/carmode_sum"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <CheckBox
             android:id="@+id/kill_car"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/kill_cg"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/kill_cg"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/kill_car"
             android:paddingLeft="10dp"
+            android:text="@string/kill_car"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <LinearLayout
@@ -99,11 +99,11 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/powermode"
-                android:textStyle="bold"
-                android:paddingTop="5dp"
                 android:paddingLeft="28dp"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
+                android:paddingTop="5dp"
+                android:text="@string/powermode"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/powertime"
@@ -118,60 +118,60 @@
             android:id="@+id/kill_power"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/kill_cg"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/kill_cg"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/kill_power"
             android:paddingLeft="10dp"
+            android:text="@string/kill_power"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <CheckBox
             android:id="@+id/vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/vertical"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/vertical"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/sensor_vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/sensor_unknown"
             android:paddingLeft="10dp"
+            android:text="@string/sensor_unknown"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <CheckBox
             android:id="@+id/mapcam"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/mapcam"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/mapcam"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <CheckBox
             android:id="@+id/strelka"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/strelka"
-            android:textStyle="bold"
             android:paddingTop="5dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:text="@string/strelka"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingTop="10dp"
             android:text="@string/start_point"
-            android:textStyle="bold"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:paddingTop="10dp" />
+            android:textStyle="bold" />
 
         <Spinner
             android:id="@+id/start_point"
@@ -189,17 +189,16 @@
                 android:id="@+id/remove_rta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/remove_rta"
-                android:textStyle="bold"
                 android:paddingTop="5dp"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
+                android:text="@string/remove_rta"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/sensor_vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/remove_rta_sum"
                 android:paddingLeft="10dp"
+                android:text="@string/remove_rta_sum"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
         </LinearLayout>
