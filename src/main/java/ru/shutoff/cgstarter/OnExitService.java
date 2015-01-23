@@ -89,11 +89,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.InvalidParameterException;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Vector;
 
 public class OnExitService extends Service {
@@ -266,41 +263,12 @@ public class OnExitService extends Service {
         return isRun(context, State.CG_Package(context));
     }
 
-    static String[] getActivePackagesCompat() {
-        final List<ActivityManager.RunningTaskInfo> taskInfo = mActivityManager.getRunningTasks(1);
-        final ComponentName componentName = taskInfo.get(0).topActivity;
-        final String[] activePackages = new String[1];
-        activePackages[0] = componentName.getPackageName();
-        return activePackages;
-    }
-
-    static String[] getActivePackages() {
-        final Set<String> activePackages = new HashSet<String>();
-        final List<ActivityManager.RunningAppProcessInfo> processInfos = mActivityManager.getRunningAppProcesses();
-        for (ActivityManager.RunningAppProcessInfo processInfo : processInfos) {
-            if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                activePackages.addAll(Arrays.asList(processInfo.pkgList));
-            }
-        }
-        return activePackages.toArray(new String[activePackages.size()]);
-    }
-
     static boolean isActiveCG(Context context) {
         if (mActivityManager == null)
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         try {
-            String[] activePackages;
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
-                activePackages = getActivePackages();
-            } else {
-                activePackages = getActivePackagesCompat();
-            }
-            if (activePackages == null)
-                return false;
-            for (String activePackage : activePackages) {
-                if (activePackage.equals(State.CG_Package(context)))
-                    return true;
-            }
+            List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
+            return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_Package(context));
         } catch (Exception ex) {
             // ignore
         }
