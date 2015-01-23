@@ -1,20 +1,12 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.0.0'
+        classpath 'com.android.tools.build:gradle:1.+'
     }
 }
-
-allprojects {
-    repositories {
-        jcenter()
-    }
-}
-
-apply plugin: 'com.android.application'
+apply plugin: 'android'
 
 repositories {
     mavenCentral()
@@ -26,8 +18,8 @@ android {
 
     defaultConfig {
         minSdkVersion 7
-        targetSdkVersion 21
     }
+
 }
 
 dependencies {
@@ -36,5 +28,3 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
     compile fileTree(dir: 'libs', include: '*.jar')
 }
-
-

@@ -144,8 +144,14 @@ public class CarMonitor extends BroadcastReceiver {
                 // ignore
             }
         }
+        if (action.equals(Intent.ACTION_BOOT_COMPLETED)) {
+            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            SharedPreferences.Editor ed = preferences.edit();
+            ed.remove(State.BT_DEVICES);
+            ed.commit();
+        }
         if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
-            State.appendLog("connected");
+            State.appendLog("Power connected");
             if (power_kill_timer != null) {
                 State.appendLog("cancel timer");
                 power_kill_timer.cancel();
@@ -219,6 +225,7 @@ public class CarMonitor extends BroadcastReceiver {
                                 power_timer.cancel();
                             power_timer = null;
                             if (!OnExitService.isRunCG(context)) {
+                                context.sendBroadcast(new Intent("com.smartmadsoft.xposed.nolockhome.UNLOCK"));
                                 Intent run = new Intent(context, MainActivity.class);
                                 run.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 context.startActivity(run);
@@ -239,6 +246,7 @@ public class CarMonitor extends BroadcastReceiver {
             }
         }
         if (action.equals(Intent.ACTION_POWER_DISCONNECTED)) {
+            State.appendLog("Power disconnected");
             if (power_timer != null) {
                 power_timer.cancel();
                 power_timer = null;
@@ -250,7 +258,7 @@ public class CarMonitor extends BroadcastReceiver {
             if (OnExitService.is_run) {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
                 State.appendLog("Disconnected start timer");
-                if (preferences.getBoolean(State.KILL_POWER, false)) {
+                if (preferences.getBoolean(State.KILL_POWER, false) && preferences.getString(State.BT_DEVICES, "").equals("")) {
                     power_kill_timer = new CountDownTimer(8000, 8000) {
                         @Override
                         public void onTick(long millisUntilFinished) {
@@ -274,15 +282,24 @@ public class CarMonitor extends BroadcastReceiver {
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String devices = preferences.getString(State.BT_DEVICES, "");
-            if (devices.equals(""))
-                return;
+            if (!devices.equals(""))
+                devices += ";";
+            devices += device.getAddress();
+            State.appendLog("BT+ " + device);
             SharedPreferences.Editor ed = preferences.edit();
-            ed.putString(State.BT_DEVICES, devices + ";" + device.getAddress());
+            ed.putString(State.BT_DEVICES, devices);
             ed.commit();
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             OnExitService.turnOffBT(context, device.getAddress());
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            if (preferences.getBoolean(State.KILL_POWER, false) && preferences.getString(State.BT_DEVICES, "").equals("")) {
+                State.appendLog("Kill CG");
+                OnExitService.force_exit = true;
+                killCG(context);
+                lockDevice(context);
+            }
         }
         if (action.equals(Intent.ACTION_NEW_OUTGOING_CALL)) {
             OnExitService.call_number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER);

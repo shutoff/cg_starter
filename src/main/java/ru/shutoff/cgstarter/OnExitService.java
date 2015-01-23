@@ -36,7 +36,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -56,6 +55,7 @@ import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -66,6 +66,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.android.internal.telephony.ITelephony;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import com.google.android.hotword.client.HotwordServiceClient;
@@ -75,7 +76,6 @@ import org.apache.http.HttpStatus;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -201,7 +201,7 @@ public class OnExitService extends Service {
                 if ((bt != null) && !bt.isEnabled()) {
                     bt.enable();
                     SharedPreferences.Editor ed = preferences.edit();
-                    ed.putString(State.BT_DEVICES, "-");
+                    ed.remove(State.BT_DEVICES);
                     ed.commit();
                 }
             } catch (Exception ex) {
@@ -213,6 +213,7 @@ public class OnExitService extends Service {
     static void turnOffBT(Context context, String device) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         String devices_str = preferences.getString(State.BT_DEVICES, "");
+        State.appendLog("Devices: " + devices_str + ", " + device);
         if (devices_str.equals(""))
             return;
         String[] devices = devices_str.split(";");
@@ -245,11 +246,6 @@ public class OnExitService extends Service {
         SharedPreferences.Editor ed = preferences.edit();
         ed.remove(State.BT_DEVICES);
         ed.commit();
-        if (preferences.getBoolean(State.KILL_POWER, false)) {
-            force_exit = true;
-            CarMonitor.killCG(context);
-            CarMonitor.lockDevice(context);
-        }
     }
 
     static boolean isRun(Context context, String pkg_name) {
@@ -943,82 +939,58 @@ public class OnExitService extends Service {
     }
 
     void callAnswer() {
+        TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+        if (tm.getCallState() != TelephonyManager.CALL_STATE_RINGING)
+            return;
+
         try {
-            String serviceManagerName = "android.os.ServiceManager";
-            String serviceManagerNativeName = "android.os.ServiceManagerNative";
-            String telephonyName = "com.android.internal.telephony.ITelephony";
-            Class<?> telephonyClass;
-            Class<?> telephonyStubClass;
-            Class<?> serviceManagerClass;
-            Class<?> serviceManagerNativeClass;
-            Object telephonyObject;
-            Object serviceManagerObject;
-            telephonyClass = Class.forName(telephonyName);
-            telephonyStubClass = telephonyClass.getClasses()[0];
-            serviceManagerClass = Class.forName(serviceManagerName);
-            serviceManagerNativeClass = Class.forName(serviceManagerNativeName);
-            Method getService = // getDefaults[29];
-                    serviceManagerClass.getMethod("getService", String.class);
-            Method tempInterfaceMethod = serviceManagerNativeClass.getMethod("asInterface", IBinder.class);
-            Binder tmpBinder = new Binder();
-            tmpBinder.attachInterface(null, "fake");
-            serviceManagerObject = tempInterfaceMethod.invoke(null, tmpBinder);
-            IBinder retbinder = (IBinder) getService.invoke(serviceManagerObject, "phone");
-            Method serviceMethod = telephonyStubClass.getMethod("asInterface", IBinder.class);
-            telephonyObject = serviceMethod.invoke(null, retbinder);
-            Method telephonySilenceRinger = telephonyClass.getMethod("silenceRinger");
-            telephonySilenceRinger.setAccessible(true);
-            telephonySilenceRinger.invoke(telephonyObject);
-            Method telephonySendRequestAsync = telephonyClass.getMethod("sendRequestAsync");
-            telephonySendRequestAsync.setAccessible(true);
-            telephonySendRequestAsync.invoke(telephonyObject, 4);
+            Class c = Class.forName(tm.getClass().getName());
+            Method m = c.getDeclaredMethod("getITelephony");
+            m.setAccessible(true);
+            ITelephony telephonyService;
+            telephonyService = (ITelephony) m.invoke(tm);
+
+            telephonyService.silenceRinger();
+            telephonyService.answerRingingCall();
             return;
         } catch (Exception e) {
             // ignore
         }
 
         try {
-            Process proc = Runtime.getRuntime().exec("su");
-            DataOutputStream os = new DataOutputStream(proc.getOutputStream());
+            Intent buttonDown = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            buttonDown.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK));
+            sendOrderedBroadcast(buttonDown, "android.permission.CALL_PRIVILEGED");
 
-            os.writeBytes("service call phone 5\n");
-            os.flush();
-
-            os.writeBytes("exit\n");
-            os.flush();
+            Intent buttonUp = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            buttonUp.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK));
+            sendOrderedBroadcast(buttonUp, "android.permission.CALL_PRIVILEGED");
         } catch (Exception e) {
+            // ignore
+        }
+
+        try {
+            Intent headSetUnPluggedintent = new Intent(Intent.ACTION_HEADSET_PLUG);
+            headSetUnPluggedintent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
+            headSetUnPluggedintent.putExtra("state", 0);
+            headSetUnPluggedintent.putExtra("name", "Headset");
+            sendOrderedBroadcast(headSetUnPluggedintent, null);
+        } catch (Exception e) {
+            // ignore
         }
     }
 
     void callReject() {
+        ITelephony telephonyService;
+        TelephonyManager telephony = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         try {
-            String serviceManagerName = "android.os.ServiceManager";
-            String serviceManagerNativeName = "android.os.ServiceManagerNative";
-            String telephonyName = "com.android.internal.telephony.ITelephony";
-            Class<?> telephonyClass;
-            Class<?> telephonyStubClass;
-            Class<?> serviceManagerClass;
-            Class<?> serviceManagerNativeClass;
-            Method telephonyEndCall;
-            Object telephonyObject;
-            Object serviceManagerObject;
-            telephonyClass = Class.forName(telephonyName);
-            telephonyStubClass = telephonyClass.getClasses()[0];
-            serviceManagerClass = Class.forName(serviceManagerName);
-            serviceManagerNativeClass = Class.forName(serviceManagerNativeName);
-            Method getService = // getDefaults[29];
-                    serviceManagerClass.getMethod("getService", String.class);
-            Method tempInterfaceMethod = serviceManagerNativeClass.getMethod("asInterface", IBinder.class);
-            Binder tmpBinder = new Binder();
-            tmpBinder.attachInterface(null, "fake");
-            serviceManagerObject = tempInterfaceMethod.invoke(null, tmpBinder);
-            IBinder retbinder = (IBinder) getService.invoke(serviceManagerObject, "phone");
-            Method serviceMethod = telephonyStubClass.getMethod("asInterface", IBinder.class);
-            telephonyObject = serviceMethod.invoke(null, retbinder);
-            telephonyEndCall = telephonyClass.getMethod("endCall");
-            telephonyEndCall.setAccessible(true);
-            telephonyEndCall.invoke(telephonyObject);
-        } catch (Exception e) {
+            Class c = Class.forName(telephony.getClass().getName());
+            Method m = c.getDeclaredMethod("getITelephony");
+            m.setAccessible(true);
+            telephonyService = (ITelephony) m.invoke(telephony);
+            telephonyService.endCall();
+        } catch (Exception ex) {
+            // ignore
         }
     }
 
@@ -1036,30 +1008,13 @@ public class OnExitService extends Service {
 
     void switchToPhone() {
         try {
-            String serviceManagerName = "android.os.ServiceManager";
-            String serviceManagerNativeName = "android.os.ServiceManagerNative";
-            String telephonyName = "com.android.internal.telephony.ITelephony";
-            Class<?> telephonyClass;
-            Class<?> telephonyStubClass;
-            Class<?> serviceManagerClass;
-            Class<?> serviceManagerNativeClass;
-            Object telephonyObject;
-            Object serviceManagerObject;
-            telephonyClass = Class.forName(telephonyName);
-            telephonyStubClass = telephonyClass.getClasses()[0];
-            serviceManagerClass = Class.forName(serviceManagerName);
-            serviceManagerNativeClass = Class.forName(serviceManagerNativeName);
-            Method getService = // getDefaults[29];
-                    serviceManagerClass.getMethod("getService", String.class);
-            Method tempInterfaceMethod = serviceManagerNativeClass.getMethod("asInterface", IBinder.class);
-            Binder tmpBinder = new Binder();
-            tmpBinder.attachInterface(null, "fake");
-            serviceManagerObject = tempInterfaceMethod.invoke(null, tmpBinder);
-            IBinder retbinder = (IBinder) getService.invoke(serviceManagerObject, "phone");
-            Method serviceMethod = telephonyStubClass.getMethod("asInterface", IBinder.class);
-            telephonyObject = serviceMethod.invoke(null, retbinder);
-            Method telephonyShowCallScreen = telephonyClass.getMethod("showCallScreen");
-            telephonyShowCallScreen.invoke(telephonyObject);
+            TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+            Class c = Class.forName(tm.getClass().getName());
+            Method m = c.getDeclaredMethod("getITelephony");
+            m.setAccessible(true);
+            ITelephony telephonyService;
+            telephonyService = (ITelephony) m.invoke(tm);
+            telephonyService.showCallScreen();
         } catch (Exception ex) {
             // ignore
         }
@@ -1898,6 +1853,10 @@ public class OnExitService extends Service {
                             }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                audio.setMode(0);
+                                audio.setBluetoothScoOn(true);
+                                audio.startBluetoothSco();
+                                audio.setMode(AudioManager.MODE_IN_CALL);
                                 if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn()) {
                                     audio.setSpeakerphoneOn(true);
                                     speacker_volume = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL) + 1;
