@@ -221,4 +221,8 @@
     <string name="okgoogle">Ok, Google</string>
     <string name="okgoogle_sum">Обнаружение горячего слова поиска Google</string>
     <string name="last_position">Последняя точка</string>
+    <string name="xposed_lock">Установить NoLock Home xposed модуль</string>
+    <string name="xposed_lock_sum">С помощью этого модуля пускач сможет разблокировать устройство при старте</string>
+    <string name="xposed_route">Установить Navigation Select xposed модуль</string>
+    <string name="xposed_route_sum">Этот модуль позволяет выбрать приложение для навигации из результатов поиска Google</string>
 </resources>

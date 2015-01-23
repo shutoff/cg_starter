@@ -13,16 +13,11 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.widget.Toast;
 
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Calendar;
-import java.util.Date;
 
 public class State extends BroadcastReceiver {
 
@@ -231,6 +226,7 @@ public class State extends BroadcastReceiver {
         }
     }
 
+/*
     static public void appendLog(String text) {
         Log.v("CG starter", text);
         File logFile = Environment.getExternalStorageDirectory();
@@ -251,8 +247,6 @@ public class State extends BroadcastReceiver {
         } catch (IOException e) {
         }
     }
-
-/*
 
     static public void print(Throwable ex) {
         appendLog("Error: " + ex.toString());

@@ -210,7 +210,6 @@ public class OnExitService extends Service {
     static void turnOffBT(Context context, String device) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         String devices_str = preferences.getString(State.BT_DEVICES, "");
-        State.appendLog("Devices: " + devices_str + ", " + device);
         if (devices_str.equals(""))
             return;
         String[] devices = devices_str.split(";");

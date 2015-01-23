@@ -7,10 +7,12 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Xml;
@@ -25,6 +27,8 @@ import android.widget.TextView;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class StartFragment extends PreferencesFragment {
 
@@ -157,6 +161,53 @@ public class StartFragment extends PreferencesFragment {
         }
         if (info == null)
             v.findViewById(R.id.strelka).setVisibility(View.GONE);
+
+        info = null;
+        boolean nolock = false;
+        boolean nav = false;
+        try {
+            info = pm.getPackageInfo("de.robv.android.xposed.installer", 0);
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (info != null) {
+            info = null;
+            try {
+                info = pm.getPackageInfo("com.smartmadsoft.xposed.nolockhome", 0);
+            } catch (Exception ex) {
+                // ignore
+            }
+            if (info == null)
+                nolock = true;
+            info = null;
+            try {
+                info = pm.getPackageInfo("ru.shutoff.routeselect", 0);
+            } catch (Exception ex) {
+                // ignore
+            }
+            if (info == null)
+                nav = true;
+        }
+        if (nolock) {
+            v.findViewById(R.id.xposed_lock).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    install("nolockhome");
+                }
+            });
+        } else {
+            v.findViewById(R.id.xposed_lock).setVisibility(View.GONE);
+        }
+        if (nav) {
+            v.findViewById(R.id.xposed_route).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    install("routeselect");
+                }
+            });
+        } else {
+            v.findViewById(R.id.xposed_route).setVisibility(View.GONE);
+        }
 
         final TextView power_time = (TextView) v.findViewById(R.id.powertime);
         XmlPullParser parser = getResources().getXml(R.xml.power_time);
@@ -295,5 +346,41 @@ public class StartFragment extends PreferencesFragment {
     public void onStop() {
         super.onStop();
         sensorManager.unregisterListener(sensorEventListener);
+    }
+
+    public void install(String name) {
+        InputStream in = null;
+        OutputStream out = null;
+
+        AssetManager assetManager = getActivity().getAssets();
+
+        try {
+            String apk = name + ".apk";
+            in = assetManager.open(apk);
+
+            out = getActivity().openFileOutput(apk, Context.MODE_WORLD_READABLE);
+
+            byte[] buffer = new byte[1024];
+
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+
+            in.close();
+
+            out.flush();
+            out.close();
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+
+            intent.setDataAndType(Uri.fromFile(getActivity().getFileStreamPath(apk)),
+                    "application/vnd.android.package-archive");
+
+            startActivity(intent);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
