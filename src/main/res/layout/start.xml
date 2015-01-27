@@ -74,21 +74,28 @@
             android:text="@string/carmode_sum"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
-        <CheckBox
-            android:id="@+id/kill_car"
+        <LinearLayout
+            android:id="@+id/kill_car_block"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="5dp"
-            android:text="@string/kill_cg"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:textStyle="bold" />
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="10dp"
-            android:text="@string/kill_car"
-            android:textAppearance="?android:attr/textAppearanceSmall" />
+            <CheckBox
+                android:id="@+id/kill_car"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="5dp"
+                android:text="@string/kill_cg"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:text="@string/kill_car"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/power_block"
@@ -114,21 +121,28 @@
 
         </LinearLayout>
 
-        <CheckBox
-            android:id="@+id/kill_power"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="5dp"
-            android:text="@string/kill_cg"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:textStyle="bold" />
+        <LinearLayout
+            android:id="@+id/kill_power_block"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="10dp"
-            android:text="@string/kill_power"
-            android:textAppearance="?android:attr/textAppearanceSmall" />
+            <CheckBox
+                android:id="@+id/kill_power"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="5dp"
+                android:text="@string/kill_cg"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:text="@string/kill_power"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+        </LinearLayout>
 
         <CheckBox
             android:id="@+id/vertical"

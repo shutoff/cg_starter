@@ -209,6 +209,11 @@ public class StartFragment extends PreferencesFragment {
             v.findViewById(R.id.xposed_route).setVisibility(View.GONE);
         }
 
+        if (!State.can_root) {
+            v.findViewById(R.id.kill_car_block).setVisibility(View.GONE);
+            v.findViewById(R.id.kill_power_block).setVisibility(View.GONE);
+        }
+
         final TextView power_time = (TextView) v.findViewById(R.id.powertime);
         XmlPullParser parser = getResources().getXml(R.xml.power_time);
         AttributeSet attributes = Xml.asAttributeSet(parser);

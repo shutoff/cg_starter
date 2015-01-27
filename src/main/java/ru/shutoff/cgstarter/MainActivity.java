@@ -665,7 +665,8 @@ public class MainActivity
             OnExitService.convertFiles(this);
             if (preferences.getBoolean(State.RTA_LOGS, false))
                 OnExitService.removeRTA(this);
-            State.doRoot(this, "", false);
+            if (State.doRoot(this, "", false))
+                State.can_root = true;
             int route_type = SettingsIni.getParam(this, "route_type");
             if ((route_type > 0) && (route_type <= 2)) {
                 stopTimers();
@@ -683,7 +684,9 @@ public class MainActivity
             }
         }
 
-        if (preferences.getBoolean(State.KILL_CAR, false) && preferences.getBoolean(State.KILL_POWER, false)
+        if ((preferences.getBoolean(State.KILL_CAR, false) ||
+                preferences.getBoolean(State.KILL_POWER, false) ||
+                preferences.getBoolean(State.KILL_BT, false))
                 && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO)) {
             dpm = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
             ComponentName componentName = new ComponentName(this, AdminReceiver.class);

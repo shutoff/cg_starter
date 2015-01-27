@@ -34,6 +34,10 @@ public class ControlFragment extends PreferencesFragment {
         setCheckBox(v, R.id.wifi, State.WIFI, true);
         setCheckBox(v, R.id.ping, State.PING);
         setCheckBox(v, R.id.okgoogle, State.OK_GOOGLE);
+        setCheckBox(v, R.id.bt_close, State.KILL_BT);
+
+        if (!State.can_root)
+            v.findViewById(R.id.bt_close_block).setVisibility(View.GONE);
 
         HotwordServiceClient client = new HotwordServiceClient(getActivity());
         boolean isAvailable = client.isAvailable();

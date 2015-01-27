@@ -62,6 +62,7 @@ public class State extends BroadcastReceiver {
     static final String ROUTE = "route";
     static final String KILL_CAR = "kill_car";
     static final String KILL_POWER = "kill_power";
+    static final String KILL_BT = "kill_bt";
     static final String PING = "ping";
     static final String NOTIFICATION = "notification";
     static final String NOTIFICATION_IGNORE = "notification_ignore";
@@ -95,10 +96,10 @@ public class State extends BroadcastReceiver {
     static final String OK_GOOGLE = "ok_google";
     static final String LAST_LAT = "last_lat";
     static final String LAST_LNG = "last_lng";
+    static public boolean can_root;
     static Point[] points;
     static int telephony_state = 0;
     static String cg_package = null;
-
     static boolean cg_files = true;
     static boolean is_cg = false;
     static boolean is_cn = false;

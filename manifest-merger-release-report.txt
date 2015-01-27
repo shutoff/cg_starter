@@ -12,9 +12,9 @@ ADDED from AndroidManifest.xml:2:1
 	xmlns:android
 		ADDED from AndroidManifest.xml:2:11
 uses-permission#android.permission.WRITE_EXTERNAL_STORAGE
-ADDED from AndroidManifest.xml:7:5
+ADDED from AndroidManifest.xml:7:1
 	android:name
-		ADDED from AndroidManifest.xml:7:22
+		ADDED from AndroidManifest.xml:7:18
 uses-permission#android.permission.WRITE_SETTINGS
 ADDED from AndroidManifest.xml:8:5
 	android:name
@@ -107,379 +107,371 @@ uses-permission#android.permission.READ_CALL_LOG
 ADDED from AndroidManifest.xml:30:5
 	android:name
 		ADDED from AndroidManifest.xml:30:22
-uses-permission#android.permission.RECEIVE_BOOT_COMPLETED
-ADDED from AndroidManifest.xml:31:5
-	android:name
-		ADDED from AndroidManifest.xml:31:22
 uses-feature#android.hardware.bluetooth
-ADDED from AndroidManifest.xml:33:5
+ADDED from AndroidManifest.xml:32:5
 	android:required
-		ADDED from AndroidManifest.xml:35:9
-	android:name
 		ADDED from AndroidManifest.xml:34:9
+	android:name
+		ADDED from AndroidManifest.xml:33:9
 uses-feature#android.hardware.wifi
-ADDED from AndroidManifest.xml:36:5
+ADDED from AndroidManifest.xml:35:5
 	android:required
-		ADDED from AndroidManifest.xml:38:9
-	android:name
 		ADDED from AndroidManifest.xml:37:9
+	android:name
+		ADDED from AndroidManifest.xml:36:9
 uses-feature#android.hardware.telephony
-ADDED from AndroidManifest.xml:39:5
+ADDED from AndroidManifest.xml:38:5
 	android:required
-		ADDED from AndroidManifest.xml:41:9
-	android:name
 		ADDED from AndroidManifest.xml:40:9
-uses-feature#android.hardware.microphone
-ADDED from AndroidManifest.xml:42:5
-	android:required
-		ADDED from AndroidManifest.xml:44:9
 	android:name
+		ADDED from AndroidManifest.xml:39:9
+uses-feature#android.hardware.microphone
+ADDED from AndroidManifest.xml:41:5
+	android:required
 		ADDED from AndroidManifest.xml:43:9
+	android:name
+		ADDED from AndroidManifest.xml:42:9
 application
-ADDED from AndroidManifest.xml:46:5
+ADDED from AndroidManifest.xml:45:5
 MERGED from com.android.support:support-v4:21.0.3:16:5
 MERGED from com.android.support:appcompat-v7:21.0.3:16:5
 MERGED from com.android.support:support-v4:21.0.3:16:5
 	android:label
-		ADDED from AndroidManifest.xml:49:9
-	android:allowBackup
-		ADDED from AndroidManifest.xml:47:9
-	android:icon
 		ADDED from AndroidManifest.xml:48:9
+	android:allowBackup
+		ADDED from AndroidManifest.xml:46:9
+	android:icon
+		ADDED from AndroidManifest.xml:47:9
 	android:theme
-		ADDED from AndroidManifest.xml:50:9
+		ADDED from AndroidManifest.xml:49:9
 activity#ru.shutoff.cgstarter.MainActivity
-ADDED from AndroidManifest.xml:52:9
+ADDED from AndroidManifest.xml:51:9
 	android:label
-		ADDED from AndroidManifest.xml:54:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:55:13
-	android:theme
-		ADDED from AndroidManifest.xml:56:13
-	android:name
 		ADDED from AndroidManifest.xml:53:13
+	android:launchMode
+		ADDED from AndroidManifest.xml:54:13
+	android:theme
+		ADDED from AndroidManifest.xml:55:13
+	android:name
+		ADDED from AndroidManifest.xml:52:13
 intent-filter#android.intent.action.MAIN+android.intent.category.LAUNCHER
-ADDED from AndroidManifest.xml:57:13
+ADDED from AndroidManifest.xml:56:13
 action#android.intent.action.MAIN
+ADDED from AndroidManifest.xml:57:17
+	android:name
+		ADDED from AndroidManifest.xml:57:25
+category#android.intent.category.LAUNCHER
 ADDED from AndroidManifest.xml:58:17
 	android:name
-		ADDED from AndroidManifest.xml:58:25
-category#android.intent.category.LAUNCHER
-ADDED from AndroidManifest.xml:59:17
-	android:name
-		ADDED from AndroidManifest.xml:59:27
+		ADDED from AndroidManifest.xml:58:27
 activity#ru.shutoff.cgstarter.CGActivity
-ADDED from AndroidManifest.xml:63:9
+ADDED from AndroidManifest.xml:62:9
 	android:label
-		ADDED from AndroidManifest.xml:65:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:66:13
-	android:theme
-		ADDED from AndroidManifest.xml:67:13
-	android:name
 		ADDED from AndroidManifest.xml:64:13
+	android:launchMode
+		ADDED from AndroidManifest.xml:65:13
+	android:theme
+		ADDED from AndroidManifest.xml:66:13
+	android:name
+		ADDED from AndroidManifest.xml:63:13
 activity#ru.shutoff.cgstarter.SendLocationActivity
-ADDED from AndroidManifest.xml:69:9
+ADDED from AndroidManifest.xml:68:9
 	android:label
-		ADDED from AndroidManifest.xml:71:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:72:13
-	android:theme
-		ADDED from AndroidManifest.xml:73:13
-	android:name
 		ADDED from AndroidManifest.xml:70:13
+	android:launchMode
+		ADDED from AndroidManifest.xml:71:13
+	android:theme
+		ADDED from AndroidManifest.xml:72:13
+	android:name
+		ADDED from AndroidManifest.xml:69:13
 activity#ru.shutoff.cgstarter.SMSActivity
-ADDED from AndroidManifest.xml:80:9
+ADDED from AndroidManifest.xml:79:9
 	android:label
-		ADDED from AndroidManifest.xml:83:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:84:13
-	android:icon
 		ADDED from AndroidManifest.xml:82:13
-	android:theme
-		ADDED from AndroidManifest.xml:85:13
-	android:name
+	android:launchMode
+		ADDED from AndroidManifest.xml:83:13
+	android:icon
 		ADDED from AndroidManifest.xml:81:13
+	android:theme
+		ADDED from AndroidManifest.xml:84:13
+	android:name
+		ADDED from AndroidManifest.xml:80:13
 intent-filter#android.intent.action.MAIN
-ADDED from AndroidManifest.xml:86:13
+ADDED from AndroidManifest.xml:85:13
 activity#ru.shutoff.cgstarter.ContactActivity
-ADDED from AndroidManifest.xml:91:9
+ADDED from AndroidManifest.xml:90:9
 	android:label
-		ADDED from AndroidManifest.xml:94:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:95:13
-	android:icon
 		ADDED from AndroidManifest.xml:93:13
-	android:theme
-		ADDED from AndroidManifest.xml:96:13
-	android:name
+	android:launchMode
+		ADDED from AndroidManifest.xml:94:13
+	android:icon
 		ADDED from AndroidManifest.xml:92:13
+	android:theme
+		ADDED from AndroidManifest.xml:95:13
+	android:name
+		ADDED from AndroidManifest.xml:91:13
 activity#ru.shutoff.cgstarter.CallContactActivity
-ADDED from AndroidManifest.xml:102:9
+ADDED from AndroidManifest.xml:101:9
 	android:label
-		ADDED from AndroidManifest.xml:105:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:106:13
-	android:icon
 		ADDED from AndroidManifest.xml:104:13
-	android:theme
-		ADDED from AndroidManifest.xml:107:13
-	android:name
+	android:launchMode
+		ADDED from AndroidManifest.xml:105:13
+	android:icon
 		ADDED from AndroidManifest.xml:103:13
+	android:theme
+		ADDED from AndroidManifest.xml:106:13
+	android:name
+		ADDED from AndroidManifest.xml:102:13
 activity#ru.shutoff.cgstarter.LastCallActivity
-ADDED from AndroidManifest.xml:113:9
+ADDED from AndroidManifest.xml:112:9
 	android:label
-		ADDED from AndroidManifest.xml:116:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:117:13
-	android:icon
 		ADDED from AndroidManifest.xml:115:13
-	android:theme
-		ADDED from AndroidManifest.xml:118:13
-	android:name
+	android:launchMode
+		ADDED from AndroidManifest.xml:116:13
+	android:icon
 		ADDED from AndroidManifest.xml:114:13
+	android:theme
+		ADDED from AndroidManifest.xml:117:13
+	android:name
+		ADDED from AndroidManifest.xml:113:13
 activity#ru.shutoff.cgstarter.VolumeActivity
-ADDED from AndroidManifest.xml:124:9
+ADDED from AndroidManifest.xml:123:9
 	android:label
-		ADDED from AndroidManifest.xml:127:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:128:13
-	android:icon
 		ADDED from AndroidManifest.xml:126:13
-	android:theme
-		ADDED from AndroidManifest.xml:129:13
-	android:name
+	android:launchMode
+		ADDED from AndroidManifest.xml:127:13
+	android:icon
 		ADDED from AndroidManifest.xml:125:13
+	android:theme
+		ADDED from AndroidManifest.xml:128:13
+	android:name
+		ADDED from AndroidManifest.xml:124:13
 activity#ru.shutoff.cgstarter.VoiceSearch
-ADDED from AndroidManifest.xml:135:9
+ADDED from AndroidManifest.xml:134:9
 	android:label
-		ADDED from AndroidManifest.xml:138:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:139:13
-	android:icon
 		ADDED from AndroidManifest.xml:137:13
-	android:theme
-		ADDED from AndroidManifest.xml:140:13
-	android:name
+	android:launchMode
+		ADDED from AndroidManifest.xml:138:13
+	android:icon
 		ADDED from AndroidManifest.xml:136:13
+	android:theme
+		ADDED from AndroidManifest.xml:139:13
+	android:name
+		ADDED from AndroidManifest.xml:135:13
 activity#ru.shutoff.cgstarter.SearchActivity
-ADDED from AndroidManifest.xml:146:9
+ADDED from AndroidManifest.xml:145:9
 	android:label
-		ADDED from AndroidManifest.xml:148:13
-	android:launchMode
-		ADDED from AndroidManifest.xml:149:13
-	android:theme
-		ADDED from AndroidManifest.xml:150:13
-	android:name
 		ADDED from AndroidManifest.xml:147:13
-activity#ru.shutoff.cgstarter.Preferences
-ADDED from AndroidManifest.xml:152:9
-	android:label
-		ADDED from AndroidManifest.xml:154:13
 	android:launchMode
-		ADDED from AndroidManifest.xml:155:13
+		ADDED from AndroidManifest.xml:148:13
 	android:theme
-		ADDED from AndroidManifest.xml:156:13
+		ADDED from AndroidManifest.xml:149:13
 	android:name
+		ADDED from AndroidManifest.xml:146:13
+activity#ru.shutoff.cgstarter.Preferences
+ADDED from AndroidManifest.xml:151:9
+	android:label
 		ADDED from AndroidManifest.xml:153:13
+	android:launchMode
+		ADDED from AndroidManifest.xml:154:13
+	android:theme
+		ADDED from AndroidManifest.xml:155:13
+	android:name
+		ADDED from AndroidManifest.xml:152:13
 activity#ru.shutoff.cgstarter.EditActivity
-ADDED from AndroidManifest.xml:158:9
+ADDED from AndroidManifest.xml:157:9
 	android:label
-		ADDED from AndroidManifest.xml:161:13
-	android:icon
 		ADDED from AndroidManifest.xml:160:13
-	android:theme
-		ADDED from AndroidManifest.xml:162:13
-	android:name
-		ADDED from AndroidManifest.xml:159:13
-intent-filter#com.twofortyfouram.locale.intent.action.EDIT_SETTING
-ADDED from AndroidManifest.xml:163:13
-action#com.twofortyfouram.locale.intent.action.EDIT_SETTING
-ADDED from AndroidManifest.xml:164:17
-	android:name
-		ADDED from AndroidManifest.xml:164:25
-activity#ru.shutoff.cgstarter.StartActivity
-ADDED from AndroidManifest.xml:168:9
-	android:label
-		ADDED from AndroidManifest.xml:171:13
 	android:icon
-		ADDED from AndroidManifest.xml:170:13
+		ADDED from AndroidManifest.xml:159:13
 	android:theme
-		ADDED from AndroidManifest.xml:172:13
+		ADDED from AndroidManifest.xml:161:13
 	android:name
+		ADDED from AndroidManifest.xml:158:13
+intent-filter#com.twofortyfouram.locale.intent.action.EDIT_SETTING
+ADDED from AndroidManifest.xml:162:13
+action#com.twofortyfouram.locale.intent.action.EDIT_SETTING
+ADDED from AndroidManifest.xml:163:17
+	android:name
+		ADDED from AndroidManifest.xml:163:25
+activity#ru.shutoff.cgstarter.StartActivity
+ADDED from AndroidManifest.xml:167:9
+	android:label
+		ADDED from AndroidManifest.xml:170:13
+	android:icon
 		ADDED from AndroidManifest.xml:169:13
-intent-filter#android.intent.action.VIEW+android.intent.category.BROWSABLE+android.intent.category.DEFAULT
-ADDED from AndroidManifest.xml:173:13
-data
-ADDED from AndroidManifest.xml:174:17
-	android:scheme
-		ADDED from AndroidManifest.xml:174:23
-action#android.intent.action.VIEW
-ADDED from AndroidManifest.xml:175:17
+	android:theme
+		ADDED from AndroidManifest.xml:171:13
 	android:name
-		ADDED from AndroidManifest.xml:175:25
+		ADDED from AndroidManifest.xml:168:13
+intent-filter#android.intent.action.VIEW+android.intent.category.BROWSABLE+android.intent.category.DEFAULT
+ADDED from AndroidManifest.xml:172:13
+data
+ADDED from AndroidManifest.xml:173:17
+	android:scheme
+		ADDED from AndroidManifest.xml:173:23
+action#android.intent.action.VIEW
+ADDED from AndroidManifest.xml:174:17
+	android:name
+		ADDED from AndroidManifest.xml:174:25
 category#android.intent.category.DEFAULT
+ADDED from AndroidManifest.xml:176:17
+	android:name
+		ADDED from AndroidManifest.xml:176:27
+category#android.intent.category.BROWSABLE
 ADDED from AndroidManifest.xml:177:17
 	android:name
 		ADDED from AndroidManifest.xml:177:27
-category#android.intent.category.BROWSABLE
-ADDED from AndroidManifest.xml:178:17
-	android:name
-		ADDED from AndroidManifest.xml:178:27
 intent-filter#android.intent.action.VIEW+android.intent.category.DEFAULT
-ADDED from AndroidManifest.xml:257:13
+ADDED from AndroidManifest.xml:256:13
 activity#ru.shutoff.cgstarter.NotificationIgnore
-ADDED from AndroidManifest.xml:264:9
+ADDED from AndroidManifest.xml:263:9
 	android:theme
-		ADDED from AndroidManifest.xml:266:13
-	android:name
 		ADDED from AndroidManifest.xml:265:13
+	android:name
+		ADDED from AndroidManifest.xml:264:13
 activity#ru.shutoff.cgstarter.SmsDialog
-ADDED from AndroidManifest.xml:268:9
+ADDED from AndroidManifest.xml:267:9
 	android:theme
-		ADDED from AndroidManifest.xml:270:13
-	android:name
 		ADDED from AndroidManifest.xml:269:13
+	android:name
+		ADDED from AndroidManifest.xml:268:13
 activity#ru.shutoff.cgstarter.TrafficActivity
-ADDED from AndroidManifest.xml:272:9
+ADDED from AndroidManifest.xml:271:9
 	android:label
-		ADDED from AndroidManifest.xml:275:13
-	android:icon
 		ADDED from AndroidManifest.xml:274:13
-	android:theme
-		ADDED from AndroidManifest.xml:276:13
-	android:name
+	android:icon
 		ADDED from AndroidManifest.xml:273:13
+	android:theme
+		ADDED from AndroidManifest.xml:275:13
+	android:name
+		ADDED from AndroidManifest.xml:272:13
 activity#ru.shutoff.cgstarter.SetupButton
-ADDED from AndroidManifest.xml:282:9
+ADDED from AndroidManifest.xml:281:9
 	android:name
-		ADDED from AndroidManifest.xml:282:19
+		ADDED from AndroidManifest.xml:281:19
 service#ru.shutoff.cgstarter.OnExitService
-ADDED from AndroidManifest.xml:284:9
+ADDED from AndroidManifest.xml:283:9
 	android:name
-		ADDED from AndroidManifest.xml:284:18
+		ADDED from AndroidManifest.xml:283:18
 service#ru.shutoff.cgstarter.NotificationService
-ADDED from AndroidManifest.xml:286:9
+ADDED from AndroidManifest.xml:285:9
 	android:permission
-		ADDED from AndroidManifest.xml:288:13
-	android:name
 		ADDED from AndroidManifest.xml:287:13
+	android:name
+		ADDED from AndroidManifest.xml:286:13
 intent-filter#android.accessibilityservice.AccessibilityService
-ADDED from AndroidManifest.xml:289:13
+ADDED from AndroidManifest.xml:288:13
 action#android.accessibilityservice.AccessibilityService
-ADDED from AndroidManifest.xml:290:17
+ADDED from AndroidManifest.xml:289:17
 	android:name
-		ADDED from AndroidManifest.xml:290:25
+		ADDED from AndroidManifest.xml:289:25
 meta-data#android.accessibilityservice
-ADDED from AndroidManifest.xml:292:13
+ADDED from AndroidManifest.xml:291:13
 	android:resource
-		ADDED from AndroidManifest.xml:294:17
-	android:name
 		ADDED from AndroidManifest.xml:293:17
-receiver#ru.shutoff.cgstarter.CarMonitor
-ADDED from AndroidManifest.xml:297:9
 	android:name
-		ADDED from AndroidManifest.xml:297:19
-intent-filter#android.bluetooth.device.action.ACL_CONNECTED+android.bluetooth.device.action.ACL_DISCONNECTED+android.intent.action.ACTION_POWER_CONNECTED+android.intent.action.ACTION_POWER_DISCONNECTED+android.intent.action.BOOT_COMPLETED+android.intent.action.DOCK_EVENT+android.intent.action.ENTER_CAR_MODE+android.intent.action.ENTER_CAR_MODE+android.intent.action.NEW_OUTGOING_CALL+android.intent.action.PHONE_STATE+android.provider.Telephony.SMS_RECEIVED+com.twofortyfouram.locale.intent.action.FIRE_SETTING+ru.shutoff.cgstarter.START
-ADDED from AndroidManifest.xml:298:13
+		ADDED from AndroidManifest.xml:292:17
+receiver#ru.shutoff.cgstarter.CarMonitor
+ADDED from AndroidManifest.xml:296:9
+	android:name
+		ADDED from AndroidManifest.xml:296:19
+intent-filter#android.bluetooth.device.action.ACL_CONNECTED+android.bluetooth.device.action.ACL_DISCONNECTED+android.intent.action.ACTION_POWER_CONNECTED+android.intent.action.ACTION_POWER_DISCONNECTED+android.intent.action.DOCK_EVENT+android.intent.action.ENTER_CAR_MODE+android.intent.action.ENTER_CAR_MODE+android.intent.action.NEW_OUTGOING_CALL+android.intent.action.PHONE_STATE+android.provider.Telephony.SMS_RECEIVED+com.twofortyfouram.locale.intent.action.FIRE_SETTING+ru.shutoff.cgstarter.START
+ADDED from AndroidManifest.xml:297:13
 	android:priority
-		ADDED from AndroidManifest.xml:298:28
+		ADDED from AndroidManifest.xml:297:28
 action#android.intent.action.DOCK_EVENT
+ADDED from AndroidManifest.xml:298:17
+	android:name
+		ADDED from AndroidManifest.xml:298:25
+action#android.intent.action.ACTION_POWER_CONNECTED
 ADDED from AndroidManifest.xml:299:17
 	android:name
 		ADDED from AndroidManifest.xml:299:25
-action#android.intent.action.ACTION_POWER_CONNECTED
+action#android.intent.action.ACTION_POWER_DISCONNECTED
 ADDED from AndroidManifest.xml:300:17
 	android:name
 		ADDED from AndroidManifest.xml:300:25
-action#android.intent.action.ACTION_POWER_DISCONNECTED
+action#android.intent.action.ENTER_CAR_MODE
 ADDED from AndroidManifest.xml:301:17
 	android:name
 		ADDED from AndroidManifest.xml:301:25
-action#android.intent.action.ENTER_CAR_MODE
+action#android.bluetooth.device.action.ACL_CONNECTED
 ADDED from AndroidManifest.xml:302:17
 	android:name
 		ADDED from AndroidManifest.xml:302:25
-action#android.bluetooth.device.action.ACL_CONNECTED
+action#android.bluetooth.device.action.ACL_DISCONNECTED
 ADDED from AndroidManifest.xml:303:17
 	android:name
 		ADDED from AndroidManifest.xml:303:25
-action#android.bluetooth.device.action.ACL_DISCONNECTED
-ADDED from AndroidManifest.xml:304:17
-	android:name
-		ADDED from AndroidManifest.xml:304:25
 action#android.intent.action.PHONE_STATE
+ADDED from AndroidManifest.xml:305:17
+	android:name
+		ADDED from AndroidManifest.xml:305:25
+action#android.intent.action.NEW_OUTGOING_CALL
 ADDED from AndroidManifest.xml:306:17
 	android:name
 		ADDED from AndroidManifest.xml:306:25
-action#android.intent.action.NEW_OUTGOING_CALL
+action#android.provider.Telephony.SMS_RECEIVED
 ADDED from AndroidManifest.xml:307:17
 	android:name
 		ADDED from AndroidManifest.xml:307:25
-action#android.provider.Telephony.SMS_RECEIVED
+action#ru.shutoff.cgstarter.START
 ADDED from AndroidManifest.xml:308:17
 	android:name
 		ADDED from AndroidManifest.xml:308:25
-action#ru.shutoff.cgstarter.START
+action#com.twofortyfouram.locale.intent.action.FIRE_SETTING
 ADDED from AndroidManifest.xml:309:17
 	android:name
 		ADDED from AndroidManifest.xml:309:25
-action#com.twofortyfouram.locale.intent.action.FIRE_SETTING
-ADDED from AndroidManifest.xml:310:17
-	android:name
-		ADDED from AndroidManifest.xml:310:25
-action#android.intent.action.BOOT_COMPLETED
-ADDED from AndroidManifest.xml:311:17
-	android:name
-		ADDED from AndroidManifest.xml:311:25
 receiver#ru.shutoff.cgstarter.GoogleSearchReceiver
-ADDED from AndroidManifest.xml:315:9
+ADDED from AndroidManifest.xml:313:9
 	android:name
-		ADDED from AndroidManifest.xml:315:19
+		ADDED from AndroidManifest.xml:313:19
 intent-filter#com.mohammadag.googlesearchapi.NEW_SEARCH
-ADDED from AndroidManifest.xml:316:13
+ADDED from AndroidManifest.xml:314:13
 action#com.mohammadag.googlesearchapi.NEW_SEARCH
-ADDED from AndroidManifest.xml:317:17
+ADDED from AndroidManifest.xml:315:17
 	android:name
-		ADDED from AndroidManifest.xml:317:25
+		ADDED from AndroidManifest.xml:315:25
 receiver#ru.shutoff.cgstarter.State
-ADDED from AndroidManifest.xml:321:9
+ADDED from AndroidManifest.xml:319:9
 	android:name
-		ADDED from AndroidManifest.xml:321:19
+		ADDED from AndroidManifest.xml:319:19
 intent-filter#android.intent.action.PACKAGE_ADDED+android.intent.action.PACKAGE_INSTALL+android.intent.action.PACKAGE_REMOVED
-ADDED from AndroidManifest.xml:322:13
+ADDED from AndroidManifest.xml:320:13
 	android:priority
-		ADDED from AndroidManifest.xml:322:28
+		ADDED from AndroidManifest.xml:320:28
 action#android.intent.action.PACKAGE_INSTALL
+ADDED from AndroidManifest.xml:321:17
+	android:name
+		ADDED from AndroidManifest.xml:321:25
+action#android.intent.action.PACKAGE_ADDED
+ADDED from AndroidManifest.xml:322:17
+	android:name
+		ADDED from AndroidManifest.xml:322:25
+action#android.intent.action.PACKAGE_REMOVED
 ADDED from AndroidManifest.xml:323:17
 	android:name
 		ADDED from AndroidManifest.xml:323:25
-action#android.intent.action.PACKAGE_ADDED
-ADDED from AndroidManifest.xml:324:17
-	android:name
-		ADDED from AndroidManifest.xml:324:25
-action#android.intent.action.PACKAGE_REMOVED
-ADDED from AndroidManifest.xml:325:17
-	android:name
-		ADDED from AndroidManifest.xml:325:25
 receiver#ru.shutoff.cgstarter.AdminReceiver
-ADDED from AndroidManifest.xml:331:9
+ADDED from AndroidManifest.xml:329:9
 	android:permission
-		ADDED from AndroidManifest.xml:333:13
+		ADDED from AndroidManifest.xml:331:13
 	android:name
-		ADDED from AndroidManifest.xml:332:13
+		ADDED from AndroidManifest.xml:330:13
 meta-data#android.app.device_admin
-ADDED from AndroidManifest.xml:334:13
+ADDED from AndroidManifest.xml:332:13
 	android:resource
-		ADDED from AndroidManifest.xml:336:17
+		ADDED from AndroidManifest.xml:334:17
 	android:name
-		ADDED from AndroidManifest.xml:335:17
+		ADDED from AndroidManifest.xml:333:17
 intent-filter#android.app.action.DEVICE_ADMIN_ENABLED
-ADDED from AndroidManifest.xml:338:13
+ADDED from AndroidManifest.xml:336:13
 action#android.app.action.DEVICE_ADMIN_ENABLED
-ADDED from AndroidManifest.xml:339:17
+ADDED from AndroidManifest.xml:337:17
 	android:name
-		ADDED from AndroidManifest.xml:339:25
+		ADDED from AndroidManifest.xml:337:25
 uses-sdk
 INJECTED from AndroidManifest.xml:0:0 reason: use-sdk injection requested
 MERGED from com.android.support:support-v4:21.0.3:15:5

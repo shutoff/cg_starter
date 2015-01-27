@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
-    android:versionCode="37"
-    android:versionName="1.7">
+    android:versionCode="38"
+    android:versionName="1.7.1">
 
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
@@ -28,7 +28,6 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature
         android:name="android.hardware.bluetooth"
@@ -308,7 +307,6 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
                 <action android:name="ru.shutoff.cgstarter.START" />
                 <action android:name="com.twofortyfouram.locale.intent.action.FIRE_SETTING" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 

@@ -224,4 +224,6 @@
     <string name="xposed_lock_sum">With this module starter can unlock device on start</string>
     <string name="xposed_route">Install navigation select xposed module</string>
     <string name="xposed_route_sum">With this module you can select navigation application for start from google search results</string>
+    <string name="bt_close">Close on BT</string>
+    <string name="bt_close_sum">Close application on BlueTooth device disconnect</string>
 </resources>

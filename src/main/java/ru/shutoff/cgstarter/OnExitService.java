@@ -198,7 +198,7 @@ public class OnExitService extends Service {
                 if ((bt != null) && !bt.isEnabled()) {
                     bt.enable();
                     SharedPreferences.Editor ed = preferences.edit();
-                    ed.remove(State.BT_DEVICES);
+                    ed.putString(State.BT_DEVICES, "-");
                     ed.commit();
                 }
             } catch (Exception ex) {
@@ -223,24 +223,23 @@ public class OnExitService extends Service {
                 d += ";" + dev;
             }
         }
-        if (d != null) {
-            SharedPreferences.Editor ed = preferences.edit();
-            ed.putString(State.BT_DEVICES, d);
-            ed.commit();
-            return;
-        }
-        BluetoothAdapter btAdapter;
-        try {
-            btAdapter = BluetoothAdapter.getDefaultAdapter();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return;
-        }
-        if (btAdapter == null)
-            return;
-        btAdapter.disable();
         SharedPreferences.Editor ed = preferences.edit();
-        ed.remove(State.BT_DEVICES);
+        if (d == null) {
+            BluetoothAdapter btAdapter;
+            try {
+                btAdapter = BluetoothAdapter.getDefaultAdapter();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                return;
+            }
+            if (btAdapter == null)
+                return;
+            btAdapter.disable();
+            ed.remove(State.BT_DEVICES);
+            return;
+        } else {
+            ed.putString(State.BT_DEVICES, d);
+        }
         ed.commit();
     }
 
