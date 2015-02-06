@@ -1820,8 +1820,8 @@ public class OnExitService extends Service {
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 audio.setMode(0);
-                                audio.setBluetoothScoOn(true);
-                                audio.startBluetoothSco();
+                                if (preferences.getBoolean(State.BT, false))
+                                    audio.setBluetoothScoOn(true);
                                 audio.setMode(AudioManager.MODE_IN_CALL);
                                 if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn()) {
                                     audio.setSpeakerphoneOn(true);
@@ -1862,16 +1862,6 @@ public class OnExitService extends Service {
                             stopAutoAnswer();
                             hideOverlays(OnExitService.this);
 
-                            int save_level = preferences.getInt(State.SAVE_RING_LEVEL, -1);
-                            if (save_level > 0) {
-                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
-                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                audio.setStreamVolume(channel, save_level, 0);
-                                SharedPreferences.Editor ed = preferences.edit();
-                                ed.remove(State.SAVE_RING_LEVEL);
-                                ed.commit();
-                            }
-
                             call_number = null;
                             if (speacker_volume > 0) {
                                 AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -1881,6 +1871,16 @@ public class OnExitService extends Service {
                                     ed.putInt(State.CALL_VOLUME, volume);
                                     ed.commit();
                                 }
+                            }
+
+                            int save_level = preferences.getInt(State.SAVE_RING_LEVEL, -1);
+                            if (save_level > 0) {
+                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                audio.setStreamVolume(channel, save_level, 0);
+                                SharedPreferences.Editor ed = preferences.edit();
+                                ed.remove(State.SAVE_RING_LEVEL);
+                                ed.commit();
                             }
 
                             show_overlay = false;
