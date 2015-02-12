@@ -234,7 +234,8 @@ public class OnExitService extends Service {
             }
             if (btAdapter == null)
                 return;
-            btAdapter.disable();
+            if (preferences.getBoolean(State.BT, false))
+                btAdapter.disable();
             ed.remove(State.BT_DEVICES);
             return;
         } else {
