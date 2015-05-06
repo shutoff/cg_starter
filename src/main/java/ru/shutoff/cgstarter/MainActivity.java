@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -416,8 +417,9 @@ public class MainActivity
                 if ((activeNetwork == null) ||
                         (activeNetwork.getType() != ConnectivityManager.TYPE_MOBILE) ||
                         !activeNetwork.isConnected()) {
+                    TelephonyManager tel = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
                     if (!OnExitService.getMobileDataEnabled(context)) {
-                        OnExitService.enableMobileData(context, true);
+                        OnExitService.enableMobileData(context, !tel.isNetworkRoaming());
                         ed.putBoolean(State.SAVE_DATA, true);
                     }
                 }

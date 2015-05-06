@@ -8,8 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.hotword.client.HotwordServiceClient;
-
 public class ControlFragment extends PreferencesFragment {
 
     @Override
@@ -33,16 +31,10 @@ public class ControlFragment extends PreferencesFragment {
         setCheckBox(v, R.id.data, State.DATA);
         setCheckBox(v, R.id.wifi, State.WIFI, true);
         setCheckBox(v, R.id.ping, State.PING);
-        setCheckBox(v, R.id.okgoogle, State.OK_GOOGLE);
         setCheckBox(v, R.id.bt_close, State.KILL_BT);
 
         if (!State.can_root)
             v.findViewById(R.id.bt_close_block).setVisibility(View.GONE);
-
-        HotwordServiceClient client = new HotwordServiceClient(getActivity());
-        boolean isAvailable = client.isAvailable();
-        v.findViewById(R.id.okgoogle).setVisibility(isAvailable ? View.VISIBLE : View.GONE);
-        v.findViewById(R.id.okgoogle_sum).setVisibility(isAvailable ? View.VISIBLE : View.GONE);
 
         View.OnClickListener listener = new View.OnClickListener() {
             @Override

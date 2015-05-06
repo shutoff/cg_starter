@@ -218,8 +218,6 @@
     </string-array>
     <string name="refresh">Обновить закладки</string>
     <string name="refresh_msg">Обновить конечные точки на стартовом экране из закладок</string>
-    <string name="okgoogle">Ok, Google</string>
-    <string name="okgoogle_sum">Обнаружение горячего слова поиска Google</string>
     <string name="last_position">Последняя точка</string>
     <string name="xposed_lock">Установить NoLock Home xposed модуль</string>
     <string name="xposed_lock_sum">С помощью этого модуля пускач сможет разблокировать устройство при старте</string>

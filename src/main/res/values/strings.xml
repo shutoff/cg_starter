@@ -217,8 +217,6 @@
     <string name="wifi">WiFi</string>
     <string name="wifi_sum">WiFi off on tirn on mobile data</string>
     <string name="toggle_volume">Toggle volume</string>
-    <string name="okgoogle">Ok, Google</string>
-    <string name="okgoogle_sum">Detect hotword Google search</string>
     <string name="last_position">Last position</string>
     <string name="xposed_lock">Install NoLock Home xposed module</string>
     <string name="xposed_lock_sum">With this module starter can unlock device on start</string>

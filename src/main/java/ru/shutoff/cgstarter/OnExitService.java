@@ -69,7 +69,6 @@ import android.widget.TextView;
 import com.android.internal.telephony.ITelephony;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import com.google.android.hotword.client.HotwordServiceClient;
 
 import org.apache.http.HttpStatus;
 
@@ -188,7 +187,6 @@ public class OnExitService extends Service {
     PackageManager pm;
     Vector<App> apps;
     boolean yandex_error;
-    HotwordServiceClient mHotwordClient;
 
     static void turnOnBT(Context context) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -563,7 +561,6 @@ public class OnExitService extends Service {
 */
 
         is_run = true;
-        mHotwordClient = new HotwordServiceClient(this);
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
         try {
@@ -627,7 +624,6 @@ public class OnExitService extends Service {
             locationManager.removeUpdates(gpsListener);
         if (networkReciever != null)
             unregisterReceiver(networkReciever);
-        mHotwordClient.requestHotwordDetection(false);
         if (currentBestLocation != null) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
             SharedPreferences.Editor ed = preferences.edit();
@@ -819,12 +815,8 @@ public class OnExitService extends Service {
             }
             if (isActiveCG(this)) {
                 background_count = 0;
-                if (preferences.getBoolean(State.OK_GOOGLE, false))
-                    mHotwordClient.requestHotwordDetection(true);
             } else {
                 background_count++;
-                if (preferences.getBoolean(State.OK_GOOGLE, false))
-                    mHotwordClient.requestHotwordDetection(false);
             }
 
             if (show_overlay) {
@@ -2289,6 +2281,9 @@ public class OnExitService extends Service {
             try {
                 if (show_overlay)
                     return null;
+                TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                if (tel.isNetworkRoaming())
+                    return null;
                 ConnectivityManager conman = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo activeNetwork = conman.getActiveNetworkInfo();
                 if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting()) {
@@ -2324,7 +2319,6 @@ public class OnExitService extends Service {
                 activeNetwork = conman.getActiveNetworkInfo();
                 if ((activeNetwork == null) || !activeNetwork.isConnectedOrConnecting())
                     return null;
-                TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
                 if ((tel.getNetworkOperator() != null) && !tel.getNetworkOperator().equals("")) {
                     setAirplaneMode(true);
                     setAirplaneMode(false);

@@ -156,23 +156,6 @@
             android:text="@string/gps_sum"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
-        <CheckBox
-            android:id="@+id/okgoogle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="5dp"
-            android:text="@string/okgoogle"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/okgoogle_sum"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="10dp"
-            android:text="@string/okgoogle_sum"
-            android:textAppearance="?android:attr/textAppearanceSmall" />
-
         <TextView
             android:id="@+id/refresh"
             android:layout_width="match_parent"
