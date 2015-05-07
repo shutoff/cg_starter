@@ -146,7 +146,7 @@ public class OnExitService extends Service {
     static boolean cg_run;
     static boolean is_run;
     static ActivityManager mActivityManager;
-    AlarmManager alarmMgr;
+    AlarmManager alarm;
     PendingIntent pi;
     PendingIntent piAnswer;
     PendingIntent piRinging;
@@ -263,6 +263,26 @@ public class OnExitService extends Service {
     static boolean isActiveCG(Context context) {
         if (mActivityManager == null)
             mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
+            List<ActivityManager.RunningAppProcessInfo> appProcesses = mActivityManager.getRunningAppProcesses();
+            for (ActivityManager.RunningAppProcessInfo info : appProcesses) {
+                if (!info.processName.equals(State.CG_Package(context)))
+                    continue;
+                if (info.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+                    return false;
+                Field field = null;
+                try {
+                    field = ActivityManager.RunningAppProcessInfo.class.getDeclaredField("processState");
+                    int state = field.getInt(info);
+                    return state == 2;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                if (field == null)
+                    return true;
+            }
+            return false;
+        }
         try {
             List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
             return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_Package(context));
@@ -561,7 +581,7 @@ public class OnExitService extends Service {
 */
 
         is_run = true;
-        alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         pi = createPendingIntent(TIMER);
         try {
             File screenshots = State.CG_Folder(this);
@@ -663,7 +683,7 @@ public class OnExitService extends Service {
             registerReceiver(phoneReceiver, filter);
         }
         if (action.equals(START)) {
-            alarmMgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + TIMEOUT, TIMEOUT, pi);
+            setTimer(TIMEOUT, pi);
             setPhoneListener();
             return START_STICKY;
         }
@@ -681,6 +701,7 @@ public class OnExitService extends Service {
             return START_STICKY;
         }
         if (action.equals(TIMER)) {
+            setTimer(TIMEOUT, pi);
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
             if (isRunCG(this)) {
                 last_run = new Date().getTime();
@@ -692,7 +713,7 @@ public class OnExitService extends Service {
                     force_exit = true;
                 if (force_exit || (hudInactive == null)) {
                     force_exit = false;
-                    alarmMgr.cancel(pi);
+                    alarm.cancel(pi);
                     SharedPreferences.Editor ed = preferences.edit();
                     int rotate = preferences.getInt(State.SAVE_ROTATE, -1);
                     if (rotate >= 0) {
@@ -824,8 +845,9 @@ public class OnExitService extends Service {
                     showActiveOverlay();
                 } else {
                     boolean run = isRunCG(this);
-                    if (run != inactive_run)
+                    if (run != inactive_run) {
                         hideInactiveOverlay();
+                    }
                     showInactiveOverlay();
                 }
             }
@@ -852,7 +874,7 @@ public class OnExitService extends Service {
         }
         if (action.equals(ANSWER)) {
             if (piAnswer != null) {
-                alarmMgr.cancel(piAnswer);
+                alarm.cancel(piAnswer);
                 piAnswer = null;
             }
             callAnswer();
@@ -860,7 +882,7 @@ public class OnExitService extends Service {
         }
         if (action.equals(RINGING)) {
             if (piRinging != null) {
-                alarmMgr.cancel(piRinging);
+                alarm.cancel(piRinging);
                 piRinging = null;
             }
             switchToCG();
@@ -1731,18 +1753,18 @@ public class OnExitService extends Service {
 
     void stopAutoAnswer() {
         if (piAnswer != null) {
-            alarmMgr.cancel(piAnswer);
+            alarm.cancel(piAnswer);
             piAnswer = null;
         }
         if (piRinging != null) {
-            alarmMgr.cancel(piRinging);
+            alarm.cancel(piRinging);
             piRinging = null;
         }
     }
 
     void stopAfterCall() {
         if (piAfterCall != null) {
-            alarmMgr.cancel(piAfterCall);
+            alarm.cancel(piAfterCall);
             piAfterCall = null;
         }
     }
@@ -1781,8 +1803,7 @@ public class OnExitService extends Service {
                                 if (prev_state == TelephonyManager.CALL_STATE_IDLE) {
                                     if (piAfterCall == null)
                                         piAfterCall = createPendingIntent(TIMER_AFTER_CALL);
-                                    alarmMgr.setRepeating(AlarmManager.RTC,
-                                            System.currentTimeMillis() + AFTER_OFFHOOK_PAUSE, AFTER_OFFHOOK_PAUSE, piAfterCall);
+                                    setTimer(AFTER_OFFHOOK_PAUSE, piAfterCall);
                                     break;
                                 }
                                 if (prev_state != TelephonyManager.CALL_STATE_RINGING)
@@ -1838,15 +1859,13 @@ public class OnExitService extends Service {
                                 if (speaker || audio.isBluetoothScoOn()) {
                                     if (piAnswer == null)
                                         piAnswer = createPendingIntent(ANSWER);
-                                    alarmMgr.setRepeating(AlarmManager.RTC,
-                                            System.currentTimeMillis() + autoanswer, autoanswer, piAnswer);
+                                    setTimer(autoanswer, piAnswer);
                                 }
                             }
                             if (autoswitch > 0) {
                                 if (piRinging == null)
                                     piRinging = createPendingIntent(RINGING);
-                                alarmMgr.setRepeating(AlarmManager.RTC,
-                                        System.currentTimeMillis() + autoswitch, autoswitch, piRinging);
+                                setTimer(autoswitch, piRinging);
                             }
                             break;
 
@@ -1887,8 +1906,7 @@ public class OnExitService extends Service {
                                     switchToCG();
                                     if (piAfterCall == null)
                                         piAfterCall = createPendingIntent(TIMER_AFTER_CALL);
-                                    alarmMgr.setRepeating(AlarmManager.RTC,
-                                            System.currentTimeMillis() + AFTER_CALL_PAUSE, AFTER_CALL_PAUSE, piAfterCall);
+                                    setTimer(AFTER_CALL_PAUSE, piAfterCall);
                                 }
                             }
                             break;
@@ -2139,6 +2157,14 @@ public class OnExitService extends Service {
             return;
         }
         startYan(this);
+    }
+
+    void setTimer(long timeout, PendingIntent pi) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
+            alarm.setExact(AlarmManager.RTC, System.currentTimeMillis() + timeout, pi);
+        } else {
+            alarm.set(AlarmManager.RTC, System.currentTimeMillis() + timeout, pi);
+        }
     }
 
     class App {
