@@ -4,31 +4,25 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-import com.eclipsesource.json.ParseException;
-import com.squareup.okhttp.CipherSuite;
-import com.squareup.okhttp.ConnectionSpec;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-import com.squareup.okhttp.TlsVersion;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URLEncoder;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 public abstract class HttpTask {
 
     final static String userAgent = System.getProperty("http.agent");
-    static ConnectionSpec spec;
     public static final OkHttpClient client = createClient();
-    AsyncTask<Object, Void, JsonObject> bgTask;
+    AsyncTask<Object, Void, JSONObject> bgTask;
     String error_text;
     boolean canceled;
 
@@ -47,38 +41,10 @@ public abstract class HttpTask {
                 return chain.proceed(requestWithUserAgent);
             }
         });
-        if (spec == null)
-            spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .tlsVersions(
-                            TlsVersion.TLS_1_2,
-                            TlsVersion.TLS_1_1,
-                            TlsVersion.TLS_1_0)
-                    .cipherSuites(
-                            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                            CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-                            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-                            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-                            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-                            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-                            CipherSuite.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
-                            CipherSuite.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
-                            CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-                            CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
-                            CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-                            CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
-                            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
-                            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
-                            CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
-                            CipherSuite.TLS_RSA_WITH_RC4_128_SHA,
-                            CipherSuite.TLS_RSA_WITH_RC4_128_MD5)
-                    .supportsTlsExtensions(true)
-                    .build();
-        client.setConnectionSpecs(Collections.singletonList(spec));
         return client;
     }
 
-    static JsonObject request(Object... params) throws Exception {
+    static JSONObject request(Object... params) throws Exception {
         String url = params[0].toString();
         String data = "";
         int last_param = 1;
@@ -107,41 +73,26 @@ public abstract class HttpTask {
                 Log.v("data", data);
             throw new Exception(response.message());
         }
-
-        JsonObject result;
         Reader reader = response.body().charStream();
-        try {
-            JsonValue res = Json.parse(reader);
-            reader.close();
-
-            if (res.isObject()) {
-                result = res.asObject();
-            } else {
-                result = new JsonObject();
-                result.set("data", res);
-            }
-            if (result.get("error") != null) {
-                Log.v("http", url);
-                if (data != null)
-                    Log.v("data", data);
-                throw new Exception(result.get("error").asString());
-            }
-        } finally {
-            reader.close();
+        char[] arr = new char[8 * 1024];
+        StringBuilder buffer = new StringBuilder();
+        int numCharsRead;
+        while ((numCharsRead = reader.read(arr, 0, arr.length)) != -1) {
+            buffer.append(arr, 0, numCharsRead);
         }
-        return result;
+        return new JSONObject(buffer.toString());
     }
 
-    abstract void result(JsonObject res) throws ParseException;
+    abstract void result(JSONObject res) throws JSONException;
 
     abstract void error(String error);
 
     void execute(Object... params) {
         if (bgTask != null)
             return;
-        bgTask = new AsyncTask<Object, Void, JsonObject>() {
+        bgTask = new AsyncTask<Object, Void, JSONObject>() {
             @Override
-            protected JsonObject doInBackground(Object... params) {
+            protected JSONObject doInBackground(Object... params) {
                 try {
                     return request(params);
                 } catch (Exception ex) {
@@ -157,7 +108,7 @@ public abstract class HttpTask {
             }
 
             @Override
-            protected void onPostExecute(JsonObject res) {
+            protected void onPostExecute(JSONObject res) {
                 bgTask = null;
                 if (canceled) {
                     canceled = false;
@@ -179,7 +130,7 @@ public abstract class HttpTask {
                         ex.printStackTrace();
                     }
                 }
-                error("No data");
+                error(error_text);
             }
         };
         try {

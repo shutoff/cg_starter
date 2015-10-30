@@ -24,6 +24,9 @@ import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.ParseException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -279,7 +282,7 @@ public class SearchActivity extends GpsActivity {
 
             Request() {
                 Phrase p = phrases.get(phrase);
-                execute(p.phrase);
+                exec(p.phrase);
             }
 
             @Override
@@ -332,7 +335,7 @@ public class SearchActivity extends GpsActivity {
 
             NearRequest() {
                 Phrase p = phrases.get(phrase);
-                execute(p.phrase, "1000");
+                exec(p.phrase, 1000);
             }
 
             @Override
@@ -385,7 +388,7 @@ public class SearchActivity extends GpsActivity {
 
             LongRequest() {
                 Phrase p = phrases.get(phrase);
-                execute(p.phrase, "50000");
+                exec(p.phrase, 50000);
             }
 
             @Override
@@ -459,17 +462,21 @@ public class SearchActivity extends GpsActivity {
             execute(url, addr);
         }
 
-        void result(JsonObject result) throws ParseException {
-            JsonArray res = result.get("results").asArray();
+        void result(JSONObject result) throws JSONException {
+            JSONArray res = result.getJSONArray("results");
             Vector<Address> r = new Vector<Address>();
-            for (int i = 0; i < res.size(); i++) {
-                JsonObject o = res.get(i).asObject();
+            for (int i = 0; i < res.length(); i++) {
+                JSONObject o = res.getJSONObject(i);
                 Address addr = new Address();
-                addr.address = o.get("formatted_address").asString();
-                addr.name = o.get("name").asString();
-                JsonObject geo = o.get("geometry").asObject().get("location").asObject();
-                addr.lat = geo.get("lat").asDouble();
-                addr.lon = geo.get("lng").asDouble();
+                addr.address = o.getString("formatted_address");
+                try {
+                    addr.name = o.getString("name");
+                } catch (Exception ex) {
+                    // ignore
+                }
+                JSONObject geo = o.getJSONObject("geometry").getJSONObject("location");
+                addr.lat = geo.getDouble("lat");
+                addr.lon = geo.getDouble("lng");
                 r.add(addr);
             }
             result(r);
@@ -483,7 +490,7 @@ public class SearchActivity extends GpsActivity {
 
     static public abstract class LocationRequest extends PlaceRequest {
 
-        void exec(String addr, int radius) {
+        void exec(String addr) {
             String url = "http://maps.googleapis.com/maps/api/geocode/json?address=$1&sensor=true";
             Location location = getLocation();
             if (location != null) {

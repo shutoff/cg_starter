@@ -67,9 +67,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-import com.eclipsesource.json.ParseException;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -2020,9 +2020,8 @@ public class OnExitService extends Service {
                     HttpTask fetcher = new HttpTask() {
 
                         @Override
-                        void result(JsonObject res) throws ParseException {
-                            JsonValue level = res.get("lvl");
-                            int lvl = level.asInt() + 1;
+                        void result(JSONObject res) throws JSONException {
+                            int lvl = res.getInt("lvl") + 1;
                             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
                             long now = new Date().getTime();
                             boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));

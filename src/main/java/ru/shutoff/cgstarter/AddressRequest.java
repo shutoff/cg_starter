@@ -1,7 +1,7 @@
 package ru.shutoff.cgstarter;
 
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.ParseException;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public abstract class AddressRequest extends HttpTask {
 
@@ -13,8 +13,8 @@ public abstract class AddressRequest extends HttpTask {
     }
 
     @Override
-    void result(JsonObject res) throws ParseException {
-        address(res.get("display_name").asString());
+    void result(JSONObject res) throws JSONException {
+        address(res.getString("display_name"));
     }
 
 
