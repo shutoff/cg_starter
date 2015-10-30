@@ -121,7 +121,7 @@ public class SendLocationActivity extends GpsActivity {
             finish_info.setText(format(finish_lat) + ", " + format(finish_lon) + "\n\n");
             AddressRequest req = new AddressRequest() {
                 @Override
-                protected void onPostExecute(String s) {
+                protected void address(String s) {
                     if (s != null)
                         finish_info.setText(format(finish_lat) + ", " + format(finish_lon) + "\n" + s);
                 }
@@ -174,7 +174,7 @@ public class SendLocationActivity extends GpsActivity {
                     location_changed = false;
                     request = new AddressRequest() {
                         @Override
-                        protected void onPostExecute(String s) {
+                        protected void address(String s) {
                             address = s;
                             locationChanged();
                         }

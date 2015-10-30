@@ -192,7 +192,7 @@ public class SMSActivity extends Activity {
         }
 
         @Override
-        protected void onPostExecute(String s) {
+        protected void address(String s) {
             if (s != null) {
                 smsList.get(addr_pos).address = s;
                 adapter.notifyDataSetChanged();

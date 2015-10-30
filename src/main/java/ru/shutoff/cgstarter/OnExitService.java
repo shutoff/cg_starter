@@ -69,10 +69,8 @@ import android.widget.TextView;
 import com.android.internal.telephony.ITelephony;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+import com.eclipsesource.json.ParseException;
 
-import org.apache.http.HttpStatus;
-
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -80,13 +78,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.security.InvalidParameterException;
 import java.util.Date;
 import java.util.List;
@@ -2024,12 +2017,38 @@ public class OnExitService extends Service {
                 if (fetcher_time < new Date().getTime()) {
                     yandex_error = false;
                     fetcher_time = new Date().getTime() + 60000;
-                    HttpTask fetcher = new HttpTask();
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                        fetcher.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, TRAFFIC_URL, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
-                    } else {
-                        fetcher.execute(TRAFFIC_URL, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
-                    }
+                    HttpTask fetcher = new HttpTask() {
+
+                        @Override
+                        void result(JsonObject res) throws ParseException {
+                            JsonValue level = res.get("lvl");
+                            int lvl = level.asInt() + 1;
+                            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
+                            long now = new Date().getTime();
+                            boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));
+                            if (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)
+                                changed = true;
+                            if (yandex_error) {
+                                yandex_error = false;
+                                changed = true;
+                            }
+                            SharedPreferences.Editor ed = preferences.edit();
+                            ed.putInt(State.TRAFFIC, lvl);
+                            ed.putLong(State.UPD_TIME, now);
+                            ed.commit();
+                            if (!setup_button && changed) {
+                                hideApps();
+                                if (isActiveCG(OnExitService.this))
+                                    showApps();
+                            }
+                        }
+
+                        @Override
+                        void error(String error) {
+                            setYandexError(true);
+                        }
+                    };
+                    fetcher.execute(TRAFFIC_URL, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
                 }
             } else {
                 if (networkReciever == null) {
@@ -2360,77 +2379,6 @@ public class OnExitService extends Service {
         @Override
         protected void onPostExecute(Void aVoid) {
             pingTask = null;
-        }
-    }
-
-    class HttpTask extends AsyncTask<Object, Void, Integer> {
-
-        BroadcastReceiver br;
-
-        @Override
-        protected Integer doInBackground(Object... params) {
-            String url = params[0].toString();
-            Reader reader = null;
-            HttpURLConnection connection = null;
-            try {
-                for (int i = 1; i < params.length; i++) {
-                    url = url.replace("$" + i, URLEncoder.encode(params[i].toString(), "UTF-8"));
-                }
-                URL u = new URL(url);
-                connection = (HttpURLConnection) u.openConnection();
-                InputStream in = new BufferedInputStream(connection.getInputStream());
-                int status = connection.getResponseCode();
-                reader = new InputStreamReader(in);
-                JsonValue res = JsonValue.readFrom(reader);
-                reader.close();
-                reader = null;
-                JsonObject result = res.asObject();
-                if (status != HttpStatus.SC_OK)
-                    return null;
-                JsonValue level = result.get("lvl");
-                if (level != null)
-                    return level.asInt() + 1;
-                return 0;
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            } finally {
-                if (connection != null)
-                    connection.disconnect();
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Integer lvl) {
-            if (lvl != null) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
-                long now = new Date().getTime();
-                boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));
-                if (now - preferences.getLong(State.UPD_TIME, 0) > VALID_INTEVAL)
-                    changed = true;
-                if (yandex_error) {
-                    yandex_error = false;
-                    changed = true;
-                }
-                SharedPreferences.Editor ed = preferences.edit();
-                ed.putInt(State.TRAFFIC, lvl);
-                ed.putLong(State.UPD_TIME, now);
-                ed.commit();
-                if (!setup_button && changed) {
-                    hideApps();
-                    if (isActiveCG(OnExitService.this))
-                        showApps();
-                }
-            } else {
-                setYandexError(true);
-            }
         }
     }
 

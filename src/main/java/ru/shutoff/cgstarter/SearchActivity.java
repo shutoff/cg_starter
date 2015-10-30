@@ -6,12 +6,10 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.location.Location;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,18 +21,10 @@ import android.widget.TextView;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
+import com.eclipsesource.json.ParseException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -446,7 +436,7 @@ public class SearchActivity extends GpsActivity {
         float scope;
     }
 
-    static abstract class PlaceRequest extends AsyncTask<String, Void, JsonArray> {
+    static abstract class PlaceRequest extends HttpTask {
 
         String error;
 
@@ -456,58 +446,21 @@ public class SearchActivity extends GpsActivity {
 
         abstract void result(Vector<Address> result);
 
-        @Override
-        protected JsonArray doInBackground(String... strings) {
-            HttpClient httpclient = new DefaultHttpClient();
-            Reader reader = null;
-            try {
-                String url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=";
-                String addr = strings[0];
-                url += Uri.encode(addr);
-                url += "&sensor=true";
-                Location location = getLocation();
-                if (location != null) {
-                    double lat = location.getLatitude();
-                    double lon = location.getLongitude();
-                    url += "&location=" + lat + "," + lon + "&radius=" + strings[1];
-                }
-                // url += "&key=AIzaSyAqcPdecy9uOeLMZ5VhjzfJQV9unU4GIL0";
-                url += "&key=AIzaSyBljQKazFWpl9nyGHp-lu8ati7QjMbwzsU";
-                url += "&language=" + Locale.getDefault().getLanguage();
-                Log.v("url", url);
-                HttpResponse response = httpclient.execute(new HttpGet(url));
-                StatusLine statusLine = response.getStatusLine();
-                int status = statusLine.getStatusCode();
-                reader = new InputStreamReader(response.getEntity().getContent());
-                JsonValue res = JsonValue.readFrom(reader);
-                reader.close();
-                reader = null;
-                if (status != HttpStatus.SC_OK) {
-                    error = "Error " + status;
-                    return null;
-                }
-                return res.asObject().get("results").asArray();
-            } catch (Exception ex) {
-                error = ex.toString();
-                ex.printStackTrace();
-            } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                }
+        void exec(String addr, int radius) {
+            String url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=%1&sensor=true";
+            Location location = getLocation();
+            if (location != null) {
+                double lat = location.getLatitude();
+                double lon = location.getLongitude();
+                url += "&location=" + lat + "," + lon + "&radius=" + radius;
             }
-            return null;
+            url += "&key=AIzaSyBljQKazFWpl9nyGHp-lu8ati7QjMbwzsU";
+            url += "&language=" + Locale.getDefault().getLanguage();
+            execute(url, addr);
         }
 
-        @Override
-        protected void onPostExecute(JsonArray res) {
-            if (res == null) {
-                showError(error);
-                return;
-            }
+        void result(JsonObject result) throws ParseException {
+            JsonArray res = result.get("results").asArray();
             Vector<Address> r = new Vector<Address>();
             for (int i = 0; i < res.size(); i++) {
                 JsonObject o = res.get(i).asObject();
@@ -521,60 +474,29 @@ public class SearchActivity extends GpsActivity {
             }
             result(r);
         }
+
+        void error(String error) {
+            showError(error);
+        }
+
     }
 
     static public abstract class LocationRequest extends PlaceRequest {
 
-        @Override
-        protected JsonArray doInBackground(String... strings) {
-            HttpClient httpclient = new DefaultHttpClient();
-            Reader reader = null;
-            try {
-                String url = "http://maps.googleapis.com/maps/api/geocode/json?address=";
-                String addr = strings[0];
-                url += Uri.encode(addr);
-                url += "&sensor=true";
-                Location location = getLocation();
-                if (location != null) {
-                    double lat = location.getLatitude();
-                    double lon = location.getLongitude();
-                    url += "&bounds=" + (lat - 1.5) + "," + (lon - 1.5) + Uri.encode("|") + (lat + 1.5) + "," + (lon + 1.5);
-                }
-                url += "&language=" + Locale.getDefault().getLanguage();
-                Log.v("url", url);
-                HttpResponse response = httpclient.execute(new HttpGet(url));
-                StatusLine statusLine = response.getStatusLine();
-                int status = statusLine.getStatusCode();
-                reader = new InputStreamReader(response.getEntity().getContent());
-                JsonValue res = JsonValue.readFrom(reader);
-                reader.close();
-                reader = null;
-                if (status != HttpStatus.SC_OK) {
-                    error = "Error " + status;
-                    return null;
-                }
-                return res.asObject().get("results").asArray();
-            } catch (Exception ex) {
-                error = ex.toString();
-                ex.printStackTrace();
-            } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                }
+        void exec(String addr, int radius) {
+            String url = "http://maps.googleapis.com/maps/api/geocode/json?address=$1&sensor=true";
+            Location location = getLocation();
+            if (location != null) {
+                double lat = location.getLatitude();
+                double lon = location.getLongitude();
+                url += "&bounds=" + (lat - 1.5) + "," + (lon - 1.5) + Uri.encode("|") + (lat + 1.5) + "," + (lon + 1.5);
             }
-            return null;
+            url += "&language=" + Locale.getDefault().getLanguage();
+            execute(url, addr);
         }
 
-        @Override
-        protected void onPostExecute(JsonArray res) {
-            if (res == null) {
-                showError(error);
-                return;
-            }
+        void result(JsonObject result) throws ParseException {
+            JsonArray res = result.asObject().get("results").asArray();
             Vector<Address> r = new Vector<Address>();
             for (int i = 0; i < res.size(); i++) {
                 JsonObject o = res.get(i).asObject();
