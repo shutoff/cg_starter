@@ -1,6 +1,5 @@
 package ru.shutoff.cgstarter;
 
-import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -67,6 +66,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
+import com.jaredrummler.android.processes.ProcessManager;
+import com.jaredrummler.android.processes.models.AndroidAppProcess;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -138,7 +139,7 @@ public class OnExitService extends Service {
     static int prev_state;
     static boolean cg_run;
     static boolean is_run;
-    static ActivityManager mActivityManager;
+
     AlarmManager alarm;
     PendingIntent pi;
     PendingIntent piAnswer;
@@ -148,6 +149,7 @@ public class OnExitService extends Service {
     WindowManager.LayoutParams layoutParams;
     BroadcastReceiver networkReciever;
     TelephonyManager tm;
+
     boolean phone;
     boolean speaker;
     boolean ringing;
@@ -236,14 +238,9 @@ public class OnExitService extends Service {
     }
 
     static boolean isRun(Context context, String pkg_name) {
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
-        if (procInfos == null)
-            return false;
-        int i;
-        for (i = 0; i < procInfos.size(); i++) {
-            ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(pkg_name))
+        List<AndroidAppProcess> processes = ProcessManager.getRunningAppProcesses();
+        for (AndroidAppProcess process : processes) {
+            if (pkg_name.equals(process.name))
                 return true;
         }
         return false;
@@ -254,33 +251,11 @@ public class OnExitService extends Service {
     }
 
     static boolean isActiveCG(Context context) {
-        if (mActivityManager == null)
-            mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
-            List<ActivityManager.RunningAppProcessInfo> appProcesses = mActivityManager.getRunningAppProcesses();
-            for (ActivityManager.RunningAppProcessInfo info : appProcesses) {
-                if (!info.processName.equals(State.CG_Package(context)))
-                    continue;
-                if (info.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
-                    return false;
-                Field field = null;
-                try {
-                    field = ActivityManager.RunningAppProcessInfo.class.getDeclaredField("processState");
-                    int state = field.getInt(info);
-                    return state == 2;
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-                if (field == null)
-                    return true;
-            }
-            return false;
-        }
-        try {
-            List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
-            return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_Package(context));
-        } catch (Exception ex) {
-            // ignore
+        List<AndroidAppProcess> processes = ProcessManager.getRunningForegroundApps(context);
+        String pkg_name = State.CG_Package(context);
+        for (AndroidAppProcess process : processes) {
+            if (pkg_name.equals(process.name))
+                return true;
         }
         return false;
     }
