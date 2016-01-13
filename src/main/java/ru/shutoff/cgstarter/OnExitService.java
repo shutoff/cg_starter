@@ -1815,18 +1815,6 @@ public class OnExitService extends Service {
                                 }
                                 showActiveOverlay();
                             }
-                            if (preferences.getBoolean(State.VOLUME, false) && (preferences.getInt(State.SAVE_RING_LEVEL, -1) == -1)) {
-                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
-                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                int cur_level = audio.getStreamVolume(channel);
-                                int new_level = audio.getStreamMaxVolume(channel) * preferences.getInt(State.RING_LEVEL, 0) / 100;
-                                if (new_level < cur_level) {
-                                    audio.setStreamVolume(channel, new_level, 0);
-                                    SharedPreferences.Editor ed = preferences.edit();
-                                    ed.putInt(State.SAVE_RING_LEVEL, cur_level);
-                                    ed.commit();
-                                }
-                            }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 audio.setMode(0);
@@ -1880,17 +1868,6 @@ public class OnExitService extends Service {
                                     ed.commit();
                                 }
                             }
-
-                            int save_level = preferences.getInt(State.SAVE_RING_LEVEL, -1);
-                            if (save_level > 0) {
-                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
-                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                audio.setStreamVolume(channel, save_level, 0);
-                                SharedPreferences.Editor ed = preferences.edit();
-                                ed.remove(State.SAVE_RING_LEVEL);
-                                ed.commit();
-                            }
-
                             show_overlay = false;
                             if (foreground)
                                 stopForeground(true);

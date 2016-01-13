@@ -31,8 +31,6 @@ public class State extends BroadcastReceiver {
     static final String BT_DEVICES = "bt_devices";
     static final String VOLUME = "volume";
     static final String LEVEL = "level";
-    static final String RING_LEVEL = "ring_level";
-    static final String SAVE_RING_LEVEL = "save_ring_level";
     static final String PHONE = "phone";
     static final String DATA = "data";
     static final String SPEAKER = "speaker";

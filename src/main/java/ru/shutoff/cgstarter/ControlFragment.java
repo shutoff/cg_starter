@@ -21,12 +21,6 @@ public class ControlFragment extends PreferencesFragment {
         setCheckBox(v, R.id.gps, State.GPS);
         setCheckBox(v, R.id.volume, State.VOLUME, R.id.level);
         setSeekBar(v, R.id.level, State.LEVEL, 100);
-        if (State.hasTelephony(getActivity())) {
-            setSeekBar(v, R.id.ring_level, State.RING_LEVEL, 0);
-        } else {
-            v.findViewById(R.id.ring_level).setVisibility(View.GONE);
-            v.findViewById(R.id.ring_level_msg).setVisibility(View.GONE);
-        }
         setCheckBox(v, R.id.bt, State.BT);
         setCheckBox(v, R.id.data, State.DATA);
         setCheckBox(v, R.id.wifi, State.WIFI, true);

@@ -40,19 +40,6 @@
             android:layout_margin="8dp"
             android:max="100" />
 
-        <TextView
-            android:id="@+id/ring_level_msg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/ring_level" />
-
-        <SeekBar
-            android:id="@+id/ring_level"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:max="100" />
-
         <CheckBox
             android:id="@+id/bt"
             android:layout_width="match_parent"
