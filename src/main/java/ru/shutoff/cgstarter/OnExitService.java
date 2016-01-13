@@ -1,5 +1,6 @@
 package ru.shutoff.cgstarter;
 
+import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -140,6 +141,8 @@ public class OnExitService extends Service {
     static boolean cg_run;
     static boolean is_run;
 
+    static ActivityManager mActivityManager;
+
     AlarmManager alarm;
     PendingIntent pi;
     PendingIntent piAnswer;
@@ -238,6 +241,20 @@ public class OnExitService extends Service {
     }
 
     static boolean isRun(Context context, String pkg_name) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            if (mActivityManager == null)
+                mActivityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+            List<ActivityManager.RunningAppProcessInfo> procInfos = mActivityManager.getRunningAppProcesses();
+            if (procInfos == null)
+                return false;
+            int i;
+            for (i = 0; i < procInfos.size(); i++) {
+                ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
+                if (proc.processName.equals(pkg_name))
+                    return true;
+            }
+            return false;
+        }
         List<AndroidAppProcess> processes = ProcessManager.getRunningAppProcesses();
         for (AndroidAppProcess process : processes) {
             if (pkg_name.equals(process.name))
@@ -251,6 +268,17 @@ public class OnExitService extends Service {
     }
 
     static boolean isActiveCG(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            if (mActivityManager == null)
+                mActivityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+            try {
+                List<ActivityManager.RunningTaskInfo> appProcesses = mActivityManager.getRunningTasks(1);
+                return appProcesses.get(0).topActivity.getPackageName().equals(State.CG_Package(context));
+            } catch (Exception ex) {
+                // ignore
+            }
+            return false;
+        }
         List<AndroidAppProcess> processes = ProcessManager.getRunningForegroundApps(context);
         String pkg_name = State.CG_Package(context);
         for (AndroidAppProcess process : processes) {
