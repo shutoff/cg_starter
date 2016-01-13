@@ -17,7 +17,7 @@
 # The following rules are used to strip any non essential Google Play Services classes and method.
 
 -printmapping mapping.txt
--renamesourcefileattribute ru.shutoff.cgstarter
+-renamesourcefileattribute net.ugona.plus
 -keepattributes SourceFile,LineNumberTable
 
 # For Google Play Services
@@ -60,6 +60,8 @@
     @android.webkit.JavascriptInterface <methods>;
 }
 
+-dontwarn android.support.**
+-dontwarn com.google.android.gms.**
 -dontwarn org.joda.convert.**
 -dontwarn sun.misc.**
 -dontwarn android.os.**
