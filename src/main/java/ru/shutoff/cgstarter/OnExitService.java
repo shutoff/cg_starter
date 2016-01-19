@@ -36,6 +36,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -75,6 +76,7 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -1817,10 +1819,6 @@ public class OnExitService extends Service {
                             }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                audio.setMode(0);
-                                if (preferences.getBoolean(State.BT, false))
-                                    audio.setBluetoothScoOn(true);
-                                audio.setMode(AudioManager.MODE_IN_CALL);
                                 if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn()) {
                                     audio.setSpeakerphoneOn(true);
                                     speacker_volume = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL) + 1;

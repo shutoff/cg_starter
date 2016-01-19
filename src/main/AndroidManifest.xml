@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.shutoff.cgstarter"
     android:versionCode="39"
-    android:versionName="1.7.3 beta 20160113">
+    android:versionName="1.7.3 beta 20160119">
 
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
@@ -258,6 +258,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="google.navigation" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.actions.SEARCH_ACTION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
         <activity
@@ -280,7 +284,7 @@
 
         <activity android:name=".SetupButton" />
 
-        <service android:name=".OnExitService"></service>
+        <service android:name=".OnExitService" />
 
         <service
             android:name=".NotificationService"
@@ -301,7 +305,6 @@
                 <action android:name="android.intent.action.ENTER_CAR_MODE" />
                 <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
                 <action android:name="android.bluetooth.device.action.ACL_DISCONNECTED" />
-                <action android:name="android.intent.action.ENTER_CAR_MODE" />
                 <action android:name="android.intent.action.PHONE_STATE" />
                 <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
