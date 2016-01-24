@@ -29,6 +29,7 @@ import java.util.Vector;
 
 public class ContactActivity extends GpsActivity implements AdapterView.OnItemClickListener {
 
+    static final String divs = " .,";
     Vector<Contact> contacts;
     Vector<Contact> filtered;
     BaseAdapter adapter;
@@ -53,7 +54,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
 
             @Override
             void showError(String error) {
-                error(error);
+                ContactActivity.this.error(error);
             }
 
             @Override
@@ -61,7 +62,7 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                 searchResult(result);
             }
         };
-        request.execute(contact.address);
+        request.exec(contact.address);
     }
 
     public void locationChanged(Location location) {
@@ -147,6 +148,32 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
             });
         }
 
+    }
+
+    static class Contact {
+        String address;
+        String name;
+        Bitmap photo;
+
+        boolean match(String pat) {
+            return match(name, pat) || match(address, pat);
+        }
+
+        boolean match(String s, String pat) {
+            s = s.toLowerCase();
+            int start = 0;
+            for (; ; ) {
+                int pos = s.indexOf(pat, start);
+                if (pos < 0)
+                    return false;
+                if (pos == 0)
+                    return true;
+                int ch = s.charAt(pos - 1);
+                if (divs.indexOf(ch) >= 0)
+                    return true;
+                start = pos + 1;
+            }
+        }
     }
 
     class ContactLoader extends AsyncTask<Void, Void, Void> {
@@ -274,34 +301,6 @@ public class ContactActivity extends GpsActivity implements AdapterView.OnItemCl
                     searcher.execute(pat);
                 }
             });
-        }
-    }
-
-    static final String divs = " .,";
-
-    static class Contact {
-        String address;
-        String name;
-        Bitmap photo;
-
-        boolean match(String pat) {
-            return match(name, pat) || match(address, pat);
-        }
-
-        boolean match(String s, String pat) {
-            s = s.toLowerCase();
-            int start = 0;
-            for (; ; ) {
-                int pos = s.indexOf(pat, start);
-                if (pos < 0)
-                    return false;
-                if (pos == 0)
-                    return true;
-                int ch = s.charAt(pos - 1);
-                if (divs.indexOf(ch) >= 0)
-                    return true;
-                start = pos + 1;
-            }
         }
     }
 

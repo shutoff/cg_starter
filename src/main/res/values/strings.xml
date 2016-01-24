@@ -31,6 +31,7 @@
     <string name="data">Mobile data control</string>
     <string name="data_sum">Turn ON mobile data</string>
     <string name="level">Volume control</string>
+    <string name="ring_level">Volume on the call</string>
     <string name="no_volume">No change volume</string>
     <string name="set_volume">Set level</string>
     <string name="carmode">Car mode</string>

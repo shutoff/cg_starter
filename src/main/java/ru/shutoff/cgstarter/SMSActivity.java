@@ -66,7 +66,7 @@ public class SMSActivity extends Activity {
             startManagingCursor(c);
             int totalSMS = c.getCount();
 
-            Pattern pattern = Pattern.compile("([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
+            Pattern pattern = Pattern.compile("^(|.* [^0-9])([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
             if (c.moveToFirst()) {
                 for (int i = 0; i < totalSMS; i++) {
                     String body = c.getString(c.getColumnIndexOrThrow("body"));
@@ -79,8 +79,8 @@ public class SMSActivity extends Activity {
                                 sms.body = body;
                                 sms.date = c.getLong(c.getColumnIndexOrThrow("date"));
                                 sms.to = c.getString(c.getColumnIndex("address"));
-                                sms.lat = Double.parseDouble(matcher.group(1));
-                                sms.lon = Double.parseDouble(matcher.group(2));
+                                sms.lat = Double.parseDouble(matcher.group(2));
+                                sms.lon = Double.parseDouble(matcher.group(3));
 
                                 Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(sms.to));
                                 ContentResolver contentResolver = getContentResolver();

@@ -19,14 +19,12 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.ParseException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -462,21 +460,21 @@ public class SearchActivity extends GpsActivity {
             execute(url, addr);
         }
 
-        void result(JSONObject result) throws JSONException {
-            JSONArray res = result.getJSONArray("results");
+        void result(String result) {
+            JsonArray res = Json.parse(result).asObject().get("results").asArray();
             Vector<Address> r = new Vector<Address>();
-            for (int i = 0; i < res.length(); i++) {
-                JSONObject o = res.getJSONObject(i);
+            for (int i = 0; i < res.size(); i++) {
+                JsonObject o = res.get(i).asObject();
                 Address addr = new Address();
-                addr.address = o.getString("formatted_address");
+                addr.address = o.get("formatted_address").asString();
                 try {
-                    addr.name = o.getString("name");
+                    addr.name = o.get("name").asString();
                 } catch (Exception ex) {
                     // ignore
                 }
-                JSONObject geo = o.getJSONObject("geometry").getJSONObject("location");
-                addr.lat = geo.getDouble("lat");
-                addr.lon = geo.getDouble("lng");
+                JsonObject geo = o.get("geometry").asObject().get("location").asObject();
+                addr.lat = geo.get("lat").asDouble();
+                addr.lon = geo.get("lng").asDouble();
                 r.add(addr);
             }
             result(r);
@@ -502,8 +500,8 @@ public class SearchActivity extends GpsActivity {
             execute(url, addr);
         }
 
-        void result(JsonObject result) throws ParseException {
-            JsonArray res = result.asObject().get("results").asArray();
+        void result(String data) throws ParseException {
+            JsonArray res = Json.parse(data).asObject().get("results").asArray();
             Vector<Address> r = new Vector<Address>();
             for (int i = 0; i < res.size(); i++) {
                 JsonObject o = res.get(i).asObject();

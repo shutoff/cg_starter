@@ -36,7 +36,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -68,15 +67,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
+import com.eclipsesource.json.Json;
 import com.jaredrummler.android.processes.ProcessManager;
 import com.jaredrummler.android.processes.models.AndroidAppProcess;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -1817,6 +1813,18 @@ public class OnExitService extends Service {
                                 }
                                 showActiveOverlay();
                             }
+                            if (preferences.getBoolean(State.VOLUME, false) && (preferences.getInt(State.SAVE_RING_LEVEL, -1) == -1)) {
+                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                int cur_level = audio.getStreamVolume(channel);
+                                int new_level = audio.getStreamMaxVolume(channel) * preferences.getInt(State.RING_LEVEL, 0) / 100;
+                                if (new_level < cur_level) {
+                                    audio.setStreamVolume(channel, new_level, 0);
+                                    SharedPreferences.Editor ed = preferences.edit();
+                                    ed.putInt(State.SAVE_RING_LEVEL, cur_level);
+                                    ed.commit();
+                                }
+                            }
                             if (speaker) {
                                 AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                 if (!audio.isBluetoothScoOn() && !audio.isWiredHeadsetOn()) {
@@ -1866,6 +1874,17 @@ public class OnExitService extends Service {
                                     ed.commit();
                                 }
                             }
+
+                            int save_level = preferences.getInt(State.SAVE_RING_LEVEL, -1);
+                            if (save_level > 0) {
+                                int channel = preferences.getInt(State.CUR_CHANNEL, 0);
+                                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                audio.setStreamVolume(channel, save_level, 0);
+                                SharedPreferences.Editor ed = preferences.edit();
+                                ed.remove(State.SAVE_RING_LEVEL);
+                                ed.commit();
+                            }
+
                             show_overlay = false;
                             if (foreground)
                                 stopForeground(true);
@@ -1998,8 +2017,8 @@ public class OnExitService extends Service {
                     HttpTask fetcher = new HttpTask() {
 
                         @Override
-                        void result(JSONObject res) throws JSONException {
-                            int lvl = res.getInt("lvl") + 1;
+                        void result(String res) {
+                            int lvl = Json.parse(res).asObject().get("lvl").asInt() + 1;
                             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(OnExitService.this);
                             long now = new Date().getTime();
                             boolean changed = (lvl != preferences.getInt(State.TRAFFIC, 0));

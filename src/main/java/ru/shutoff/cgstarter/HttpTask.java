@@ -4,47 +4,44 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 
-import com.squareup.okhttp.Interceptor;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 public abstract class HttpTask {
 
     final static String userAgent = System.getProperty("http.agent");
     public static final OkHttpClient client = createClient();
-    AsyncTask<Object, Void, JSONObject> bgTask;
+    AsyncTask<Object, Void, String> bgTask;
     String error_text;
     boolean canceled;
 
     static OkHttpClient createClient() {
-        OkHttpClient client = new OkHttpClient();
-        client.setConnectTimeout(15, TimeUnit.SECONDS);
-        client.setReadTimeout(40, TimeUnit.SECONDS);
-        client.interceptors().add(new Interceptor() {
-            @Override
-            public Response intercept(Chain chain) throws IOException {
-                Request originalRequest = chain.request();
-                Request requestWithUserAgent = originalRequest.newBuilder()
-                        .removeHeader("User-Agent")
-                        .addHeader("User-Agent", userAgent)
-                        .build();
-                return chain.proceed(requestWithUserAgent);
-            }
-        });
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(40, TimeUnit.SECONDS)
+                .addInterceptor(new Interceptor() {
+                    @Override
+                    public Response intercept(Chain chain) throws IOException {
+                        Request originalRequest = chain.request();
+                        Request requestWithUserAgent = originalRequest.newBuilder()
+                                .removeHeader("User-Agent")
+                                .addHeader("User-Agent", userAgent)
+                                .build();
+                        return chain.proceed(requestWithUserAgent);
+                    }
+                }).build();
         return client;
     }
 
-    static JSONObject request(Object... params) throws Exception {
+    static String request(Object... params) throws Exception {
         String url = params[0].toString();
         String data = "";
         int last_param = 1;
@@ -80,19 +77,19 @@ public abstract class HttpTask {
         while ((numCharsRead = reader.read(arr, 0, arr.length)) != -1) {
             buffer.append(arr, 0, numCharsRead);
         }
-        return new JSONObject(buffer.toString());
+        return buffer.toString();
     }
 
-    abstract void result(JSONObject res) throws JSONException;
+    abstract void result(String res);
 
     abstract void error(String error);
 
     void execute(Object... params) {
         if (bgTask != null)
             return;
-        bgTask = new AsyncTask<Object, Void, JSONObject>() {
+        bgTask = new AsyncTask<Object, Void, String>() {
             @Override
-            protected JSONObject doInBackground(Object... params) {
+            protected String doInBackground(Object... params) {
                 try {
                     return request(params);
                 } catch (Exception ex) {
@@ -108,7 +105,7 @@ public abstract class HttpTask {
             }
 
             @Override
-            protected void onPostExecute(JSONObject res) {
+            protected void onPostExecute(String res) {
                 bgTask = null;
                 if (canceled) {
                     canceled = false;

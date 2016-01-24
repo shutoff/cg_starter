@@ -32,6 +32,7 @@
     <string name="data">Управление данными</string>
     <string name="data_sum">Включить мобильный интернет</string>
     <string name="level">Управление звуком</string>
+    <string name="ring_level">Громкость во время звонка</string>
     <string name="no_volume">Не изменять</string>
     <string name="set_volume">Установить громкость</string>
     <string name="carmode">Автомобильный режим</string>

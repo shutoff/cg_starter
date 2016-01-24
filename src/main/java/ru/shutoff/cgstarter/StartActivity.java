@@ -2,7 +2,6 @@ package ru.shutoff.cgstarter;
 
 import android.location.Location;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.LayoutInflater;
@@ -16,10 +15,6 @@ import android.widget.Toast;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,28 +52,10 @@ public class StartActivity extends GpsActivity {
             Pattern pat = Pattern.compile("\\@([0-9]+\\.[0-9]+),([0-9]+\\.[0-9]+)");
             Matcher matcher = pat.matcher(url);
             if (!matcher.find()) {
-                AsyncTask<String, Void, Vector<SearchActivity.Address>> task = new AsyncTask<String, Void, Vector<SearchActivity.Address>>() {
+                HttpTask task = new HttpTask() {
                     @Override
-                    protected Vector<SearchActivity.Address> doInBackground(String... strings) {
+                    void result(String data) {
                         try {
-                            URL kml = new URL(strings[0]);
-                            HttpURLConnection connection = (HttpURLConnection) kml.openConnection();
-                            int code = connection.getResponseCode();
-                            if (code == 302) {
-                                String location = connection.getHeaderField("Location");
-                                kml = new URL(location);
-                                connection = (HttpURLConnection) kml.openConnection();
-                                code = connection.getResponseCode();
-                            }
-
-                            BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                            StringBuilder sb = new StringBuilder();
-                            String line;
-                            while ((line = br.readLine()) != null) {
-                                sb.append(line + "\n");
-                            }
-                            br.close();
-                            String data = sb.toString();
                             SearchActivity.Address addr = new SearchActivity.Address();
                             Vector<SearchActivity.Address> result = new Vector<SearchActivity.Address>();
                             int start = data.indexOf("title:\"");
@@ -101,21 +78,19 @@ public class StartActivity extends GpsActivity {
                                 int end = data.indexOf("}", start);
                                 addr.lon = Double.parseDouble(data.substring(start, end));
                             }
-                            if (result.size() > 0)
-                                return result;
+                            if (result.size() > 0) {
+                                showResult(result);
+                                return;
+                            }
+                            finish();
                         } catch (Exception ex) {
-                            ex.printStackTrace();
+                            error(ex.getLocalizedMessage());
                         }
-                        return null;
                     }
 
                     @Override
-                    protected void onPostExecute(Vector<SearchActivity.Address> addresses) {
-                        if (addresses == null) {
-                            finish();
-                            return;
-                        }
-                        showResult(addresses);
+                    void error(String error) {
+
                     }
                 };
                 task.execute(url + "&output=json");
@@ -156,7 +131,7 @@ public class StartActivity extends GpsActivity {
 
                     @Override
                     void showError(String err) {
-                        error(err);
+                        StartActivity.this.error(err);
                     }
 
                     @Override
@@ -182,7 +157,7 @@ public class StartActivity extends GpsActivity {
                         showResult(result);
                     }
                 };
-                req.execute(query);
+                req.exec(query);
             }
         };
         timer.start();
