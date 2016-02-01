@@ -58,7 +58,6 @@ public class SMSActivity extends Activity {
         protected Void doInBackground(Void... voids) {
 
             smsList = new Vector<SMS>();
-
             Uri message = Uri.parse("content://sms/");
             ContentResolver cr = getContentResolver();
 
@@ -66,21 +65,20 @@ public class SMSActivity extends Activity {
             startManagingCursor(c);
             int totalSMS = c.getCount();
 
-            Pattern pattern = Pattern.compile("^(|.* [^0-9])([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
+            Pattern pattern = Pattern.compile("^([0-9]{1,2}\\.[0-9]{4,7})[^0-9]+([0-9]{1,2}\\.[0-9]{4,7})");
             if (c.moveToFirst()) {
                 for (int i = 0; i < totalSMS; i++) {
                     String body = c.getString(c.getColumnIndexOrThrow("body"));
                     if (body != null) {
                         Matcher matcher = pattern.matcher(body);
                         try {
-
                             if (matcher.find()) {
                                 SMS sms = new SMS();
                                 sms.body = body;
                                 sms.date = c.getLong(c.getColumnIndexOrThrow("date"));
                                 sms.to = c.getString(c.getColumnIndex("address"));
-                                sms.lat = Double.parseDouble(matcher.group(2));
-                                sms.lon = Double.parseDouble(matcher.group(3));
+                                sms.lat = Double.parseDouble(matcher.group(1));
+                                sms.lon = Double.parseDouble(matcher.group(2));
 
                                 Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(sms.to));
                                 ContentResolver contentResolver = getContentResolver();
@@ -105,7 +103,7 @@ public class SMSActivity extends Activity {
                                 smsList.add(sms);
                             }
                         } catch (Exception ex) {
-                            // ignore
+                            // State.print(ex);
                         }
                     }
                     c.moveToNext();

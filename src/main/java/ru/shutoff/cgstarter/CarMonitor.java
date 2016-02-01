@@ -19,6 +19,9 @@ import android.preference.PreferenceManager;
 import android.telephony.SmsMessage;
 import android.widget.Toast;
 
+import com.jaredrummler.android.processes.ProcessManager;
+import com.jaredrummler.android.processes.models.AndroidAppProcess;
+
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,15 +69,26 @@ public class CarMonitor extends BroadcastReceiver {
     }
 
     static void killCG(Context context) {
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
-        if (procInfos == null)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
+            if (procInfos == null)
+                return;
+            int i;
+            for (i = 0; i < procInfos.size(); i++) {
+                ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
+                if (proc.processName.equals(State.CG_Package(context))) {
+                    State.doRoot(context, "kill " + proc.pid, true);
+                }
+            }
             return;
-        int i;
-        for (i = 0; i < procInfos.size(); i++) {
-            ActivityManager.RunningAppProcessInfo proc = procInfos.get(i);
-            if (proc.processName.equals(State.CG_Package(context))) {
-                State.doRoot(context, "kill " + proc.pid, true);
+        }
+        List<AndroidAppProcess> processes = ProcessManager.getRunningAppProcesses();
+        String pkg_name = State.CG_Package(context);
+        for (AndroidAppProcess process : processes) {
+            if (pkg_name.equals(process.name)) {
+                State.doRoot(context, "kill " + process.pid, true);
+                return;
             }
         }
     }

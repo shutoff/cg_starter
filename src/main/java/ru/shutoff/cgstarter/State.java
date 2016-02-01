@@ -227,7 +227,6 @@ public class State extends BroadcastReceiver {
     }
 
     /*
-
     static public void appendLog(String text) {
         Log.v("CG starter", text);
         File logFile = Environment.getExternalStorageDirectory();
@@ -256,7 +255,6 @@ public class State extends BroadcastReceiver {
         String s = sw.toString();
         appendLog(s);
     }
-
     */
 
     static boolean inInterval(String interval) {
