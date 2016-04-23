@@ -1413,6 +1413,8 @@ public class OnExitService extends Service {
     void showActiveOverlay() {
         if (hudActive != null)
             return;
+
+
         hideInactiveOverlay();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
