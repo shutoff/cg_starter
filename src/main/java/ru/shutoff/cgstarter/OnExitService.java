@@ -632,10 +632,20 @@ public class OnExitService extends Service {
         if (foreground)
             stopForeground(true);
         hideOverlays(null);
-        if (netListener != null)
-            locationManager.removeUpdates(netListener);
-        if (gpsListener != null)
-            locationManager.removeUpdates(gpsListener);
+        if (netListener != null) {
+            try {
+                locationManager.removeUpdates(netListener);
+            } catch (SecurityException ex) {
+                // ignore
+            }
+        }
+        if (gpsListener != null) {
+            try {
+                locationManager.removeUpdates(gpsListener);
+            } catch (SecurityException ex) {
+                // ignore
+            }
+        }
         if (networkReciever != null)
             unregisterReceiver(networkReciever);
         if (currentBestLocation != null) {
@@ -644,7 +654,6 @@ public class OnExitService extends Service {
             ed.putString(State.LAST_LAT, currentBestLocation.getLatitude() + "");
             ed.putString(State.LAST_LNG, currentBestLocation.getLongitude() + "");
             ed.commit();
-
         }
         is_run = false;
         super.onDestroy();
