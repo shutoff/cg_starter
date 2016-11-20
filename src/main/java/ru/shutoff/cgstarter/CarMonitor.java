@@ -40,6 +40,7 @@ public class CarMonitor extends BroadcastReceiver {
     private CountDownTimer power_timer;
     private CountDownTimer power_kill_timer;
     private CountDownTimer dock_kill_timer;
+    private CountDownTimer bt_kill_timer;
 
     static void startCG(Context context, String route, String route_points, SearchActivity.Address addr) {
         if (route.equals("-")) {
@@ -271,6 +272,7 @@ public class CarMonitor extends BroadcastReceiver {
 
                         @Override
                         public void onFinish() {
+                            State.appendLog("Exit on power");
                             power_kill_timer = null;
                             OnExitService.force_exit = true;
                             killCG(context);
@@ -288,18 +290,40 @@ public class CarMonitor extends BroadcastReceiver {
             if (!devices.equals(""))
                 devices += ";";
             devices += device.getAddress();
+            State.appendLog("ACL: " + devices);
             SharedPreferences.Editor ed = preferences.edit();
             ed.putString(State.BT_DEVICES, devices);
             ed.commit();
+            if (bt_kill_timer != null) {
+                bt_kill_timer.cancel();
+                bt_kill_timer = null;
+            }
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            State.appendLog("-ACL: " + device.getAddress());
             OnExitService.turnOffBT(context, device.getAddress());
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             if (preferences.getBoolean(State.KILL_BT, false) && preferences.getString(State.BT_DEVICES, "").equals("-")) {
-                OnExitService.force_exit = true;
-                killCG(context);
-                lockDevice(context);
+                State.appendLog("Exit on BT");
+                if (bt_kill_timer == null) {
+                    bt_kill_timer = new CountDownTimer(3000, 3000) {
+                        @Override
+                        public void onTick(long l) {
+
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            State.appendLog("Exit on BT timer");
+                            bt_kill_timer = null;
+                            OnExitService.force_exit = true;
+                            killCG(context);
+                            lockDevice(context);
+                        }
+                    };
+                    bt_kill_timer.start();
+                }
             }
         }
         if (action.equals(Intent.ACTION_NEW_OUTGOING_CALL)) {
@@ -380,6 +404,7 @@ public class CarMonitor extends BroadcastReceiver {
 
                         @Override
                         public void onFinish() {
+                            State.appendLog("Exit on car mode");
                             dock_kill_timer = null;
                             OnExitService.force_exit = true;
                             killCG(context);

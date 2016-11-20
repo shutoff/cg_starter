@@ -623,6 +623,7 @@ public class OnExitService extends Service {
 
     @Override
     public void onDestroy() {
+        State.appendLog("OnDestroy");
         if (phoneListener != null)
             tm.listen(phoneListener, PhoneStateListener.LISTEN_NONE);
         if (observer != null)

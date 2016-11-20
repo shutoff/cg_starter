@@ -29,21 +29,26 @@ public class StartActivity extends GpsActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String q = null;
-        String url = null;
+        String url = "";
         try {
             Uri uri = getIntent().getData();
-            url = uri.toString();
+            if (uri != null)
+                url = uri.toString();
             String[] parts = uri.getQuery().split("&");
             for (String part : parts) {
                 if (part.length() < 2)
                     continue;
-                if (!part.substring(0, 2).equals("q="))
-                    continue;
-                q = Uri.decode(part.substring(2));
-                break;
+                if ((part.length() > 3) && part.substring(0, 2).equals("q=")) {
+                    q = Uri.decode(part.substring(2));
+                    break;
+                }
+                if ((part.length() > 7) && part.substring(0, 6).equals("daddr=")) {
+                    q = Uri.decode(part.substring(6));
+                    break;
+                }
             }
         } catch (Exception ex) {
-            // ignore
+            ex.printStackTrace();
         }
         setContentView(R.layout.list);
         if (q == null) {
@@ -115,6 +120,11 @@ public class StartActivity extends GpsActivity {
             }
         }
         final String query = q;
+        if (query == null) {
+            finish();
+            return;
+        }
+
         CountDownTimer timer = new CountDownTimer(1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
