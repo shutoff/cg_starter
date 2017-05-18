@@ -1255,7 +1255,6 @@ public class OnExitService extends Service {
         layoutParams.x = position[0];
         layoutParams.y = position[1];
 
-        State.appendLog("Show apps");
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudApps = inflater.inflate(R.layout.quick_launch, null);
         int icon_size = preferences.getInt(State.QUICK_SIZE, isBig() ? 45 : 30);
@@ -1282,10 +1281,14 @@ public class OnExitService extends Service {
                         App app = apps.get((Integer) v.getTag());
                         String[] component = app.name.split("/");
                         if (component[0].equals("tel")) {
-                            Intent intent = new Intent(Intent.ACTION_CALL);
-                            intent.setData(Uri.parse("tel:" + component[1]));
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(intent);
+                            try {
+                                Intent intent = new Intent(Intent.ACTION_CALL);
+                                intent.setData(Uri.parse("tel:" + component[1]));
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                            }catch (SecurityException ex){
+                                ex.printStackTrace();
+                            }
                             return;
                         }
                         Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
@@ -1423,8 +1426,6 @@ public class OnExitService extends Service {
     void showActiveOverlay() {
         if (hudActive != null)
             return;
-
-        State.appendLog("Show active");
         hideInactiveOverlay();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
@@ -1714,7 +1715,6 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudActive == null)
             return;
-        State.appendLog("Hide active");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudActive);
         hudActive = null;
     }
@@ -1723,7 +1723,6 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudInactive == null)
             return;
-        State.appendLog("Hide inactive");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudInactive);
         hudInactive = null;
     }
@@ -1744,7 +1743,6 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudApps == null)
             return;
-        State.appendLog("Hide apps");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudApps);
         hudApps = null;
     }

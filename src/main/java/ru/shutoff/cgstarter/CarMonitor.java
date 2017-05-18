@@ -70,6 +70,12 @@ public class CarMonitor extends BroadcastReceiver {
     }
 
     static void killCG(Context context) {
+        State.appendLog("Kill CG");
+        try{
+            throw new Error("Kill");
+        }catch (Exception ex){
+            State.print(ex);
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
             List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
@@ -95,6 +101,12 @@ public class CarMonitor extends BroadcastReceiver {
     }
 
     static void lockDevice(Context context) {
+        State.appendLog("Lock");
+        try{
+            throw new Error("Lock");
+        }catch (Exception ex){
+            State.print(ex);
+        }
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
                 DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
@@ -160,6 +172,7 @@ public class CarMonitor extends BroadcastReceiver {
             }
         }
         if (action.equals(Intent.ACTION_POWER_CONNECTED)) {
+            State.appendLog("ACTION_POWER_CONNECTED");
             if (power_kill_timer != null) {
                 power_kill_timer.cancel();
                 power_kill_timer = null;
@@ -205,6 +218,8 @@ public class CarMonitor extends BroadcastReceiver {
                             }
                         }
                     }
+                    if (power_timer != null)
+                        power_timer.cancel();
                     power_timer = new CountDownTimer(10000, 2000) {
                         @Override
                         public void onTick(long millisUntilFinished) {
@@ -253,6 +268,7 @@ public class CarMonitor extends BroadcastReceiver {
             }
         }
         if (action.equals(Intent.ACTION_POWER_DISCONNECTED)) {
+            State.appendLog("ACTION_POWER_CONNECTED");
             if (power_timer != null) {
                 power_timer.cancel();
                 power_timer = null;
@@ -264,6 +280,8 @@ public class CarMonitor extends BroadcastReceiver {
             if (OnExitService.is_run) {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
                 if (preferences.getBoolean(State.KILL_POWER, false)) {
+                    if (power_kill_timer != null)
+                        power_kill_timer.cancel();
                     power_kill_timer = new CountDownTimer(3000, 3000) {
                         @Override
                         public void onTick(long millisUntilFinished) {
@@ -283,6 +301,7 @@ public class CarMonitor extends BroadcastReceiver {
             }
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
+            State.appendLog("ACTION_ACL_CONNECTED");
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
             String devices = preferences.getString(State.BT_DEVICES, "");
@@ -292,17 +311,23 @@ public class CarMonitor extends BroadcastReceiver {
             SharedPreferences.Editor ed = preferences.edit();
             ed.putString(State.BT_DEVICES, devices);
             ed.commit();
+            State.appendLog(">> " + preferences.getString(State.BT_DEVICES, ""));
             if (bt_timer != null) {
+                State.appendLog("Kill BT timer");
                 bt_timer.cancel();
                 bt_timer = null;
             }
         }
         if (action.equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
+            State.appendLog("ACTION_ACL_DISCONNECTED");
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             OnExitService.turnOffBT(context, device.getAddress());
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            State.appendLog(">> " + preferences.getString(State.BT_DEVICES, ""));
             if (preferences.getBoolean(State.KILL_BT, false) && preferences.getString(State.BT_DEVICES, "").equals("-")) {
-                bt_timer = new CountDownTimer(3000, 3000) {
+                if (bt_timer != null)
+                    bt_timer.cancel();
+                bt_timer = new CountDownTimer(5000, 5000) {
                     @Override
                     public void onTick(long millisUntilFinished) {
 
@@ -310,6 +335,7 @@ public class CarMonitor extends BroadcastReceiver {
 
                     @Override
                     public void onFinish() {
+                        State.appendLog("Kill on BT");
                         bt_timer = null;
                         OnExitService.force_exit = true;
                         killCG(context);
