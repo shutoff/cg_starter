@@ -4,7 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.2'
+        classpath 'com.android.tools.build:gradle:2.3.2'
     }
 }
 
@@ -16,11 +16,14 @@ repositories {
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25"
+    buildToolsVersion '25.0.3'
+
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 24
+        targetSdkVersion 25
+        versionCode 40
+        versionName "1.8"
     }
 
     buildTypes {
@@ -29,15 +32,19 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
     }
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:25.0.1'
-    compile 'com.android.support:appcompat-v7:25.0.1'
-    compile 'com.squareup.okhttp3:okhttp:3.4.2'
+    compile 'com.android.support:support-v4:25.3.1'
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.squareup.okhttp3:okhttp:3.2.0'
     compile 'org.apache.commons:commons-lang3:3.4'
-    compile 'com.jaredrummler:android-processes:1.0.8'
+    compile 'com.jaredrummler:android-processes:1.0.7'
     compile 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
     compile fileTree(dir: 'libs', include: '*.jar')
 }

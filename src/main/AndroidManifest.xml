@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="ru.shutoff.cgstarter"
-    android:versionCode="40"
-    android:versionName="1.7.4 test 20150201">
+    package="ru.shutoff.cgstarter">
 
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />

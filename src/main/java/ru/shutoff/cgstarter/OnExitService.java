@@ -564,7 +564,6 @@ public class OnExitService extends Service {
     public void onCreate() {
         super.onCreate();
 
-/*
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable ex) {
@@ -572,7 +571,6 @@ public class OnExitService extends Service {
                 ex.printStackTrace();
             }
         });
-*/
 
         is_run = true;
         alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
@@ -637,14 +635,14 @@ public class OnExitService extends Service {
             try {
                 locationManager.removeUpdates(netListener);
             } catch (SecurityException ex) {
-                // ignore
+                ex.printStackTrace();
             }
         }
         if (gpsListener != null) {
             try {
                 locationManager.removeUpdates(gpsListener);
             } catch (SecurityException ex) {
-                // ignore
+                ex.printStackTrace();
             }
         }
         if (networkReciever != null)
@@ -655,6 +653,7 @@ public class OnExitService extends Service {
             ed.putString(State.LAST_LAT, currentBestLocation.getLatitude() + "");
             ed.putString(State.LAST_LNG, currentBestLocation.getLongitude() + "");
             ed.commit();
+
         }
         is_run = false;
         super.onDestroy();
@@ -1256,6 +1255,7 @@ public class OnExitService extends Service {
         layoutParams.x = position[0];
         layoutParams.y = position[1];
 
+        State.appendLog("Show apps");
         LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         hudApps = inflater.inflate(R.layout.quick_launch, null);
         int icon_size = preferences.getInt(State.QUICK_SIZE, isBig() ? 45 : 30);
@@ -1424,7 +1424,7 @@ public class OnExitService extends Service {
         if (hudActive != null)
             return;
 
-
+        State.appendLog("Show active");
         hideInactiveOverlay();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!preferences.getBoolean(State.PHONE_SHOW, false))
@@ -1714,6 +1714,7 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudActive == null)
             return;
+        State.appendLog("Hide active");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudActive);
         hudActive = null;
     }
@@ -1722,6 +1723,7 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudInactive == null)
             return;
+        State.appendLog("Hide inactive");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudInactive);
         hudInactive = null;
     }
@@ -1742,6 +1744,7 @@ public class OnExitService extends Service {
         cancelSetup();
         if (hudApps == null)
             return;
+        State.appendLog("Hide apps");
         ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(hudApps);
         hudApps = null;
     }
@@ -1955,7 +1958,11 @@ public class OnExitService extends Service {
 
         try {
             if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, netListener);
+                try {
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, netListener);
+                } catch (SecurityException ex) {
+                    ex.printStackTrace();
+                }
             } else {
                 netListener = null;
             }
@@ -1989,7 +1996,7 @@ public class OnExitService extends Service {
 
             try {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
-            } catch (Exception ex) {
+            } catch (SecurityException ex) {
                 gpsListener = null;
             }
         }
@@ -2084,15 +2091,25 @@ public class OnExitService extends Service {
     Location getLastBestLocation() {
         Location locationGPS = null;
         try {
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-                locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                try {
+                    locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                } catch (SecurityException ex) {
+                    ex.printStackTrace();
+                }
+            }
         } catch (Exception ex) {
             // ignore
         }
         Location locationNet = null;
         try {
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
-                locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                try {
+                    locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                } catch (SecurityException ex) {
+                    ex.printStackTrace();
+                }
+            }
         } catch (Exception ex) {
             // ignore
         }

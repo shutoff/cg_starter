@@ -17,7 +17,7 @@
 # The following rules are used to strip any non essential Google Play Services classes and method.
 
 -printmapping mapping.txt
--renamesourcefileattribute net.ugona.plus
+-renamesourcefileattribute a
 -keepattributes SourceFile,LineNumberTable
 
 # For Google Play Services
@@ -29,9 +29,6 @@
 -keep public class com.google.ads.**{
    public *;
 }
-
-# For mediation
--keepattributes *Annotation*
 
 # Other required classes for Google Play Services
 # Read more at http://developer.android.com/google/play-services/setup.html
@@ -62,8 +59,8 @@
 
 -dontwarn android.support.**
 -dontwarn com.google.android.gms.**
--dontwarn org.joda.convert.**
 -dontwarn sun.misc.**
 -dontwarn android.os.**
 -dontwarn okio.**
+
 
