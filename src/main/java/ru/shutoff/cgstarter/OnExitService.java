@@ -755,7 +755,7 @@ public class OnExitService extends Service {
                     }
                     if (preferences.getBoolean(State.SAVE_WIFI, false)) {
                         try {
-                            WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                            WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                             if (wifiManager != null)
                                 wifiManager.setWifiEnabled(true);
                         } catch (Exception ex) {
