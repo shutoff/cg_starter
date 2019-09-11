@@ -359,7 +359,7 @@ public class State extends BroadcastReceiver {
         }
         if (!is_cn) {
             cg_package = cg;
-            cg_folder = new File(cg_folder, "CityGuide");
+            cg_folder = new File(cg_folder, "Android/data/cityguide.probki.net/files"); // Fix me
             context.sendBroadcast(new Intent(MainActivity.CHANGE_APP));
             return;
         }
