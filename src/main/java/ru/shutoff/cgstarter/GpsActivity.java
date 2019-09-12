@@ -1,15 +1,19 @@
 package ru.shutoff.cgstarter;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
 
 import java.util.Date;
 
-public class GpsActivity extends ActionBarActivity {
+public class GpsActivity extends AppCompatActivity {
 
     private LocationManager locationManager;
     private LocationListener netListener;
@@ -27,6 +31,7 @@ public class GpsActivity extends ActionBarActivity {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void onResume() {
         super.onResume();
@@ -108,6 +113,7 @@ public class GpsActivity extends ActionBarActivity {
 
     static final int TWO_MINUTES = 1000 * 60 * 2;
 
+    @SuppressLint("MissingPermission")
     Location getLastBestLocation() {
         Location locationGPS = null;
         try {

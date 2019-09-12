@@ -6,13 +6,13 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-public class Preferences extends ActionBarActivity {
+public class Preferences extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

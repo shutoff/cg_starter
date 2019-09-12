@@ -1,5 +1,6 @@
 package ru.shutoff.cgstarter;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -286,6 +287,7 @@ public class OnExitService extends Service {
         return false;
     }
 
+    @SuppressLint("MissingPermission")
     static void convertFile(String bmp_name) {
         try {
             File bmp_file = new File(bmp_name);
@@ -1662,6 +1664,7 @@ public class OnExitService extends Service {
             wm.updateViewLayout(hudApps, layoutParams);
     }
 
+    @SuppressLint("MissingPermission")
     void setupPhoneButton() {
         cancelSetup();
         LinearLayout layout = null;
